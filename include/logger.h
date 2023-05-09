@@ -15,10 +15,23 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FOO_H
-#define FOO_H
+#ifndef LOGGER_H
+#define LOGGER_H
 
-/* functions */
-void foo(void);
+#include <stdio.h>
 
-#endif /* FOO.H */
+#define LOG_INFO(...)                         \
+    ({                                        \
+	fprintf(stdout, "\033[0;33m[LOG]: "); \
+	fprintf(stdout, __VA_ARGS__);         \
+	fprintf(stdout, "\033[0m\n");         \
+    })
+
+#define LOG_ERR(...)                          \
+    ({                                        \
+	fprintf(stderr, "\033[0;31m[ERR]: "); \
+	fprintf(stderr, __VA_ARGS__);         \
+	fprintf(stderr, "\033[0m\n");         \
+    })
+
+#endif /* LOGGER_H */

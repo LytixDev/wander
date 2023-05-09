@@ -15,10 +15,26 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef FOO_H
-#define FOO_H
+#ifndef COMMON_H
+#define COMMON_H
 
-/* functions */
-void foo(void);
+#include <stdint.h>
 
-#endif /* FOO.H */
+#define u8 uint8_t
+#define u16 uint16_t
+#define u32 uint32_t
+#define u64 uint64_t
+#define u128 uint128_t
+#define u256 uint256_t
+
+#define i8 int8_t
+#define i16 int16_t
+#define i32 int32_t
+#define i64 int64_t
+#define i128 iint128_t
+#define i256 iint256_t
+
+/* Unicode code point */
+#define Rune i32
+
+#endif
