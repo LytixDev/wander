@@ -10,7 +10,7 @@ OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 CC = gcc
 CFLAGS = -I include -Wall -Wpedantic -Wextra -Wshadow -std=c11
 
-.PHONY: clean tags bear $(OBJDIR)
+.PHONY: format clean tags bear $(OBJDIR)
 TARGET = yopierre
 
 all: $(TARGET)
@@ -37,6 +37,9 @@ tags:
 
 bear:
 	bear -- make
+
+format:
+	python format.py
 
 $(OBJDIR):
 	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))

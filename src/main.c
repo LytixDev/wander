@@ -15,12 +15,14 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include "foo.h"
+#include <stdio.h>
 
 
-int main()
+int main(void)
 {
     printf("Yo!\n");
-    foo();
+    if (1) {
+	foo();
+    }
 }
