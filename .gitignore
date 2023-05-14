@@ -1,0 +1,11 @@
+# ignore object files, binaries and caches
+*.out
+.obj/
+.cache/*
+
+# used for enhanced development
+tags
+compile_commands.json
+
+# compiled binary
+gigaduf

@@ -1,0 +1,25 @@
+name: gigaduf checkstyle
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Checkstyle
+    strategy:
+      matrix:
+        os: [ubuntu-20.04]
+        cc: [gcc]
+    runs-on: ${{matrix.os}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Dependencies
+        if: startswith(matrix.os, 'ubuntu-')
+        run: |
+          sudo apt-get update -qyy
+          sudo apt-get install python3
+
+      - name: Checkstyle
+        run: python3 format.py -checkstyle

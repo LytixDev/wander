@@ -1,0 +1,23 @@
+name: gigaduf build
+on: [push, pull_request]
+
+jobs:
+  build:
+    name: Build
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, macos-12]
+        cc: [gcc]
+    runs-on: ${{matrix.os}}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          submodules: recursive
+
+      - name: Dependencies
+        if: startswith(matrix.os, 'ubuntu-')
+        run: sudo apt-get update -qyy
+
+      - name: Build
+        run: make
