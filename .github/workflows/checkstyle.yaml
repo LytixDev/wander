@@ -6,7 +6,7 @@ jobs:
     name: Checkstyle
     strategy:
       matrix:
-        os: [ubuntu-20.04, macos-12]
+        os: [ubuntu-20.04]
         cc: [gcc]
     runs-on: ${{matrix.os}}
     steps:
