@@ -29,10 +29,8 @@ def checkstyle():
         for file in files:
             if file.endswith((".c", ".h")):
                 rc = os.system("clang-format --dry-run --Werror -style=file " + root + "/" + file)
-                if rc == 1:
-                    return 1
-
-    return 0
+                if rc != 0:
+                    return exit(1)
 
 
 def main():

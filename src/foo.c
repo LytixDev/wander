@@ -18,7 +18,6 @@
 #include <stdio.h>
 
 
-void foo()
-{
+void foo() {
     printf("foo...\n");
 }
