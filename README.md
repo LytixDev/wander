@@ -20,7 +20,7 @@ $ make
 ```
 
 ```sh
-$ ./yopierre
+$ ./gigaduf
 ```
 
 Voila.
