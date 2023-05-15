@@ -80,7 +80,7 @@ int init_node(struct node_t *node, int connections, int threads, int queue_size,
 
     struct sockaddr_in address = { 0 };
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_addr.s_addr = htonl(INADDR_ANY);
     address.sin_port = htons(ULSR_DEFAULT_PORT);
 
     if (bind(node->socket, (struct sockaddr *)&address, sizeof(address)) < 0) {
