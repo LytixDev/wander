@@ -15,27 +15,27 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
-#include <stdarg.h>
-#include <sys/socket.h>
-#include <netinet/in.h>
 #include <arpa/inet.h>
+#include <netinet/in.h>
+#include <stdarg.h>
+#include <stdlib.h>
+#include <sys/socket.h>
 
-#include "ulsr/node.h"
-#include "lib/logger.h"
 #include "lib/common.h"
+#include "lib/logger.h"
+#include "ulsr/node.h"
 
 int init_node(struct node_t *node, int connections, int threads, int queue_size, ...)
 {
     node->socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (node->socket < 0) {
-        LOG_ERR("Failed to create socket");
-        return -1;
+	LOG_ERR("Failed to create socket");
+	return -1;
     }
 
-    if (setsockopt(node->socket, SOL_SOCKET, IP_HDRINCL, &(int){1}, sizeof(int)) < 0) {
-        LOG_ERR("Failed to set socket options");
-        return -1;
+    if (setsockopt(node->socket, SOL_SOCKET, IP_HDRINCL, &(int){ 1 }, sizeof(int)) < 0) {
+	LOG_ERR("Failed to set socket options");
+	return -1;
     }
 
     node->connections = malloc(sizeof(struct connections_t));
@@ -52,7 +52,7 @@ int init_node(struct node_t *node, int connections, int threads, int queue_size,
     va_start(args, num_args);
 
     for (int i = 0; i < num_args; i++)
-        ARRAY_PUSH(*node->all_nodes, va_arg(args, struct sockaddr_in));
+	ARRAY_PUSH(*node->all_nodes, va_arg(args, struct sockaddr_in));
 
     va_end(args);
 

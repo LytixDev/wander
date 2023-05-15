@@ -19,13 +19,13 @@
 #define NODE_H
 
 #include <netinet/in.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <sys/socket.h>
-#include <stdbool.h>
 
-#include "lib/threadpool.h"
 #include "lib/arraylist.h"
 #include "lib/common.h"
+#include "lib/threadpool.h"
 
 /**
  * Arraylist struct for sockaddr_in.
