@@ -52,6 +52,7 @@ struct neighbor_t {
  * @param all_nodes All nodes in the network.
  */
 struct node_t {
+    int socket;
     struct sockaddr_in addr;
     struct neighbor_array_t *neighbors;
     struct sockaddr_in_array_t *all_nodes;
