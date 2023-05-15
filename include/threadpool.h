@@ -122,4 +122,4 @@ bool submit_worker_task_timeout(struct threadpool_t *threadpool, worker_thread_f
  */
 void threadpool_stop(struct threadpool_t *threadpool);
 
-#endif
+#endif /* THREADPOOL_H */

@@ -17,7 +17,7 @@ all: $(TARGET)
 
 $(OBJDIR)/%.o: %.c Makefile | $(OBJDIR)
 	@echo [CC] $@
-	@$(CC) -c $(CFLAGS) -c $< -o $@ -l pthread
+	@$(CC) -c $(CFLAGS) -c $< -o $@
 
 $(TARGET): $(OBJS)
 	@echo [LD] $@

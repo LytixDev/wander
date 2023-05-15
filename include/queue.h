@@ -84,4 +84,4 @@ void *queue_pop(struct queue_t *queue);
  */
 void free_queue(struct queue_t *queue);
 
-#endif
+#endif /* QUEUE_H */
