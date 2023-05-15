@@ -18,7 +18,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "queue.h"
+#include "lib/queue.h"
 
 void init_queue(struct queue_t *queue, int size)
 {

@@ -9,3 +9,6 @@ compile_commands.json
 
 # compiled binary
 ulsr
+
+# ignore soydev editor
+.vscode/*

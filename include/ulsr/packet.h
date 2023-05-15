@@ -20,7 +20,7 @@
 
 #include <netinet/in.h>
 
-#include "common.h"
+#include "lib/common.h"
 
 /**
  * Enum used to represent the type of a packet.

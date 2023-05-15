@@ -22,18 +22,18 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 
-#include "arraylist.h"
-#include "common.h"
+#include "lib/arraylist.h"
+#include "lib/common.h"
 
 /**
  * Arraylist struct for sockaddr_in.
  */
-ARRAY_T(sockaddr_in_array_t, struct sockaddr_in);
+ARRAY_T(sockaddr_in_array_t, struct sockaddr_in)
 
 /**
  * Arraylist struct for neighbor_t.
  */
-ARRAY_T(neighbor_array_t, struct neighbor_t);
+ARRAY_T(neighbor_array_t, struct neighbor_t)
 
 /**
  * Struct used to represent a neighbor of a node.
