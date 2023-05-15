@@ -18,9 +18,9 @@
 #ifndef NODE_H
 #define NODE_H
 
+#include <netinet/in.h>
 #include <stdlib.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
 
 /**
  * Struct used to represent a neighbor of a node.
