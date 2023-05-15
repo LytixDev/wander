@@ -17,7 +17,7 @@
 
 #include <stdlib.h>
 
-#include "window_utils.h"
+#include "gui/window_utils.h"
 
 double longitude_to_x(double longitude)
 {
