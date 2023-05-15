@@ -40,8 +40,8 @@ enum packet_type {
  * @param destination_ip The destination IP address of the packet.
  * @param pt The type of packet.
  * @param data The data contained in the packet.
- * @param len The length of the data contained in the packet. 
- * This is also the maximum length of the data in an IPv4 packet. 
+ * @param len The length of the data contained in the packet.
+ * This is also the maximum length of the data in an IPv4 packet.
  */
 struct packet_h {
     struct sockaddr_in source_ip;
