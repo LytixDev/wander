@@ -21,9 +21,30 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 
+#include "lib/arraylist.h"
+#include "lib/lambda.h"
 #include "lib/common.h"
 #include "lib/logger.h"
 #include "ulsr/node.h"
+
+static void close_connections(struct connections_t *connections)
+{
+    LOG_INFO("Closing connections");
+    for (int i = 0; i < connections->cap; i++) {
+        if (send(connections->connections[i], "Server shutting down", 20, MSG_NOSIGNAL) > 0) {
+            shutdown(connections->connections[i], SHUT_RDWR);
+            close(connections->connections[i]);
+        }
+    }
+    LOG_INFO("Closed connections");
+}
+
+static void insert_connection(struct connections_t *connections, int connection)
+{
+    connections->index = ++connections->index % connections->cap;
+    connections->connections[connections->index] = connection;
+    LOG_INFO("Inserted connection");
+}
 
 int init_node(struct node_t *node, int connections, int threads, int queue_size, ...)
 {
@@ -33,14 +54,38 @@ int init_node(struct node_t *node, int connections, int threads, int queue_size,
 	return -1;
     }
 
+    LOG_INFO("Created socket");
+
     if (setsockopt(node->socket, SOL_SOCKET, IP_HDRINCL, &(int){ 1 }, sizeof(int)) < 0) {
 	LOG_ERR("Failed to set socket options");
 	return -1;
     }
 
+    LOG_INFO("Set socket options");
+
+    struct sockaddr_in address = {0};
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(0);
+    
+    if (bind(node->socket, (struct sockaddr *)&address, sizeof(address)) < 0) {
+	LOG_ERR("Failed to bind socket");
+        return -1;
+    }
+
+    if (listen(node->socket, threads) != 0) {
+        LOG_ERR("Failed to listen on socket");
+        return -1;
+    }
+
+    LOG_INFO("Bound socket");
+
     node->connections = malloc(sizeof(struct connections_t));
-    node->connections->connections = malloc(sizeof(int) * connections);
+    node->connections->connections = calloc(connections, sizeof(int));
+    node->connections->index = -1;
     node->connections->cap = connections;
+
+    LOG_INFO("Allocated connections");
 
     node->threadpool = malloc(sizeof(struct threadpool_t));
     init_threadpool(node->threadpool, threads, queue_size);
@@ -56,5 +101,41 @@ int init_node(struct node_t *node, int connections, int threads, int queue_size,
 
     va_end(args);
 
+    LOG_INFO("Initialized node");
+
     return 0;
+}
+
+int run_node(struct node_t *node) 
+{
+    int client_socket = -1;
+
+    start_threadpool(node->threadpool);
+
+    LOG_INFO("Started threadpool");
+
+    node->running = true;
+
+    LOG_INFO("Server started, press 'q' to quit\n");
+
+    submit_worker_task(node->threadpool, LAMBDA(void, (void *arg), {
+	struct node_t *node = (struct node_t *)arg;
+
+	while (getc(stdin) != 'q');
+
+	shutdown(node->socket, SHUT_RDWR);
+	close(node->socket);
+	
+	LOG_INFO("Quitting...\n");
+	
+	node->running = false;
+    }), (void *)node);
+}
+
+void free_node(struct node_t *node)
+{
+    free(node->connections->connections);
+    free(node->connections);
+    free(node->threadpool);
+    free(node->all_nodes);
 }

@@ -77,4 +77,22 @@ struct node_t {
     struct sockaddr_in_array_t *all_nodes;
 };
 
+/* Methods */
+
+/**
+ * Initializes a node.
+ * @param node The node to initialize.
+ * @param connections The amount of connections.
+ * @param threads The amount of threads.
+ * @param queue_size The size of the queue.
+ * @param ... The current nodes known in the network.
+ */
+int init_node(struct node_t *node, int connections, int threads, int queue_size, ...);
+
+/**
+ * Frees a node.
+ * @param node The node to free.
+ */
+void free_node(struct node_t *node);
+
 #endif /* NODE_H */
