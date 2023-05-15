@@ -34,6 +34,13 @@ enum packet_type {
     PACKET_PURGE,
 };
 
+struct packet_header_t {
+    struct sockaddr_in source_ip;
+    struct sockaddr_in destination_ip;
+    enum packet_type pt;
+    u16 len;
+};
+
 /**
  * Struct used to represent a packet.
  * @param source_ip The source IP address of the packet.
@@ -43,12 +50,9 @@ enum packet_type {
  * @param len The length of the data contained in the packet.
  * This is also the maximum length of the data in an IPv4 packet.
  */
-struct packet_h {
-    struct sockaddr_in source_ip;
-    struct sockaddr_in destination_ip;
-    enum packet_type pt;
-    void *data;
-    u16 len;
+struct packet_t {
+    struct packet_header_t header;
+    void *payload;
 };
 
 #endif /* PACKET_H */
