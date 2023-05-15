@@ -23,6 +23,7 @@
 #include <sys/socket.h>
 
 #include "arraylist.h"
+#include "common.h"
 
 /**
  * Arraylist struct for sockaddr_in.
@@ -41,7 +42,7 @@ ARRAY_T(neighbor_array_t, struct neighbor_t);
  */
 struct neighbor_t {
     struct sockaddr_in addr;
-    int cost;
+    u16 cost;
 };
 
 /**
