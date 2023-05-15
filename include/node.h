@@ -13,7 +13,7 @@ struct neighbor_t {
 struct node_t {
     struct sockaddr_in addr;
     struct neighbor_t *neighbors;
-    struct sockaddr_in *routing_table;
+    struct sockaddr_in *all_nodes;
 };
 
 #endif /* NODE_H */
