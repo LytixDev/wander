@@ -22,12 +22,27 @@
 
 #include "common.h"
 
+/**
+ * Enum used to represent the type of a packet.
+ * @param PACKET_DATA A packet containing data.
+ * @param PACKET_HELLO A packet used to establish a connection.
+ * @param PACKET_PURGE A packet used to purge a connection.
+ */
 enum packet_type {
     PACKET_DATA,
     PACKET_HELLO,
     PACKET_PURGE,
 };
 
+/**
+ * Struct used to represent a packet.
+ * @param source_ip The source IP address of the packet.
+ * @param destination_ip The destination IP address of the packet.
+ * @param pt The type of packet.
+ * @param data The data contained in the packet.
+ * @param len The length of the data contained in the packet. 
+ * This is also the maximum length of the data in an IPv4 packet. 
+ */
 struct packet_h {
     struct sockaddr_in source_ip;
     struct sockaddr_in destination_ip;
