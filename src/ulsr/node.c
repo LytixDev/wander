@@ -18,56 +18,41 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <sys/socket.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
 
 #include "ulsr/node.h"
+#include "lib/logger.h"
 #include "lib/common.h"
 
 int init_node(struct node_t *node, int connections, int threads, int queue_size, ...)
 {
     node->socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
     if (node->socket < 0) {
-        perror("socket");
+        LOG_ERR("Failed to create socket");
         return -1;
     }
 
-    if (setsockopt(node->socket, SOL_SOCKET, (SO_REUSEPORT | SO_REUSEADDR), &(int){1}, sizeof(int)) < 0) {
-        perror("setsockopt");
-        return -1;
-    }
-    
-    struct sockaddr_in address = {0};
-    address.sin_family = AF_INET;
-    address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(port);
-    
-    if (bind(server->socket, (struct sockaddr *)&address, sizeof(address)) < 0) {
-        perror("bind");
+    if (setsockopt(node->socket, SOL_SOCKET, IP_HDRINCL, &(int){1}, sizeof(int)) < 0) {
+        LOG_ERR("Failed to set socket options");
         return -1;
     }
 
-    if (listen(server->socket, 5) != 0) {
-        perror("listen");
-        return -1;
-    }
+    node->connections = malloc(sizeof(struct connections_t));
+    node->connections->connections = malloc(sizeof(int) * connections);
+    node->connections->cap = connections;
 
-    server->connections = malloc(sizeof(struct connections_t));
-    server->connections->connections = malloc(sizeof(int) * connections);
-    server->connections->cap = connections;
+    node->threadpool = malloc(sizeof(struct threadpool_t));
+    init_threadpool(node->threadpool, threads, queue_size);
 
-    server->threadpool = malloc(sizeof(struct threadpool_t));
-    init_threadpool(server->threadpool, threads, q_size);
-
-    server->routes = malloc(sizeof(struct routes_t));
-    init_routes(server->routes);
+    node->all_nodes = malloc(sizeof(struct sockaddr_in_array_t));
 
     va_list args;
     u16 num_args = VA_NUMBER_OF_ARGS(args);
     va_start(args, num_args);
 
-    for (int i = 0; i < num_args; i++) {
-        // TODO: retrieve the next argument from the va_list
-        // and initialize it
-    }
+    for (int i = 0; i < num_args; i++)
+        ARRAY_PUSH(*node->all_nodes, va_arg(args, struct sockaddr_in));
 
     va_end(args);
 

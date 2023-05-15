@@ -21,7 +21,9 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <stdbool.h>
 
+#include "lib/threadpool.h"
 #include "lib/arraylist.h"
 #include "lib/common.h"
 
@@ -46,14 +48,31 @@ struct neighbor_t {
 };
 
 /**
+ * Struct for connections.
+ * @param connections The connections.
+ * @param index The current index of the connections.
+ * @param cap The max amount of connections.
+ */
+struct connections_t {
+    int *connections;
+    int index;
+    int cap;
+};
+
+/**
  * Struct used to represent a node in the network.
- * @param addr The address of the node.
+ * @param socket The socket of the node.
+ * @param running Whether the node is running.
+ * @param connections The connections of the node.
+ * @param threadpool The threadpool of the node.
  * @param neighbors The neighbors of the node.
  * @param all_nodes All nodes in the network.
  */
 struct node_t {
     int socket;
-    struct sockaddr_in addr;
+    bool running;
+    struct connections_t *connections;
+    struct threadpool_t *threadpool;
     struct neighbor_array_t *neighbors;
     struct sockaddr_in_array_t *all_nodes;
 };
