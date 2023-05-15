@@ -15,12 +15,14 @@ Copyright © 2023 Nicolai Brand and Callum Grand under GPL v3 (see LICENSE.txt).
 - `valgrind` - a tool for finding memory leaks and other undefined behavior. Used in `tests/run.sh`
 
 
+#### Compile and run
+
 ```sh
 $ make
 ```
 
 ```sh
-$ ./gigaduf
+$ ./ulsr
 ```
 
 Voila.
