@@ -16,7 +16,7 @@
  */
 
 #ifndef PACKET_H
-#define PACKET_H 
+#define PACKET_H
 
 #include <netinet/in.h>
 
