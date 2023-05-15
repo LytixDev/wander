@@ -7,8 +7,10 @@
 tags
 compile_commands.json
 
-# compiled binary
+# compiled binary, but not sources
 ulsr
+!src/ulsr
+!include/ulsr
 
 # ignore soydev editor
 .vscode/*
