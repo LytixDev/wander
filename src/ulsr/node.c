@@ -21,6 +21,7 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 
+#include "lib/socket_utils.h"
 #include "lib/arraylist.h"
 #include "lib/lambda.h"
 #include "lib/common.h"
@@ -130,6 +131,37 @@ int run_node(struct node_t *node)
 	
 	node->running = false;
     }), (void *)node);
+
+    set_nonblocking(node->socket);
+
+    while (node->running) {
+	client_socket = accept(node->socket, NULL, NULL);
+
+	if (client_socket != -1) {
+		insert_connection(node->connections, client_socket);
+
+		LOG_INFO("Connection with client %d established", client_socket);
+
+		//TODO: Handle connection
+		client_socket = -1;
+	}
+    }
+
+    LOG_INFO("Closing connections");
+
+    close_connections(node->connections);
+
+    LOG_INFO("Stopping threadpool");
+
+    threadpool_stop(node->threadpool);
+
+    LOG_INFO("Freeing node");
+
+    free_node(node);
+
+    LOG_INFO("Shutdown complete");
+
+    return 0;
 }
 
 void free_node(struct node_t *node)
