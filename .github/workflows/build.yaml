@@ -17,9 +17,7 @@ jobs:
 
       - name: Dependencies
         if: startswith(matrix.os, 'ubuntu-')
-        run: |
-            sudo apt-get update -qyy
-            sudo apt-get install libpthread-stubs0-dev
+        run: sudo apt-get update -qyy
 
       - name: Build
         run: make
