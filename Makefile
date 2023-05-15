@@ -11,7 +11,7 @@ CC = gcc
 CFLAGS = -I include -Wall -Wpedantic -Wextra -Wshadow -std=c11
 
 .PHONY: format clean tags bear $(OBJDIR)
-TARGET = gigaduf
+TARGET = ulsr
 
 all: $(TARGET)
 
