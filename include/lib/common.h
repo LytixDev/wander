@@ -20,6 +20,8 @@
 
 #include <stdint.h>
 
+/* unsigned integral types */
+#define Rune i32
 #define u8 uint8_t
 #define u16 uint16_t
 #define u32 uint32_t
@@ -27,6 +29,7 @@
 #define u128 uint128_t
 #define u256 uint256_t
 
+/* signed integral types */
 #define i8 int8_t
 #define i16 int16_t
 #define i32 int32_t
@@ -34,7 +37,16 @@
 #define i128 iint128_t
 #define i256 iint256_t
 
-/* Unicode code point */
-#define Rune i32
+/* common */
+#define VA_NUMBER_OF_ARGS(...) (sizeof((int[]){ __VA_ARGS__ }) / sizeof(int))
 
-#endif
+#define KB(x) ((x) << 10)
+#define MB(x) ((x) << 20)
+#define GB(x) ((x) << 30)
+#define TB(x) ((x) << 40)
+
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+#define CLAMP(a, x, b) (((x) < (a)) ? (a) : ((b) < (x)) ? (b) : (x))
+
+#endif /* COMMON_H */
