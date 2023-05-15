@@ -17,7 +17,7 @@
 
 #include <fcntl.h>
 
-#include "socket_utils.h"
+#include "lib/socket_utils.h"
 
 void set_nonblocking(int socket)
 {
