@@ -8,7 +8,8 @@ SRCS := $(shell find $(SRC) -type f -name "*.c")
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
 CC = gcc
-CFLAGS = -I include -Wall -Wpedantic -Wextra -Wshadow -std=c11
+CFLAGS = -Iinclude -Wall -Wpedantic -Wextra -Wshadow -std=c11
+LDFLAGS = -pthread
 
 .PHONY: format clean tags bear $(OBJDIR)
 TARGET = ulsr
@@ -21,7 +22,7 @@ $(OBJDIR)/%.o: %.c Makefile | $(OBJDIR)
 
 $(TARGET): $(OBJS)
 	@echo [LD] $@
-	@$(CC) -o $@ $^
+	@$(CC) $(LDFLAGS) -o $@ $^
 
 debug: CFLAGS += -g -DDEBUG
 debug: $(TARGET)
