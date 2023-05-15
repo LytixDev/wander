@@ -21,21 +21,21 @@
 #include <stdlib.h>
 #include <sys/socket.h>
 
-#include "lib/socket_utils.h"
 #include "lib/arraylist.h"
-#include "lib/lambda.h"
 #include "lib/common.h"
+#include "lib/lambda.h"
 #include "lib/logger.h"
+#include "lib/socket_utils.h"
 #include "ulsr/node.h"
 
 static void close_connections(struct connections_t *connections)
 {
     LOG_INFO("Closing connections");
     for (int i = 0; i < connections->cap; i++) {
-        if (send(connections->connections[i], "Server shutting down", 20, MSG_NOSIGNAL) > 0) {
-            shutdown(connections->connections[i], SHUT_RDWR);
-            close(connections->connections[i]);
-        }
+	if (send(connections->connections[i], "Server shutting down", 20, MSG_NOSIGNAL) > 0) {
+	    shutdown(connections->connections[i], SHUT_RDWR);
+	    close(connections->connections[i]);
+	}
     }
     LOG_INFO("Closed connections");
 }
@@ -45,6 +45,20 @@ static void insert_connection(struct connections_t *connections, int connection)
     connections->index = ++connections->index % connections->cap;
     connections->connections[connections->index] = connection;
     LOG_INFO("Inserted connection");
+}
+
+static void check_quit(void *arg)
+{
+    struct node_t *node = (struct node_t *)arg;
+
+    while (getc(stdin) != 'q')
+	;
+
+    shutdown(node->socket, SHUT_RDWR);
+    close(node->socket);
+    LOG_INFO("Quitting...");
+
+    node->running = false;
 }
 
 int init_node(struct node_t *node, int connections, int threads, int queue_size, ...)
@@ -64,19 +78,19 @@ int init_node(struct node_t *node, int connections, int threads, int queue_size,
 
     LOG_INFO("Set socket options");
 
-    struct sockaddr_in address = {0};
+    struct sockaddr_in address = { 0 };
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(0);
-    
+
     if (bind(node->socket, (struct sockaddr *)&address, sizeof(address)) < 0) {
 	LOG_ERR("Failed to bind socket");
-        return -1;
+	return -1;
     }
 
     if (listen(node->socket, threads) != 0) {
-        LOG_ERR("Failed to listen on socket");
-        return -1;
+	LOG_ERR("Failed to listen on socket");
+	return -1;
     }
 
     LOG_INFO("Bound socket");
@@ -107,7 +121,7 @@ int init_node(struct node_t *node, int connections, int threads, int queue_size,
     return 0;
 }
 
-int run_node(struct node_t *node) 
+int run_node(struct node_t *node)
 {
     int client_socket = -1;
 
@@ -119,18 +133,7 @@ int run_node(struct node_t *node)
 
     LOG_INFO("Server started, press 'q' to quit\n");
 
-    submit_worker_task(node->threadpool, LAMBDA(void, (void *arg), {
-	struct node_t *node = (struct node_t *)arg;
-
-	while (getc(stdin) != 'q');
-
-	shutdown(node->socket, SHUT_RDWR);
-	close(node->socket);
-	
-	LOG_INFO("Quitting...\n");
-	
-	node->running = false;
-    }), (void *)node);
+    submit_worker_task(node->threadpool, check_quit, (void *)node);
 
     set_nonblocking(node->socket);
 
@@ -138,12 +141,12 @@ int run_node(struct node_t *node)
 	client_socket = accept(node->socket, NULL, NULL);
 
 	if (client_socket != -1) {
-		insert_connection(node->connections, client_socket);
+	    insert_connection(node->connections, client_socket);
 
-		LOG_INFO("Connection with client %d established", client_socket);
+	    LOG_INFO("Connection with client %d established", client_socket);
 
-		//TODO: Handle connection
-		client_socket = -1;
+	    // TODO: Handle connection
+	    client_socket = -1;
 	}
     }
 

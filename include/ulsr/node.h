@@ -90,6 +90,12 @@ struct node_t {
 int init_node(struct node_t *node, int connections, int threads, int queue_size, ...);
 
 /**
+ * Runs a node.
+ * @param node The node to run.
+ */
+int run_node(struct node_t *node);
+
+/**
  * Frees a node.
  * @param node The node to free.
  */
