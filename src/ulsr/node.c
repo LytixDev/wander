@@ -16,6 +16,8 @@
  */
 
 #include <arpa/inet.h>
+#include <linux/if_packet.h>
+#include <net/ethernet.h>
 #include <netinet/in.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -61,9 +63,12 @@ static void check_quit(void *arg)
     node->running = false;
 }
 
-int init_node(struct node_t *node, int connections, int threads, int queue_size, ...)
+int init_node(struct node_t *node, u16 node_id, int connections, int threads, int queue_size,
+	      distance_func_t distance_func, send_func_t send_func, rec_func_t rec_func, ...)
 {
-    node->socket = socket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+    node->node_id = node_id;
+
+    node->socket = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
     if (node->socket < 0) {
 	LOG_ERR("Failed to create socket");
 	return -1;
@@ -105,14 +110,14 @@ int init_node(struct node_t *node, int connections, int threads, int queue_size,
     node->threadpool = malloc(sizeof(struct threadpool_t));
     init_threadpool(node->threadpool, threads, queue_size);
 
-    node->all_nodes = malloc(sizeof(struct sockaddr_in_array_t));
+    node->all_nodes = malloc(sizeof(struct node_array_t));
 
     va_list args;
     u16 num_args = VA_NUMBER_OF_ARGS(args);
     va_start(args, num_args);
 
     for (int i = 0; i < num_args; i++)
-	ARRAY_PUSH(*node->all_nodes, va_arg(args, struct sockaddr_in));
+        ARRAY_PUSH(*node->all_nodes, va_arg(args, struct sockaddr_in));
 
     va_end(args);
 
@@ -131,7 +136,7 @@ int run_node(struct node_t *node)
 
     node->running = true;
 
-    LOG_INFO("Server started, press 'q' to quit\n");
+    LOG_INFO("Node started, press 'q' to quit\n");
 
     submit_worker_task(node->threadpool, check_quit, (void *)node);
 

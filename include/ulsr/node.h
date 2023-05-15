@@ -27,10 +27,27 @@
 #include "lib/common.h"
 #include "lib/threadpool.h"
 
+/* Function definitions. */
+
 /**
- * Arraylist struct for sockaddr_in.
+ * Function definition for a function that finds the distance to a node.
  */
-ARRAY_T(sockaddr_in_array_t, struct sockaddr_in)
+typedef u16 (*distance_func_t)(void *);
+
+/**
+ * Function definition for a function that sends a message.
+ */
+typedef u16 (*send_func_t)(void *);
+
+/**
+ * Function definition for a function that receives a message.
+ */
+typedef u16 (*rec_func_t)(void *);
+
+/**
+ * Arraylist struct for node_t.
+ */
+ARRAY_T(node_array_t, struct node_t)
 
 /**
  * Arraylist struct for neighbor_t.
@@ -43,7 +60,7 @@ ARRAY_T(neighbor_array_t, struct neighbor_t)
  * @param cost The cost to the neighbor.
  */
 struct neighbor_t {
-    struct sockaddr_in addr;
+    u16 node_id;
     u16 cost;
 };
 
@@ -69,12 +86,16 @@ struct connections_t {
  * @param all_nodes All nodes in the network.
  */
 struct node_t {
+    u16 node_id;
     int socket;
     bool running;
+    distance_func_t distance_func;
+    send_func_t send_func;
+    rec_func_t rec_func;
     struct connections_t *connections;
     struct threadpool_t *threadpool;
     struct neighbor_array_t *neighbors;
-    struct sockaddr_in_array_t *all_nodes;
+    struct node_array_t *all_nodes;
 };
 
 /* Methods */
@@ -82,12 +103,14 @@ struct node_t {
 /**
  * Initializes a node.
  * @param node The node to initialize.
+ * @param node_id The id of the node.
  * @param connections The amount of connections.
  * @param threads The amount of threads.
  * @param queue_size The size of the queue.
  * @param ... The current nodes known in the network.
  */
-int init_node(struct node_t *node, int connections, int threads, int queue_size, ...);
+int init_node(struct node_t *node, u16 node_id, int connections, int threads, int queue_size,
+	      distance_func_t distance_func, send_func_t send_func, rec_func_t rec_func, ...);
 
 /**
  * Runs a node.
