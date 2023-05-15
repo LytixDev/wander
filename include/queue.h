@@ -18,8 +18,8 @@
 #ifndef QUEUE_H
 #define QUEUE_H
 
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 /* Structs */
 
@@ -35,7 +35,7 @@ struct queue_t {
     void **items;
     int start;
     int end;
-    int size; 
+    int size;
     int max;
 };
 

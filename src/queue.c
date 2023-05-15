@@ -15,8 +15,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdlib.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "queue.h"
 
@@ -40,7 +40,7 @@ bool queue_full(struct queue_t *queue)
 bool queue_push(struct queue_t *queue, void *item)
 {
     if (queue_full(queue))
-        return false;
+	return false;
     *(queue->items + queue->end) = item;
     queue->end = (queue->end + 1) % queue->max;
     ++queue->size;
@@ -51,7 +51,7 @@ void *queue_pop(struct queue_t *queue)
 {
     void *element;
     if (queue_empty(queue))
-        return NULL;
+	return NULL;
 
     element = *(queue->items + queue->start);
     queue->start = (queue->start + 1) % queue->max;
