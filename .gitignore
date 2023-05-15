@@ -2,6 +2,7 @@
 *.out
 .obj/
 .cache/*
+.vscode/*
 
 # used for enhanced development
 tags
