@@ -15,38 +15,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef PACKET_H
-#define PACKET_H
+#include <stdlib.h>
+#include <string.h>
 
 #include "lib/common.h"
-
-enum ulsr_packet_type {
-    HTTP,
-};
-
-struct ulsr_packet {
-    enum ulsr_packet_type type;
-    char source_ipv4[16];
-    char dest_ipv4[16];
-    u16 dest_port;
-    u16 payload_len;
-    void *payload;
-};
-
-/*
- * packets used for internal communication between devices in the simulation
- */
-enum ulsr_internal_packet_type {
-    PACKET_DATA,
-    PACKET_HELLO,
-    PACKET_PURGE,
-};
-
-struct ulsr_internal_packet {
-    enum ulsr_packet_type pt;
-    u16 prev_node_id;
-    u32 payload_len;
-    void *payload;
-};
-
-#endif /* PACKET_H */
+#include "ulsr/packet.h"
