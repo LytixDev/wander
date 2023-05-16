@@ -17,6 +17,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "lib/common.h"
 #include "ulsr/packet.h"
@@ -30,4 +31,16 @@ struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *extern
     packet->dest_node_id = 0;
     packet->pt = PACKET_DATA;
     return packet;
+}
+
+struct u32 ulsr_checksum(struct ulsr_packet *packet)
+{
+    u32 checksum = 0;
+    u8 bytes[sizeof(struct ulsr_packet)] = packet;
+
+    /* i starts at 4 because we don't want to include the checksum in the checksum calculation */
+    for (u8 i = 4; i < sizeof(struct ulsr_packet); i++)
+        checksum += bytes[i];
+    
+    return ~checksum;
 }
