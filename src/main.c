@@ -104,7 +104,7 @@ int main(void)
     }
 
     threadpool_stop(&threadpool);
-    // We dont need to free. Why? Will be freed once the process exits anyway. Doesn't matter.
-    // free_threadpool(&threadpool);
+
+    free_threadpool(&threadpool);
     return 0;
 }

@@ -47,24 +47,22 @@
  */
 
 #ifdef LOGGING
-#define LOG_NODE_INFO(node_id, ...)           \
-    ({                                        \
-	fprintf(stdout, "\033[0;31m[ERR]: "); \
-	fprintf(stdout, ":[%d]", node_id);    \
-	fprintf(stdout, __VA_ARGS__);         \
-	fprintf(stdout, "\033[0m\n");         \
+#define LOG_NODE_INFO(node_id, ...)                   \
+    ({                                                \
+	fprintf(stdout, "\033[0;32m[%d]: ", node_id); \
+	fprintf(stdout, __VA_ARGS__);                 \
+	fprintf(stdout, "\033[0m\n");                 \
     })
 #else
 #define LOGG_NODE_INFO(node_id...) (void)0;
 #endif
 
 #ifdef LOGGING
-#define LOG_NODE_ERR(node_id, ...)            \
-    ({                                        \
-	fprintf(stderr, "\033[0;31m[ERR]: "); \
-	fprintf(stderr, ":[%d]", node_id);    \
-	fprintf(stderr, __VA_ARGS__);         \
-	fprintf(stderr, "\033[0m\n");         \
+#define LOG_NODE_ERR(node_id, ...)                     \
+    ({                                                 \
+	fprintf(stderr, ":\033[0;31m[%d]: ", node_id); \
+	fprintf(stderr, __VA_ARGS__);                  \
+	fprintf(stderr, "\033[0m\n");                  \
     })
 #else
 #define LOGG_NODE_ERR(node_id, ...) (void)0;
