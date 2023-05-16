@@ -17,28 +17,41 @@
 
 #include <stdio.h>
 
+#include "ulsr/ulsr.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 
-static void send_func(struct ulsr_packet *packet)
+static u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
-    printf("Sending packet from %s to %s\n", packet->source_ipv4, packet->dest_ipv4);
-    free(packet);
 }
 
 int main(void)
 {
-    struct node_t node = { 0 };
+    #define MESH_NODE_COUNT 8
+    struct node_t nodes[MESH_NODE_COUNT];
+    struct ulsr_internal_packetl current_packets[MESH_NODE_COUNT];
 
-    if (init_node(&node, 1, 8, 8, 8, NULL, send_func, NULL, NULL, NULL, 8087) == -1) {
-	exit(1);
+    /* init nodes */
+    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+        int rc = init_node(&nodes[i], i + 1, 8, 8, 8, NULL, send_func, NULL, NULL, NULL, ULSR_DEVICE_PORT_START + i);
+        if (rc == -1)
+            exit(1);
     }
 
-    if (run_node(&node) == -1) {
-	exit(1);
-    }
 
-    free_node(&node);
+
+
+    //struct node_t node = { 0 };
+
+    //if (init_node(&node, 1, 8, 8, 8, NULL, send_func, NULL, NULL, NULL, 8087) == -1) {
+    //    exit(1);
+    //}
+
+    //if (run_node(&node) == -1) {
+    //    exit(1);
+    //}
+
+    //free_node(&node);
 
     return 0;
 }

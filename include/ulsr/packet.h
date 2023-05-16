@@ -25,6 +25,7 @@ enum ulsr_packet_type {
 };
 
 struct ulsr_packet {
+    u32 checksum;
     enum ulsr_packet_type type;
     char source_ipv4[16];
     char dest_ipv4[16];
@@ -58,5 +59,7 @@ struct ulsr_internal_packet {
  * @return The new internal packet.
  */
 struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *external_packet);
+
+struct u32 ulsr_checksum(struct ulsr_packet *packet);
 
 #endif /* PACKET_H */

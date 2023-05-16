@@ -55,6 +55,8 @@ void construct_test_packet(struct ulsr_packet *p)
     p->dest_port = 80;
     p->payload_len = payload_len;
     strncpy((char *)p->payload, payload, payload_len);
+
+    //ulsr_checksum(p);
 }
 
 void send_test_packet()

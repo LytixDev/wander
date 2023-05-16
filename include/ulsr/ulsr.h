@@ -17,3 +17,5 @@
 
 /* ulsr default port */
 #define ULSR_DEFAULT_PORT 6969
+
+#define ULSR_DEVICE_PORT_START 8087
