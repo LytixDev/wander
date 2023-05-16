@@ -27,6 +27,7 @@ struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *extern
     packet->payload_len = sizeof(struct ulsr_packet);
     packet->payload = external_packet;
     packet->prev_node_id = 0;
+    packet->dest_node_id = 0;
     packet->pt = PACKET_DATA;
     return packet;
 }

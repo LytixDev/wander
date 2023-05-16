@@ -38,5 +38,7 @@ int main(void)
 	exit(1);
     }
 
+    free_node(&node);
+
     return 0;
 }
