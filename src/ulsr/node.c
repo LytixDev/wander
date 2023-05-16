@@ -20,6 +20,7 @@
 #include <stdarg.h>
 #include <stdlib.h>
 #include <sys/socket.h>
+#include <string.h>
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
@@ -28,6 +29,7 @@
 #include "lib/socket_utils.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
+#include "ulsr/ulsr.h"
 
 struct external_request_thread_data_t {
     u16 connection;
@@ -103,8 +105,33 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
 
     char response[1024] = { 0 };
 
+    // REMOVE THIS IN FUTURE, THIS IS NOT A GOOD WAY TO DO THIS AND DOES NOT WORK WITH MULTIPLE NODES
+
+    int rec_socket = socket(PF_INET, SOCK_STREAM, 0);
+    if (rec_socket < 0) {
+	LOG_ERR("Failed to create socket");
+	return -1;
+    }
+
+    struct sockaddr_in rec_server = { 0 };
+    rec_server.sin_family = AF_INET;
+    rec_server.sin_addr.s_addr = inet_addr(internal_payload->source_ipv4);
+    rec_server.sin_port = htons(ULSR_DEFAULT_PORT);
+
     while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
-	LOG_INFO("Received response: %s", response);
+
+	struct ulsr_packet packet = { 0 };
+	strncpy(packet.source_ipv4, internal_payload->dest_ipv4, 16);
+    	strncpy(packet.dest_ipv4, internal_payload->source_ipv4, 16);
+	packet.dest_port = ULSR_DEFAULT_PORT;
+	packet.payload_len = strlen(response);
+	strncpy(packet.payload, response, packet.payload_len);
+	packet.type = ULSR_HTTP;
+
+	if (send(node->sockfd, &packet, sizeof(packet), 0) < 0) {
+	    LOG_ERR("Failed to send packet");
+	    return -1;
+	}
     }
 }
 
