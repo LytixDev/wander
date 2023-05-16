@@ -19,16 +19,36 @@
 #define NODE_H
 
 #include <netinet/in.h>
+#include <stdbool.h>
 #include <stdlib.h>
 #include <sys/socket.h>
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
+#include "lib/threadpool.h"
+#include "ulsr/packet.h"
+
+/* Function definitions. */
 
 /**
- * Arraylist struct for sockaddr_in.
+ * Function definition for a function that finds the distance to a node.
  */
-ARRAY_T(sockaddr_in_array_t, struct sockaddr_in)
+typedef u16 (*node_distance_func_t)(void *);
+
+/**
+ * Function definition for a function that sends a message.
+ */
+typedef u16 (*node_send_func_t)(struct packet_h *);
+
+/**
+ * Function definition for a function that receives a message.
+ */
+typedef u16 (*node_rec_func_t)(struct packet_h *);
+
+/**
+ * Function definition for a function that frees the data of a node.
+ */
+typedef void (*data_free_func_t)(void *);
 
 /**
  * Arraylist struct for neighbor_t.
@@ -41,20 +61,75 @@ ARRAY_T(neighbor_array_t, struct neighbor_t)
  * @param cost The cost to the neighbor.
  */
 struct neighbor_t {
-    struct sockaddr_in addr;
+    u16 node_id;
     u16 cost;
 };
 
 /**
+ * Struct for connections.
+ * @param connections The connections.
+ * @param index The current index of the connections.
+ * @param cap The max amount of connections.
+ */
+struct connections_t {
+    int *connections;
+    int index;
+    int cap;
+};
+
+/**
  * Struct used to represent a node in the network.
- * @param addr The address of the node.
+ * @param node_id The id of the node.
+ * @param sockfd The socket file descriptor.
+ * @param running Whether the node is running.
+ * @param data The data of the node.
+ * @param distance_func The function used to find the distance to a node.
+ * @param send_func The function used to send a message.
+ * @param rec_func The function used to receive a message.
+ * @param connections The connections of the node.
+ * @param threadpool The threadpool of the node.
  * @param neighbors The neighbors of the node.
- * @param all_nodes All nodes in the network.
  */
 struct node_t {
-    struct sockaddr_in addr;
+    u16 node_id;
+    int sockfd;
+    bool running;
+    void *data;
+    data_free_func_t data_free_func;
+    node_distance_func_t distance_func;
+    node_send_func_t send_func;
+    node_rec_func_t rec_func;
+    struct connections_t *connections;
+    struct threadpool_t *threadpool;
     struct neighbor_array_t *neighbors;
-    struct sockaddr_in_array_t *all_nodes;
 };
+
+
+/* Methods */
+
+/**
+ * Initializes a node.
+ * @param node The node to initialize.
+ * @param node_id The id of the node.
+ * @param connections The amount of connections.
+ * @param threads The amount of threads.
+ * @param queue_size The size of the queue.
+ * @param ... The current nodes known in the network.
+ */
+int init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
+	      node_distance_func_t distance_func, node_send_func_t send_func,
+	      node_rec_func_t rec_func, void *data, data_free_func_t data_free_func, u16 port);
+
+/**
+ * Runs a node.
+ * @param node The node to run.
+ */
+int run_node(struct node_t *node);
+
+/**
+ * Frees a node.
+ * @param node The node to free.
+ */
+void free_node(struct node_t *node);
 
 #endif /* NODE_H */

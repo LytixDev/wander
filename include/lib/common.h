@@ -20,6 +20,9 @@
 
 #include <stdint.h>
 
+/* ulsr default port */
+#define ULSR_DEFAULT_PORT 6969
+
 /* unsigned integral types */
 #define Rune i32
 #define u8 uint8_t

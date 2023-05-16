@@ -8,7 +8,7 @@ SRCS := $(shell find $(SRC) -type f -name "*.c")
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
 CC = gcc
-CFLAGS = -Iinclude -Wall -Wpedantic -Wextra -Wshadow -std=c11
+CFLAGS = -Iinclude -Wall -Wextra -Wshadow -std=c11
 LDFLAGS = -pthread
 
 .PHONY: format clean tags bear $(OBJDIR)
