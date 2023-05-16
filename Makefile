@@ -3,8 +3,8 @@
 
 OBJDIR = .obj
 SRC = src
-DIRS := $(shell find $(SRC) -type d)
-SRCS := $(shell find $(SRC) -type f -name "*.c")
+DIRS := $(shell find $(SRC) -type d -not -wholename "src/client")
+SRCS := $(shell find $(SRC) -type f -name "*.c" -not -wholename "src/client/*")
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
 CC = gcc
@@ -41,6 +41,9 @@ bear:
 
 format:
 	python format.py
+
+client:
+	gcc src/client/client.c $(CFLAGS) -o client
 
 $(OBJDIR):
 	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))

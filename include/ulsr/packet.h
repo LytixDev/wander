@@ -21,7 +21,7 @@
 #include "lib/common.h"
 
 enum ulsr_packet_type {
-    HTTP,
+    ULSR_HTTP,
 };
 
 struct ulsr_packet {
