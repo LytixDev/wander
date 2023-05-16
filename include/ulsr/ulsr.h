@@ -15,31 +15,5 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef LOGGER_H
-#define LOGGER_H
-
-#include <stdio.h>
-
-#ifdef LOGGING
-#define LOG_INFO(...)                         \
-    ({                                        \
-	fprintf(stdout, "\033[0;33m[LOG]: "); \
-	fprintf(stdout, __VA_ARGS__);         \
-	fprintf(stdout, "\033[0m\n");         \
-    })
-#else
-#define LOG_INFO(...) (void)0;
-#endif
-
-#ifdef LOGGING
-#define LOG_ERR(...)                          \
-    ({                                        \
-	fprintf(stderr, "\033[0;31m[ERR]: "); \
-	fprintf(stderr, __VA_ARGS__);         \
-	fprintf(stderr, "\033[0m\n");         \
-    })
-#else
-#define LOGG_ERR(...) (void)0;
-#endif
-
-#endif /* LOGGER_H */
+/* ulsr default port */
+#define ULSR_DEFAULT_PORT 6969

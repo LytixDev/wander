@@ -26,6 +26,7 @@
 #include "lib/common.h"
 #include "lib/logger.h"
 #include "ulsr/packet.h"
+#include "ulsr/ulsr.h"
 
 #define MY_IP "10.22.13.94"
 
@@ -56,15 +57,8 @@ void construct_test_packet(struct ulsr_packet *p)
     strncpy((char *)p->payload, payload, payload_len);
 }
 
-int main(void)
+void send_test_packet()
 {
-    /*
-     * 1. construct ulsr packet
-     * 2. connect to a node of the mesh
-     * 3. send the packet to the mesh
-     * 4. wait for response
-     * 5. print response
-     */
     struct ulsr_packet packet;
     construct_test_packet(&packet);
 
@@ -72,12 +66,11 @@ int main(void)
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
 	LOG_ERR("Socker creation failed\n");
-	exit(0);
+	exit(1);
     }
 
     LOG_INFO("Client socket successfully created\n");
     struct sockaddr_in servaddr = { 0 };
-    struct sockaddr_in cli = { 0 };
 
     /* assign IP and PORT */
     servaddr.sin_family = AF_INET;
@@ -99,8 +92,78 @@ int main(void)
     else if (sent == sizeof(struct ulsr_packet))
 	LOG_INFO("probably good?");
 
-    /* receive */
-
-
     close(sockfd);
+}
+
+void listen_for_response()
+{
+    int sockfd = socket(PF_INET, SOCK_STREAM, 0);
+    if (sockfd == -1) {
+	LOG_ERR("Socker creation failed\n");
+	exit(1);
+    }
+
+    LOG_INFO("Created socket");
+    struct sockaddr_in address = { 0 };
+    address.sin_family = AF_INET;
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(ULSR_DEFAULT_PORT);
+
+    if (bind(sockfd, (struct sockaddr *)&address, sizeof(address)) < 0) {
+	LOG_ERR("Failed to bind socket");
+	exit(1);
+    }
+
+    LOG_INFO("Successfully binded socket");
+
+    if ((listen(sockfd, 4)) != 0) {
+	LOG_ERR("Listen failed");
+	exit(1);
+    }
+
+    LOG_INFO("Server listening");
+
+    struct sockaddr_in client = { 0 };
+    unsigned int len = sizeof(client);
+    int connfd = accept(sockfd, (struct sockaddr *)&client, &len);
+    if (connfd < 0) {
+	LOG_ERR("Server accept failed");
+	exit(1);
+    }
+
+    struct ulsr_packet packet;
+    ssize_t read = recv(connfd, &packet, sizeof(struct ulsr_packet), 0);
+
+    if (read == -1)
+	LOG_ERR("could not send :-(");
+    else if (read == sizeof(struct ulsr_packet))
+	LOG_INFO("probably good?");
+
+    LOG_INFO("%s", packet.payload);
+    close(connfd);
+    close(sockfd);
+}
+
+int main(void)
+{
+    /*
+     * 1. construct ulsr packet
+     * 2. connect to a node of the mesh
+     * 3. send the packet to the mesh
+     * 4. wait for response
+     * 5. print response
+     */
+
+    send_test_packet();
+    listen_for_response();
+
+    /*
+     * realistic flow:
+     *
+     * while (running) {
+     *    packet decide_packet()
+     *    send_packet(packet)
+     *    listen_for_response()
+     * }
+     */
 }
