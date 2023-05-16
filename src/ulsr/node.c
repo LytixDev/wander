@@ -106,8 +106,6 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
     while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
 	LOG_INFO("Received response: %s", response);
     }
-
-    ulsr_internal_packet_free(packet);
 }
 
 // static void handle_send_request(void *arg)
