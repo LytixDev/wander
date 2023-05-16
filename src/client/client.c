@@ -131,15 +131,18 @@ void listen_for_response()
 	exit(1);
     }
 
-    struct ulsr_packet packet;
-    ssize_t read = recv(connfd, &packet, sizeof(struct ulsr_packet), 0);
 
-    if (read == -1)
-	LOG_ERR("could not send :-(");
-    else if (read == sizeof(struct ulsr_packet))
-	LOG_INFO("probably good?");
+    while (1) {
+        struct ulsr_packet packet;
+        ssize_t received = recv(connfd, &packet, sizeof(struct ulsr_packet), 0);
+        if (received <= 0) {
+            LOG_INFO("Done receiving");
+            break;
+        }
 
-    LOG_INFO("%s", packet.payload);
+        LOG_INFO("%s", packet.payload);
+    }
+
     close(connfd);
     close(sockfd);
 }
