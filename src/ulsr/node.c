@@ -123,8 +123,8 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
     rec_server.sin_port = htons(ULSR_DEFAULT_PORT);
 
     if (connect(rec_socket, (struct sockaddr *)&rec_server, sizeof(rec_server)) < 0) {
-    LOG_ERR("Failed to connect to return socket");
-    return -1;
+	LOG_ERR("Failed to connect to return socket");
+	return -1;
     }
 
     LOG_INFO("Connected to return socket");
@@ -142,10 +142,10 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
 	    LOG_ERR("Failed to send packet");
 	    return -1;
 	}
-    LOG_INFO("Sent packet");
-    memset(response, 0, 1024);
+	LOG_INFO("Sent packet");
+	memset(response, 0, 1024);
     }
-    
+
     close(rec_socket);
 }
 
@@ -198,7 +198,7 @@ static void handle_external_request(void *arg)
 	LOG_INFO("External packet destination: %s", packet.dest_ipv4);
 	LOG_INFO("External payload: %s", packet.payload);
 	struct ulsr_internal_packet *internal_packet = ulsr_internal_packet_new(&packet);
-    LOG_INFO("DONE WITH EXTERNAL PACKET INPUT");
+	LOG_INFO("DONE WITH EXTERNAL PACKET INPUT");
 	internal_packet->prev_node_id = data->node->node_id;
 
 	internal_packet->dest_node_id = data->node->node_id;

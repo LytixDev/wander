@@ -133,14 +133,14 @@ void listen_for_response()
 
 
     while (1) {
-        struct ulsr_packet packet;
-        ssize_t received = recv(connfd, &packet, sizeof(struct ulsr_packet), 0);
-        if (received <= 0) {
-            LOG_INFO("Done receiving");
-            break;
-        }
+	struct ulsr_packet packet;
+	ssize_t received = recv(connfd, &packet, sizeof(struct ulsr_packet), 0);
+	if (received <= 0) {
+	    LOG_INFO("Done receiving");
+	    break;
+	}
 
-        LOG_INFO("%s", packet.payload);
+	LOG_INFO("%s", packet.payload);
     }
 
     close(connfd);
