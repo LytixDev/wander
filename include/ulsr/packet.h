@@ -60,6 +60,6 @@ struct ulsr_internal_packet {
  */
 struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *external_packet);
 
-struct u32 ulsr_checksum(struct ulsr_packet *packet);
+u32 ulsr_checksum(struct ulsr_packet *packet);
 
 #endif /* PACKET_H */

@@ -38,7 +38,7 @@ typedef u16 (*node_distance_func_t)(void *);
 /**
  * Function definition for a function that sends a message.
  */
-typedef u16 (*node_send_func_t)(struct ulsr_internal_packet *, u16 node_id);
+typedef u16 (*node_send_func_t)(struct ulsr_internal_packet *);
 
 /**
  * Function definition for a function that receives a message.
