@@ -36,10 +36,6 @@ struct external_request_thread_data_t {
     struct node_t *node;
 };
 
-// struct internal_request_thread_data_t {
-//     struct node_t *node;
-// };
-
 static void close_connections(struct connections_t *connections)
 {
     LOG_INFO("Closing connections");
@@ -106,7 +102,7 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
 
     LOG_INFO("Sent packet to external IP");
 
-    char response[1024] = { 0 };
+    u8 response[1024] = { 0 };
 
     // REMOVE THIS IN FUTURE, THIS IS NOT A GOOD WAY TO DO THIS AND DOES NOT WORK WITH MULTIPLE
     // NODES
@@ -130,15 +126,15 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
     LOG_INFO("Connected to return socket");
 
     while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
-	struct ulsr_packet packet = { 0 };
-	strncpy(packet.source_ipv4, internal_payload->dest_ipv4, 16);
-	strncpy(packet.dest_ipv4, internal_payload->source_ipv4, 16);
-	packet.dest_port = ULSR_DEFAULT_PORT;
-	packet.payload_len = strlen(response);
-	strncpy(packet.payload, response, packet.payload_len);
-	packet.type = ULSR_HTTP;
+	struct ulsr_packet ret_packet = { 0 };
+	strncpy(ret_packet.source_ipv4, internal_payload->dest_ipv4, 16);
+	strncpy(ret_packet.dest_ipv4, internal_payload->source_ipv4, 16);
+	ret_packet.dest_port = ULSR_DEFAULT_PORT;
+	ret_packet.payload_len = strlen((const char)response);
+	strncpy(ret_packet.payload, response, ret_packet.payload_len);
+	ret_packet.type = ULSR_HTTP;
 
-	if (send(rec_socket, &packet, sizeof(packet), 0) < 0) {
+	if (send(rec_socket, &ret_packet, sizeof(ret_packet), 0) < 0) {
 	    LOG_ERR("Failed to send packet");
 	    return -1;
 	}
@@ -149,38 +145,31 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
     close(rec_socket);
 }
 
-// static void handle_send_request(void *arg)
-// {
-//         struct thread_data_t *data = (struct thread_data_t *)arg;
+static void handle_send_request(void *arg)
+{
+    struct node_t *node = (struct thread_data_t *)arg;
 
-//         struct ulsr_internal_packet *packet = NULL;
+    struct ulsr_internal_packet *packet = NULL;
 
-//         while (data->running) {
-//                 packet = data->();
-//                 if (packet != NULL) {
-//                 struct ulsr_packet *payload = packet->payload;
-//                 LOG_INFO("Received packet");
-//                 LOG_INFO("Source: %s", payload->source_ipv4);
-//                 LOG_INFO("Destination: %s", payload->dest_ipv4);
-//                 LOG_INFO("Payload: %s", payload->payload);
+    while (node->running) {
+	packet = node->rec_func(node->node_id);
+	if (packet != NULL) {
+	    struct ulsr_packet *payload = packet->payload;
+	    LOG_INFO("Received packet");
+	    LOG_INFO("Source: %s", payload->source_ipv4);
+	    LOG_INFO("Destination: %s", payload->dest_ipv4);
+	    LOG_INFO("Payload: %s", payload->payload);
 
-//                 if (payload->dest_ipv4 == data->node_id) {
-//                         LOG_INFO("Packet is for this node");
-//                         // Send packet over tcp socket
-//                         // Listen for response
-//                         // If response is not NULL, send response back to sender
-//                 } else {
-//                         LOG_INFO("Packet is not for this node");
-//                         // Send packet to next node
-//                         data->send_func(&packet->packet);
-//                 }
-
-//                 ulsr_internal_packet_free(packet);
-//                 }
-//         }
-
-//         free(data);
-// }
+	    if (payload->dest_ipv4 == node->node_id) {
+		LOG_INFO("Packet is for this node");
+		handle_send_external_request(node, packet);
+	    } else {
+		LOG_INFO("Packet is not for this node");
+		node->send_func(&packet, node->node_id);
+	    }
+	}
+    }
+}
 
 static void handle_external_request(void *arg)
 {
@@ -211,7 +200,7 @@ static void handle_external_request(void *arg)
 		goto cleanup;
 	    }
 	} else {
-	    data->node->send_func(internal_packet);
+	    data->node->send_func(internal_packet, data->node->node_id);
 	}
     }
 

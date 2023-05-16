@@ -40,6 +40,7 @@ enum ulsr_internal_packet_type {
     PACKET_DATA,
     PACKET_HELLO,
     PACKET_PURGE,
+    PACKET_NONE,
 };
 
 struct ulsr_internal_packet {

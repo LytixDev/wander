@@ -17,28 +17,47 @@
 
 #include <stdio.h>
 
+#include "lib/common.h"
+#include "lib/lambda.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
+#include "ulsr/ulsr.h"
 
-static void send_func(struct ulsr_packet *packet)
-{
-    printf("Sending packet from %s to %s\n", packet->source_ipv4, packet->dest_ipv4);
-    free(packet);
-}
+#define MESH_NODE_COUNT 8
 
 int main(void)
 {
-    struct node_t node = { 0 };
+    struct node_t nodes[MESH_NODE_COUNT];
+    struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT] = { 0 };
 
-    if (init_node(&node, 1, 8, 8, 8, NULL, send_func, NULL, NULL, NULL, 8087) == -1) {
+    struct node_t node_one = { 0 };
+
+    node_send_func_t node_send_func =
+	LAMBDA(u16, (struct ulsr_internal_packet * packet, u16 node_id), {
+	    packet_limbo[node_id] = *packet;
+	    return packet->payload_len;
+	});
+
+    node_rec_func_t node_rec_func = LAMBDA(struct ulsr_internal_packet *, (u16 node_id), {
+	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
+	*packet = packet_limbo[node_id];
+	packet_limbo[node_id] = (struct ulsr_internal_packet){ 0 };
+	packet_limbo[node_id].pt = PACKET_NONE;
+	return packet;
+    });
+
+    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, NULL, node_send_func, node_rec_func, NULL,
+			   NULL, ULSR_DEVICE_PORT_START + i);
+	if (rc == -1)
+	    exit(1);
+    }
+
+    if (run_node(&node_one) == -1) {
 	exit(1);
     }
 
-    if (run_node(&node) == -1) {
-	exit(1);
-    }
-
-    free_node(&node);
+    free_node(&node_one);
 
     return 0;
 }
