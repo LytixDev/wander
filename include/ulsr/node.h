@@ -38,12 +38,12 @@ typedef u16 (*node_distance_func_t)(void *);
 /**
  * Function definition for a function that sends a message.
  */
-typedef u16 (*node_send_func_t)(struct packet_h *);
+typedef u16 (*node_send_func_t)(struct ulsr_packet *);
 
 /**
  * Function definition for a function that receives a message.
  */
-typedef u16 (*node_rec_func_t)(struct packet_h *);
+typedef u16 (*node_rec_func_t)(struct ulsr_packet *);
 
 /**
  * Function definition for a function that frees the data of a node.

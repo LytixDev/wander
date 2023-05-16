@@ -20,6 +20,12 @@
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 
+static void send_func(struct ulsr_packet *packet)
+{
+    printf("Sending packet from %s to %s\n", packet->source_ipv4, packet->dest_ipv4);
+    free(packet);
+}
+
 int main(void)
 {
     struct node_t node = { 0 };

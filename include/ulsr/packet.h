@@ -30,7 +30,7 @@ struct ulsr_packet {
     char dest_ipv4[16];
     u16 dest_port;
     u16 payload_len;
-    void *payload;
+    u8 payload[1024];
 };
 
 /*
@@ -43,10 +43,19 @@ enum ulsr_internal_packet_type {
 };
 
 struct ulsr_internal_packet {
-    enum ulsr_packet_type pt;
+    enum ulsr_internal_packet_type pt;
     u16 prev_node_id;
     u32 payload_len;
     void *payload;
 };
+
+/* Methods */
+
+/**
+ * Creates a new internal packet from an external packet.
+ * @param external_packet The external packet to create the internal packet from.
+ * @return The new internal packet.
+ */
+struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *external_packet);
 
 #endif /* PACKET_H */
