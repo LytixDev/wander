@@ -45,7 +45,7 @@ format:
 	python format.py
 
 client:
-	gcc src/client/client.c $(CFLAGS) -o client
+	gcc src/client/client.c src/ulsr/packet.c $(CFLAGS) -o client
 
 $(OBJDIR):
 	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))

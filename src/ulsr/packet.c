@@ -33,14 +33,13 @@ struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *extern
     return packet;
 }
 
-struct u32 ulsr_checksum(struct ulsr_packet *packet)
+u32 ulsr_checksum(struct ulsr_packet *packet)
 {
     u32 checksum = 0;
-    u8 bytes[sizeof(struct ulsr_packet)] = packet;
 
     /* i starts at 4 because we don't want to include the checksum in the checksum calculation */
-    for (u8 i = 4; i < sizeof(struct ulsr_packet); i++)
-        checksum += bytes[i];
+    for (unsigned long i = 4; i < sizeof(struct ulsr_packet); i++)
+        checksum += ((u8 *)packet)[i];
     
     return ~checksum;
 }
