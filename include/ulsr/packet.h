@@ -21,7 +21,7 @@
 #include "lib/common.h"
 
 enum ulsr_packet_type {
-    HTTP,
+    ULSR_HTTP,
 };
 
 struct ulsr_packet {
@@ -30,7 +30,7 @@ struct ulsr_packet {
     char dest_ipv4[16];
     u16 dest_port;
     u16 payload_len;
-    void *payload;
+    u8 payload[1024];
 };
 
 /*
