@@ -21,22 +21,3 @@
 #include "lib/common.h"
 #include "ulsr/packet.h"
 
-
-void packet_send(struct packet_t *p, enum packet_type pt, u16 source, u16 destination, u16 len,
-		 void *payload)
-{
-    p->header = (struct packet_header_t){
-	.pt = pt, .source_node_id = source, .destination_node_id = destination, .len = len
-    };
-    p->payload = payload;
-}
-
-u16 packet_recv(struct packet_t *p)
-{
-    /* if checksum fail, return 0 or something */
-    /*
-     * if (!checksum(p))
-     *   return ERROR
-     */
-    return sizeof(p->header) + p->header.len;
-}
