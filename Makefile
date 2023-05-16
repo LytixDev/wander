@@ -7,12 +7,13 @@ DIRS := $(shell find $(SRC) -type d -not -wholename "src/client")
 SRCS := $(shell find $(SRC) -type f -name "*.c" -not -wholename "src/client/*")
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
-CC = gcc
-CFLAGS = -Iinclude -Wall -Wextra -Wshadow -std=c11 -DLOGGING
+CFLAGS = -Iinclude -Wall -Wextra -Wshadow -std=c11
+CFLAGS += -DLOGGING
 LDFLAGS = -pthread
 
 .PHONY: format clean tags bear $(OBJDIR)
 TARGET = ulsr
+TARGET_CLIENT = client
 
 all: $(TARGET)
 
@@ -27,25 +28,20 @@ $(TARGET): $(OBJS)
 debug: CFLAGS += -g -DDEBUG
 debug: $(TARGET)
 
-debug-verbose: CFLAGS += -DDEBUG_VERBOSE
-debug-verbose: debug
-
 clean:
-	@rm -rf $(OBJDIR) $(TARGET)
-	@rm -f $(TARGET)
-	@rm -f client
+	rm -rf $(OBJDIR) $(TARGET) $(TARGET_CLIENT)
 
 tags:
 	@ctags -R
 
 bear:
-	bear -- make
+	@bear -- make
 
 format:
 	python format.py
 
-client:
-	gcc src/client/client.c src/ulsr/packet.c $(CFLAGS) -o client
+$(TARGET_CLIENT):
+	$(CC) src/client/client.c src/ulsr/packet.c $(CFLAGS) -o $(TARGET_CLIENT)
 
 $(OBJDIR):
 	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))
