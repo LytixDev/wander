@@ -129,8 +129,8 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
 	strncpy(ret_packet.source_ipv4, internal_payload->dest_ipv4, 16);
 	strncpy(ret_packet.dest_ipv4, internal_payload->source_ipv4, 16);
 	ret_packet.dest_port = ULSR_DEFAULT_PORT;
-	ret_packet.payload_len = strlen(response);
-	strncpy(ret_packet.payload, response, ret_packet.payload_len);
+	ret_packet.payload_len = strlen((char *)response);
+	strncpy((char *)ret_packet.payload, (const char *)response, ret_packet.payload_len);
 	ret_packet.type = ULSR_HTTP;
 
 	if (send(rec_socket, &ret_packet, sizeof(ret_packet), 0) < 0) {
@@ -142,11 +142,12 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
     }
 
     close(rec_socket);
+    return 0;
 }
 
 static void handle_send_request(void *arg)
 {
-    struct node_t *node = (struct thread_data_t *)arg;
+    struct node_t *node = (struct node_t *)arg;
 
     struct ulsr_internal_packet *packet = NULL;
 
@@ -169,7 +170,7 @@ static void handle_send_request(void *arg)
 
 		// This is a hack, but it works for now as we only have 2 nodes
 		if (node->node_id < 2)
-		    node->send_func(&packet, node->node_id + 1);
+		    node->send_func(packet, node->node_id + 1);
 	    }
 	}
     }
@@ -227,7 +228,7 @@ cleanup:
 
 int init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
 	      node_distance_func_t distance_func, node_send_func_t send_func,
-	      node_rec_func_t rec_func, void *data, data_free_func_t data_free_func, u16 port)
+	      node_recv_func_t rec_func, void *data, data_free_func_t data_free_func, u16 port)
 {
     node->node_id = node_id;
 
@@ -287,10 +288,8 @@ int init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u1
 
 int run_node(struct node_t *node)
 {
-    int client_socket = -1;
-
+    /* start the nodes internal threadpool */
     start_threadpool(node->threadpool);
-
     LOG_INFO("Started threadpool");
 
     node->running = true;
@@ -304,19 +303,19 @@ int run_node(struct node_t *node)
     submit_worker_task(node->threadpool, handle_send_request, (void *)node);
 
     while (node->running) {
-	client_socket = accept(node->sockfd, NULL, NULL);
+	int client_sockfd = accept(node->sockfd, NULL, NULL);
 
-	if (client_socket != -1) {
-	    insert_connection(node->connections, client_socket);
+	if (client_sockfd != -1) {
+	    insert_connection(node->connections, client_sockfd);
 
 	    struct external_request_thread_data_t *data =
 		malloc(sizeof(struct external_request_thread_data_t));
-	    data->connection = client_socket;
+	    data->connection = client_sockfd;
 	    data->node = node;
 
 	    submit_worker_task(node->threadpool, handle_external_request, (void *)data);
 
-	    client_socket = -1;
+	    client_sockfd = -1;
 	}
     }
 

@@ -43,7 +43,7 @@ typedef u16 (*node_send_func_t)(struct ulsr_internal_packet *packet, u16 node_id
 /**
  * Function definition for a function that receives a message.
  */
-typedef struct ulsr_internal_packet *(*node_rec_func_t)(u16 node_id);
+typedef struct ulsr_internal_packet *(*node_recv_func_t)(u16 node_id);
 
 /**
  * Function definition for a function that frees the data of a node.
@@ -98,7 +98,7 @@ struct node_t {
     data_free_func_t data_free_func;
     node_distance_func_t distance_func;
     node_send_func_t send_func;
-    node_rec_func_t rec_func;
+    node_recv_func_t rec_func;
     struct connections_t *connections;
     struct threadpool_t *threadpool;
     struct neighbor_array_t *neighbors;
@@ -118,7 +118,7 @@ struct node_t {
  */
 int init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
 	      node_distance_func_t distance_func, node_send_func_t send_func,
-	      node_rec_func_t rec_func, void *data, data_free_func_t data_free_func, u16 port);
+	      node_recv_func_t rec_func, void *data, data_free_func_t data_free_func, u16 port);
 
 /**
  * Runs a node.
