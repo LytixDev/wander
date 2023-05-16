@@ -198,12 +198,12 @@ static void handle_external_request(void *arg)
 	LOG_INFO("External packet destination: %s", packet.dest_ipv4);
 	LOG_INFO("External payload: %s", packet.payload);
 
-        u32 checksum = ulsr_checksum(&packet);
-        if (checksum != packet.checksum) {
-            LOG_ERR("Checksum failed!");
-            goto cleanup;
-        }
-        LOG_INFO("Checksum correct");
+	u32 checksum = ulsr_checksum((u8 *)&packet, (unsigned long)bytes_read);
+	if (checksum != packet.checksum) {
+	    LOG_ERR("Checksum failed!");
+	    goto cleanup;
+	}
+	LOG_INFO("Checksum correct");
 
 	struct ulsr_internal_packet *internal_packet = ulsr_internal_packet_new(&packet);
 	LOG_INFO("DONE WITH EXTERNAL PACKET INPUT");

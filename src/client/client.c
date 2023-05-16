@@ -56,7 +56,7 @@ void construct_test_packet(struct ulsr_packet *p)
     p->payload_len = payload_len;
     strncpy((char *)p->payload, payload, payload_len);
 
-    u32 checksum = ulsr_checksum(p);
+    u32 checksum = ulsr_checksum((u8 *)p, sizeof(struct ulsr_packet));
     p->checksum = checksum;
 }
 

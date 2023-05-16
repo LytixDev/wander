@@ -15,9 +15,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <assert.h>
 #include <stdlib.h>
 #include <string.h>
-#include <assert.h>
 
 #include "lib/common.h"
 #include "ulsr/packet.h"
@@ -29,17 +29,28 @@ struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *extern
     packet->payload = external_packet;
     packet->prev_node_id = 0;
     packet->dest_node_id = 0;
-    packet->pt = PACKET_DATA;
+    packet->type = PACKET_DATA;
     return packet;
 }
 
-u32 ulsr_checksum(struct ulsr_packet *packet)
+// u32 ulsr_checksum(struct ulsr_packet *packet)
+//{
+//     u32 checksum = 0;
+//
+//     /* i starts at 4 because we don't want to include the checksum in the checksum calculation */
+//     for (unsigned long i = 4; i < sizeof(struct ulsr_packet); i++)
+//	checksum += ((u8 *)packet)[i];
+//
+//     return ~checksum;
+// }
+
+u32 ulsr_checksum(u8 *packet, unsigned long size)
 {
     u32 checksum = 0;
 
     /* i starts at 4 because we don't want to include the checksum in the checksum calculation */
-    for (unsigned long i = 4; i < sizeof(struct ulsr_packet); i++)
-        checksum += ((u8 *)packet)[i];
-    
+    for (unsigned long i = 4; i < size; i++)
+	checksum += packet[i];
+
     return ~checksum;
 }

@@ -17,9 +17,9 @@
 
 #include <stdio.h>
 
-#include "ulsr/ulsr.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
+#include "ulsr/ulsr.h"
 
 static u16 send_func(struct ulsr_internal_packet *packet)
 {
@@ -32,11 +32,11 @@ int main(void)
     struct node_t node = { 0 };
 
     if (init_node(&node, 1, 8, 8, 8, NULL, send_func, NULL, NULL, NULL, 8087) == -1) {
-        exit(1);
+	exit(1);
     }
 
     if (run_node(&node) == -1) {
-        exit(1);
+	exit(1);
     }
 
     free_node(&node);
