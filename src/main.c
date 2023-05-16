@@ -21,9 +21,9 @@
 #include "lib/lambda.h"
 #include "lib/logger.h"
 #include "lib/threadpool.h"
-#include "ulsr/ulsr.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
+#include "ulsr/ulsr.h"
 
 #define MESH_NODE_COUNT 2
 
