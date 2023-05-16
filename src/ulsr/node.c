@@ -145,6 +145,8 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
     LOG_INFO("Sent packet");
     memset(response, 0, 1024);
     }
+    
+    close(rec_socket);
 }
 
 // static void handle_send_request(void *arg)
