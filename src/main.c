@@ -50,10 +50,6 @@ int main(void)
 
     start_threadpool(&threadpool);
 
-    bool running = true;
-
-    submit_worker_task(&threadpool, check_quit, &running);
-
     struct node_t node_one = { 0 };
 
     node_send_func_t node_send_func =
@@ -83,18 +79,25 @@ int main(void)
 	    &threadpool, LAMBDA(void, (void *arg), { run_node((struct node_t *)arg); }), &nodes[i]);
     }
 
-    while (nodes[0].running = true || nodes[1].running == true && running == true)
+    while ((nodes[0].running == true || nodes[1].running == true))
+	;
+
+    bool running = true;
+
+    submit_worker_task(&threadpool, check_quit, &running);
+
+    while (running == true)
 	;
 
     LOG_INFO("Stopping threadpool... FOR MAIN");
-    threadpool_stop(&threadpool);
-
-    free_threadpool(&threadpool);
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	free_node(&nodes[i]);
     }
 
+    threadpool_stop(&threadpool);
+
+    free_threadpool(&threadpool);
 
     return 0;
 }
