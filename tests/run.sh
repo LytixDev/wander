@@ -21,7 +21,7 @@ n_tests="$(ls ./*.c | wc -l)"
 
 for file in *.c
 do
-    gcc -g -fsanitize=address -fsanitize=undefined -Wall -Wpedantic -Wextra -Werror "$file"
+    $(cc) -g -fsanitize=address -fsanitize=undefined -Wall -Wpedantic -Wextra -Werror "$file"
     [ "$mem_leak_option" = "-m" ] && (valgrind -s ./a.out >/dev/null)
     if ./a.out
     then

@@ -7,7 +7,7 @@ Copyright © 2023 Nicolai Brand and Callum Grand under GPL v3 (see LICENSE.txt).
 
 - `UNIX` - access to Unix-like operating system commands (find, rm, etc.). WSL works fine on Windows.
 - `Make` - for building the source code.
-- `cc` - a C11 compiler. Tested with GCC. Clang should work, altough you would have to modify the `Makefile` and `tests/run.sh`.
+- `cc` - a C11 compiler. Tested with gcc and clang.
 
 #### Optional dependencies for further development
 - `python`, `clang-format` - for formatting the source code.

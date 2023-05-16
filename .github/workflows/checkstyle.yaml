@@ -1,5 +1,5 @@
-name: gigaduf checkstyle
-on: [push, pull_request]
+name: ulsr checkstyle
+on: [pull_request]
 
 jobs:
   build:
