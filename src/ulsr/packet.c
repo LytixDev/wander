@@ -22,6 +22,7 @@
 #include "lib/common.h"
 #include "ulsr/packet.h"
 
+
 struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *external_packet)
 {
     struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
@@ -32,17 +33,6 @@ struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *extern
     packet->type = PACKET_DATA;
     return packet;
 }
-
-// u32 ulsr_checksum(struct ulsr_packet *packet)
-//{
-//     u32 checksum = 0;
-//
-//     /* i starts at 4 because we don't want to include the checksum in the checksum calculation */
-//     for (unsigned long i = 4; i < sizeof(struct ulsr_packet); i++)
-//	checksum += ((u8 *)packet)[i];
-//
-//     return ~checksum;
-// }
 
 u32 ulsr_checksum(u8 *packet, unsigned long size)
 {
