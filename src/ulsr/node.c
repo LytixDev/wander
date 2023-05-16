@@ -144,7 +144,7 @@ int run_node(struct node_t *node)
 	if (client_socket != -1) {
 	    insert_connection(node->connections, client_socket);
 
-        // TODO: Handle connection.
+	    // TODO: Handle connection.
 
 	    client_socket = -1;
 	}
