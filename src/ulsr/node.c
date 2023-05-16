@@ -19,6 +19,7 @@
 #include <netinet/in.h>
 #include <stdarg.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/socket.h>
 
 #include "lib/arraylist.h"
@@ -28,13 +29,16 @@
 #include "lib/socket_utils.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
+#include "ulsr/ulsr.h"
 
-struct thread_data_t {
+struct external_request_thread_data_t {
     u16 connection;
-    bool *running;
-    u16 node_id;
-    node_send_func_t send_func;
+    struct node_t *node;
 };
+
+// struct internal_request_thread_data_t {
+//     struct node_t *node;
+// };
 
 static void close_connections(struct connections_t *connections)
 {
@@ -70,9 +74,117 @@ static void check_quit(void *arg)
     node->running = false;
 }
 
+static int handle_send_external_request(struct node_t *node, struct ulsr_internal_packet *packet)
+{
+    LOG_INFO("Handling request to send external ip");
+    struct ulsr_packet *internal_payload = packet->payload;
+
+    int ext_sockfd = socket(PF_INET, SOCK_STREAM, 0);
+    if (ext_sockfd < 0) {
+	LOG_ERR("Failed to create socket");
+	return -1;
+    }
+
+    LOG_INFO("Created socket");
+
+    struct sockaddr_in server = { 0 };
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = inet_addr(internal_payload->dest_ipv4);
+    server.sin_port = htons(internal_payload->dest_port);
+
+    if (connect(ext_sockfd, (struct sockaddr *)&server, sizeof(server)) < 0) {
+	LOG_ERR("Failed to connect to external IP server");
+	return -1;
+    }
+
+    LOG_INFO("Connected to server");
+
+    if (send(ext_sockfd, internal_payload->payload, internal_payload->payload_len, 0) < 0) {
+	LOG_ERR("Failed to send packet to external IP");
+	return -1;
+    }
+
+    LOG_INFO("Sent packet to external IP");
+
+    char response[1024] = { 0 };
+
+    // REMOVE THIS IN FUTURE, THIS IS NOT A GOOD WAY TO DO THIS AND DOES NOT WORK WITH MULTIPLE
+    // NODES
+
+    int rec_socket = socket(PF_INET, SOCK_STREAM, 0);
+    if (rec_socket < 0) {
+	LOG_ERR("Failed to create return socket");
+	return -1;
+    }
+
+    struct sockaddr_in rec_server = { 0 };
+    rec_server.sin_family = AF_INET;
+    rec_server.sin_addr.s_addr = inet_addr(internal_payload->source_ipv4);
+    rec_server.sin_port = htons(ULSR_DEFAULT_PORT);
+
+    if (connect(rec_socket, (struct sockaddr *)&rec_server, sizeof(rec_server)) < 0) {
+	LOG_ERR("Failed to connect to return socket");
+	return -1;
+    }
+
+    LOG_INFO("Connected to return socket");
+
+    while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
+	struct ulsr_packet packet = { 0 };
+	strncpy(packet.source_ipv4, internal_payload->dest_ipv4, 16);
+	strncpy(packet.dest_ipv4, internal_payload->source_ipv4, 16);
+	packet.dest_port = ULSR_DEFAULT_PORT;
+	packet.payload_len = strlen(response);
+	strncpy(packet.payload, response, packet.payload_len);
+	packet.type = ULSR_HTTP;
+
+	if (send(rec_socket, &packet, sizeof(packet), 0) < 0) {
+	    LOG_ERR("Failed to send packet");
+	    return -1;
+	}
+	LOG_INFO("Sent packet");
+	memset(response, 0, 1024);
+    }
+
+    close(rec_socket);
+}
+
+// static void handle_send_request(void *arg)
+// {
+//         struct thread_data_t *data = (struct thread_data_t *)arg;
+
+//         struct ulsr_internal_packet *packet = NULL;
+
+//         while (data->running) {
+//                 packet = data->();
+//                 if (packet != NULL) {
+//                 struct ulsr_packet *payload = packet->payload;
+//                 LOG_INFO("Received packet");
+//                 LOG_INFO("Source: %s", payload->source_ipv4);
+//                 LOG_INFO("Destination: %s", payload->dest_ipv4);
+//                 LOG_INFO("Payload: %s", payload->payload);
+
+//                 if (payload->dest_ipv4 == data->node_id) {
+//                         LOG_INFO("Packet is for this node");
+//                         // Send packet over tcp socket
+//                         // Listen for response
+//                         // If response is not NULL, send response back to sender
+//                 } else {
+//                         LOG_INFO("Packet is not for this node");
+//                         // Send packet to next node
+//                         data->send_func(&packet->packet);
+//                 }
+
+//                 ulsr_internal_packet_free(packet);
+//                 }
+//         }
+
+//         free(data);
+// }
+
 static void handle_external_request(void *arg)
 {
-    struct thread_data_t *data = (struct thread_data_t *)arg;
+    struct external_request_thread_data_t *data = (struct external_request_thread_data_t *)arg;
 
     struct ulsr_packet packet = { 0 };
 
@@ -81,20 +193,29 @@ static void handle_external_request(void *arg)
     if (bytes_read <= 0) {
 	LOG_ERR("Failed to read from socket");
     } else {
-	LOG_INFO("Received packet");
-	LOG_INFO("Source: %s", packet.source_ipv4);
-	LOG_INFO("Destination: %s", packet.dest_ipv4);
-	LOG_INFO("Payload: %s", packet.payload);
+	LOG_INFO("Received external packet");
+	LOG_INFO("External packet source: %s", packet.source_ipv4);
+	LOG_INFO("External packet destination: %s", packet.dest_ipv4);
+	LOG_INFO("External payload: %s", packet.payload);
 	struct ulsr_internal_packet *internal_packet = ulsr_internal_packet_new(&packet);
+	LOG_INFO("DONE WITH EXTERNAL PACKET INPUT");
+	internal_packet->prev_node_id = data->node->node_id;
 
-	internal_packet->prev_node_id = data->node_id;
-
-	// TODO: Find path to destination
+	internal_packet->dest_node_id = data->node->node_id;
+	// internal_packet->dest_node_id = find_path(data->node_id, packet.dest_ipv4);
 
 	// Add path to send func
-	data->send_func(internal_packet);
+	if (internal_packet->dest_node_id == data->node->node_id) {
+	    if (handle_send_external_request(data->node, internal_packet) == -1) {
+		LOG_ERR("Failed to handle sending of external request");
+		goto cleanup;
+	    }
+	} else {
+	    data->node->send_func(internal_packet);
+	}
     }
 
+cleanup:
     shutdown(data->connection, SHUT_RDWR);
     close(data->connection);
 
@@ -185,9 +306,10 @@ int run_node(struct node_t *node)
 	if (client_socket != -1) {
 	    insert_connection(node->connections, client_socket);
 
-	    struct thread_data_t *data = malloc(sizeof(struct thread_data_t));
+	    struct external_request_thread_data_t *data =
+		malloc(sizeof(struct external_request_thread_data_t));
 	    data->connection = client_socket;
-	    data->running = true;
+	    data->node = node;
 
 	    submit_worker_task(node->threadpool, handle_external_request, (void *)data);
 
@@ -202,10 +324,6 @@ int run_node(struct node_t *node)
     LOG_INFO("Stopping threadpool");
 
     threadpool_stop(node->threadpool);
-
-    LOG_INFO("Freeing node");
-
-    free_node(node);
 
     LOG_INFO("Shutdown complete");
 

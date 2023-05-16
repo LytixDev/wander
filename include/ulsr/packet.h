@@ -45,6 +45,7 @@ enum ulsr_internal_packet_type {
 struct ulsr_internal_packet {
     enum ulsr_internal_packet_type pt;
     u16 prev_node_id;
+    u16 dest_node_id;
     u32 payload_len;
     void *payload;
 };
