@@ -1,5 +1,5 @@
-name: gigaduf build
-on: [push, pull_request]
+name: ulsr build
+on: [pull_request]
 
 jobs:
   build:
@@ -7,7 +7,7 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-20.04, macos-12]
-        cc: [gcc]
+        cc: [gcc, clang]
     runs-on: ${{matrix.os}}
     steps:
       - name: Checkout
@@ -20,4 +20,4 @@ jobs:
         run: sudo apt-get update -qyy
 
       - name: Build
-        run: make
+        run: make CC="${{matrix.cc}}"
