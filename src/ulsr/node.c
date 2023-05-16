@@ -127,6 +127,8 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
     return -1;
     }
 
+    LOG_INFO("Connected to return socket");
+
     while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
 	struct ulsr_packet packet = { 0 };
 	strncpy(packet.source_ipv4, internal_payload->dest_ipv4, 16);
@@ -140,6 +142,8 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
 	    LOG_ERR("Failed to send packet");
 	    return -1;
 	}
+    LOG_INFO("Sent packet");
+    memset(response, 0, 1024);
     }
 }
 
