@@ -115,9 +115,9 @@ struct node_t {
  * @param queue_size The size of the queue.
  * @param ... The current nodes known in the network.
  */
-int init_node(struct node_t *node, u16 node_id, int connections, int threads, int queue_size,
+int init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
 	      node_distance_func_t distance_func, node_send_func_t send_func,
-	      node_rec_func_t rec_func, void *data);
+	      node_rec_func_t rec_func, void *data, data_free_func_t data_free_func, u16 port);
 
 /**
  * Runs a node.

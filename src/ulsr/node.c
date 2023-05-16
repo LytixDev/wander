@@ -16,8 +16,6 @@
  */
 
 #include <arpa/inet.h>
-#include <linux/if_packet.h>
-#include <net/ethernet.h>
 #include <netinet/in.h>
 #include <stdarg.h>
 #include <stdlib.h>
@@ -34,7 +32,7 @@ static void close_connections(struct connections_t *connections)
 {
     LOG_INFO("Closing connections");
     for (int i = 0; i < connections->cap; i++) {
-	if (send(connections->connections[i], "Server shutting down", 20, MSG_NOSIGNAL) > 0) {
+	if (send(connections->connections[i], "q", 2, MSG_NOSIGNAL) > 0) {
 	    shutdown(connections->connections[i], SHUT_RDWR);
 	    close(connections->connections[i]);
 	}
@@ -63,9 +61,9 @@ static void check_quit(void *arg)
     node->running = false;
 }
 
-int init_node(struct node_t *node, u16 node_id, int connections, int threads, int queue_size,
+int init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
 	      node_distance_func_t distance_func, node_send_func_t send_func,
-	      node_rec_func_t rec_func, void *data, int port)
+	      node_rec_func_t rec_func, void *data, data_free_func_t data_free_func, u16 port)
 {
     node->node_id = node_id;
 
@@ -77,18 +75,18 @@ int init_node(struct node_t *node, u16 node_id, int connections, int threads, in
 
     LOG_INFO("Created socket");
 
-    if (setsockopt(node->sockfd, SOL_SOCKET, (SO_REUSEPORT | SO_REUSEADDR), &(int){1}, sizeof(int)) < 0) {
+    if (setsockopt(node->sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0) {
 	LOG_ERR("Failed to set socket options");
 	return -1;
     }
 
     LOG_INFO("Set socket options");
 
-    struct sockaddr_in address = {0};
+    struct sockaddr_in address = { 0 };
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
     address.sin_port = htons(port);
-    
+
     if (bind(node->sockfd, (struct sockaddr *)&address, sizeof(address)) < 0) {
 	LOG_ERR("Failed to bind socket");
 	return -1;
@@ -110,6 +108,13 @@ int init_node(struct node_t *node, u16 node_id, int connections, int threads, in
 
     node->threadpool = malloc(sizeof(struct threadpool_t));
     init_threadpool(node->threadpool, threads, queue_size);
+
+    node->data_free_func = data_free_func;
+    node->data = data;
+
+    node->distance_func = distance_func;
+    node->send_func = send_func;
+    node->rec_func = rec_func;
 
     LOG_INFO("Initialized node");
 
@@ -140,7 +145,14 @@ int run_node(struct node_t *node)
 
 	    LOG_INFO("Connection with client %d established", client_socket);
 
-	    // TODO: Handle connection
+	    char buffer[4096] = { 0 };
+	    size_t bytes_recv = 0;
+
+	    bytes_recv = recv(client_socket, buffer, 4096, 0);
+
+	    LOG_INFO("Received %zu bytes", bytes_recv);
+	    LOG_INFO("Received: %s", buffer);
+
 	    client_socket = -1;
 	}
     }
@@ -163,10 +175,23 @@ int run_node(struct node_t *node)
 }
 
 void free_node(struct node_t *node)
-{
-    free(node->connections->connections);
-    free(node->connections);
-    free_threadpool(node->threadpool);
-    ARRAY_FREE(*(node->neighbors));
-    node->data_free_func(node->data);
+{    
+    if (node->connections != NULL) {
+        if (node->connections->connections != NULL) {
+            free(node->connections->connections);
+        }
+        free(node->connections);
+    }
+
+    if (node->threadpool != NULL) {
+        free_threadpool(node->threadpool);
+    }
+
+    if (node->neighbors != NULL) {
+        ARRAY_FREE(*(node->neighbors));
+    }
+
+    if (node->data != NULL) {
+        node->data_free_func(node->data);
+    }
 }

@@ -17,8 +17,20 @@
 
 #include <stdio.h>
 
+#include "ulsr/node.h"
+#include "ulsr/packet.h"
 
 int main(void)
 {
-    printf("Yo!\n");
+    struct node_t node = { 0 };
+
+    if (init_node(&node, 1, 8, 8, 8, NULL, NULL, NULL, NULL, NULL, 8087) == -1) {
+	exit(1);
+    }
+
+    if (run_node(&node) == -1) {
+	exit(1);
+    }
+
+    return 0;
 }
