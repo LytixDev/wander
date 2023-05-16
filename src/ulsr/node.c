@@ -24,7 +24,6 @@
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
-#include "lib/lambda.h"
 #include "lib/logger.h"
 #include "lib/socket_utils.h"
 #include "ulsr/node.h"

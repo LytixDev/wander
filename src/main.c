@@ -18,7 +18,6 @@
 #include <stdio.h>
 
 #include "lib/common.h"
-#include "lib/lambda.h"
 #include "lib/logger.h"
 #include "lib/threadpool.h"
 #include "ulsr/node.h"
@@ -26,6 +25,9 @@
 #include "ulsr/ulsr.h"
 
 #define MESH_NODE_COUNT 2
+
+struct node_t nodes[MESH_NODE_COUNT];
+struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT] = { 0 };
 
 static void check_quit(void *arg)
 {
@@ -38,36 +40,40 @@ static void check_quit(void *arg)
     *running = false;
 }
 
+u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
+{
+    packet_limbo[node_id] = *packet;
+    return packet->payload_len;
+};
+
+struct ulsr_internal_packet *rec_func(u16 node_id)
+{
+    if (packet_limbo[node_id - 1].type == PACKET_NONE)
+	return NULL;
+
+    struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
+    *packet = packet_limbo[node_id - 1];
+    packet_limbo[node_id - 1] = (struct ulsr_internal_packet){ 0 };
+    packet_limbo[node_id - 1].type = PACKET_NONE;
+    return packet;
+}
+
+void run(void *arg)
+{
+    run_node((struct node_t *)arg);
+}
+
 int main(void)
 {
-    struct node_t nodes[MESH_NODE_COUNT];
-    struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT] = { 0 };
     for (int i = 0; i < MESH_NODE_COUNT; i++)
 	packet_limbo[i].type = PACKET_NONE;
 
     struct threadpool_t threadpool = { 0 };
     init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
-
     start_threadpool(&threadpool);
 
-    struct node_t node_one = { 0 };
-
-    node_send_func_t node_send_func =
-	LAMBDA(u16, (struct ulsr_internal_packet * packet, u16 node_id), {
-	    packet_limbo[node_id] = *packet;
-	    return packet->payload_len;
-	});
-
-    node_rec_func_t node_rec_func = LAMBDA(struct ulsr_internal_packet *, (u16 node_id), {
-	if (packet_limbo[node_id - 1].type == PACKET_NONE)
-	    return NULL;
-
-	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
-	*packet = packet_limbo[node_id - 1];
-	packet_limbo[node_id - 1] = (struct ulsr_internal_packet){ 0 };
-	packet_limbo[node_id - 1].type = PACKET_NONE;
-	return packet;
-    });
+    node_send_func_t node_send_func = send_func;
+    node_rec_func_t node_rec_func = rec_func;
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, NULL, node_send_func, node_rec_func, NULL,
@@ -75,17 +81,14 @@ int main(void)
 	if (rc == -1)
 	    exit(1);
 
-	submit_worker_task(
-	    &threadpool, LAMBDA(void, (void *arg), { run_node((struct node_t *)arg); }), &nodes[i]);
+	submit_worker_task(&threadpool, run, &nodes[i]);
     }
 
     while ((nodes[0].running == true || nodes[1].running == true))
 	;
 
     bool running = true;
-
     submit_worker_task(&threadpool, check_quit, &running);
-
     while (running == true)
 	;
 
@@ -96,8 +99,6 @@ int main(void)
     }
 
     threadpool_stop(&threadpool);
-
     free_threadpool(&threadpool);
-
     return 0;
 }
