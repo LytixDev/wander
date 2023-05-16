@@ -32,6 +32,8 @@ debug-verbose: debug
 
 clean:
 	@rm -rf $(OBJDIR) $(TARGET)
+	@rm -f $(TARGET)
+	@rm -f client
 
 tags:
 	@ctags -R
