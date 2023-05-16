@@ -72,7 +72,7 @@ static void check_quit(void *arg)
 
 static int handle_send_external_request(struct node_t *node, struct ulsr_internal_packet *packet)
 {
-    LOG_INFO("Handling request to send external ip");
+    LOG_INFO("Handling request to send external ip and node id: %d", node->node_id);
     struct ulsr_packet *internal_payload = packet->payload;
 
     int ext_sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -155,6 +155,7 @@ static void handle_send_request(void *arg)
 	packet = node->rec_func(node->node_id);
 	if (packet != NULL) {
 	    struct ulsr_packet *payload = packet->payload;
+	    LOG_INFO("Received packet from rec_func");
 	    LOG_INFO("Received packet");
 	    LOG_INFO("Source: %s", payload->source_ipv4);
 	    LOG_INFO("Destination: %s", payload->dest_ipv4);
@@ -194,7 +195,7 @@ static void handle_external_request(void *arg)
 	LOG_INFO("DONE WITH EXTERNAL PACKET INPUT");
 	internal_packet->prev_node_id = data->node->node_id;
 
-	internal_packet->dest_node_id = data->node->node_id;
+	internal_packet->dest_node_id = 2;
 	// internal_packet->dest_node_id = find_path(data->node_id, packet.dest_ipv4);
 
 	// Add path to send func
@@ -292,6 +293,8 @@ int run_node(struct node_t *node)
     submit_worker_task(node->threadpool, check_quit, (void *)node);
 
     set_nonblocking(node->sockfd);
+
+    submit_worker_task(node->threadpool, handle_send_request, (void *)node);
 
     while (node->running) {
 	client_socket = accept(node->sockfd, NULL, NULL);

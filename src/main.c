@@ -19,13 +19,13 @@
 
 #include "lib/common.h"
 #include "lib/lambda.h"
-#include "lib/threadpool.h"
 #include "lib/logger.h"
+#include "lib/threadpool.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
 
-#define MESH_NODE_COUNT 1
+#define MESH_NODE_COUNT 2
 
 static void check_quit(void *arg)
 {
@@ -42,6 +42,9 @@ int main(void)
 {
     struct node_t nodes[MESH_NODE_COUNT];
     struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT] = { 0 };
+    for (int i = 0; i < MESH_NODE_COUNT; i++)
+	packet_limbo[i].pt = PACKET_NONE;
+
     struct threadpool_t threadpool = { 0 };
     init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
 
@@ -60,6 +63,9 @@ int main(void)
 	});
 
     node_rec_func_t node_rec_func = LAMBDA(struct ulsr_internal_packet *, (u16 node_id), {
+	if (packet_limbo[node_id - 1].pt == PACKET_NONE)
+	    return NULL;
+
 	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
 	*packet = packet_limbo[node_id - 1];
 	packet_limbo[node_id - 1] = (struct ulsr_internal_packet){ 0 };
@@ -77,7 +83,8 @@ int main(void)
 	    &threadpool, LAMBDA(void, (void *arg), { run_node((struct node_t *)arg); }), &nodes[i]);
     }
 
-    while (nodes[0].running = true || nodes[1].running == true && running == true);
+    while (nodes[0].running = true || nodes[1].running == true && running == true)
+	;
 
     LOG_INFO("Stopping threadpool... FOR MAIN");
     threadpool_stop(&threadpool);
