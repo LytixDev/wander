@@ -18,6 +18,7 @@
 #ifndef LAMBDA_H
 #define LAMBDA_H
 
+
 /**
  * Macro to create an lambda function.
  * @param return_type The return type of the lambda function.
@@ -26,6 +27,6 @@
  * @return A pointer to the lambda function.
  */
 #define LAMBDA(return_type, func_args, func_body) \
-    ({ return_type __call__ func_args func_body &__call__; })
+    ({ return_type __lambda__  func_args func_body &__lambda__; })
 
 #endif
