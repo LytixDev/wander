@@ -23,7 +23,7 @@
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
 
-#define MESH_NODE_COUNT 8
+#define MESH_NODE_COUNT 2
 
 int main(void)
 {
@@ -51,13 +51,14 @@ int main(void)
 			   NULL, ULSR_DEVICE_PORT_START + i);
 	if (rc == -1)
 	    exit(1);
+	rc = run_node(&nodes[i]);
+	if (rc == -1)
+	    exit(1);
     }
 
-    if (run_node(&node_one) == -1) {
-	exit(1);
+    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	free_node(&nodes[i]);
     }
-
-    free_node(&node_one);
 
     return 0;
 }
