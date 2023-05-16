@@ -76,11 +76,8 @@ static void check_quit(void *arg)
 
 static int handle_send_external_request(struct node_t *node, struct ulsr_internal_packet *packet)
 {
+    LOG_INFO("Handling request to send external ip");
     struct ulsr_packet *internal_payload = packet->payload;
-    LOG_INFO("Received packet");
-    LOG_INFO("Source: %s", internal_payload->source_ipv4);
-    LOG_INFO("Destination: %s", internal_payload->dest_ipv4);
-    LOG_INFO("Payload: %s", internal_payload->payload);
 
     int ext_sockfd = socket(PF_INET, SOCK_STREAM, 0);
     if (ext_sockfd < 0) {
@@ -88,20 +85,26 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
 	return -1;
     }
 
+    LOG_INFO("Created socket");
+
     struct sockaddr_in server = { 0 };
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = inet_addr(internal_payload->dest_ipv4);
     server.sin_port = htons(internal_payload->dest_port);
 
     if (connect(ext_sockfd, (struct sockaddr *)&server, sizeof(server)) < 0) {
-	LOG_ERR("Failed to create socket");
+	LOG_ERR("Failed to connect to external IP server");
 	return -1;
     }
 
+    LOG_INFO("Connected to server");
+
     if (send(ext_sockfd, internal_payload->payload, internal_payload->payload_len, 0) < 0) {
-	LOG_ERR("Failed to send packet");
+	LOG_ERR("Failed to send packet to external IP");
 	return -1;
     }
+
+    LOG_INFO("Sent packet to external IP");
 
     char response[1024] = { 0 };
 
@@ -110,7 +113,7 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
 
     int rec_socket = socket(PF_INET, SOCK_STREAM, 0);
     if (rec_socket < 0) {
-	LOG_ERR("Failed to create socket");
+	LOG_ERR("Failed to create return socket");
 	return -1;
     }
 
@@ -118,6 +121,11 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
     rec_server.sin_family = AF_INET;
     rec_server.sin_addr.s_addr = inet_addr(internal_payload->source_ipv4);
     rec_server.sin_port = htons(ULSR_DEFAULT_PORT);
+
+    if (connect(rec_socket, (struct sockaddr *)&rec_server, sizeof(rec_server)) < 0) {
+    LOG_ERR("Failed to connect to return socket");
+    return -1;
+    }
 
     while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
 	struct ulsr_packet packet = { 0 };
@@ -128,7 +136,7 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
 	strncpy(packet.payload, response, packet.payload_len);
 	packet.type = ULSR_HTTP;
 
-	if (send(node->sockfd, &packet, sizeof(packet), 0) < 0) {
+	if (send(rec_socket, &packet, sizeof(packet), 0) < 0) {
 	    LOG_ERR("Failed to send packet");
 	    return -1;
 	}
@@ -179,12 +187,12 @@ static void handle_external_request(void *arg)
     if (bytes_read <= 0) {
 	LOG_ERR("Failed to read from socket");
     } else {
-	LOG_INFO("Received packet");
-	LOG_INFO("Source: %s", packet.source_ipv4);
-	LOG_INFO("Destination: %s", packet.dest_ipv4);
-	LOG_INFO("Payload: %s", packet.payload);
+	LOG_INFO("Received external packet");
+	LOG_INFO("External packet source: %s", packet.source_ipv4);
+	LOG_INFO("External packet destination: %s", packet.dest_ipv4);
+	LOG_INFO("External payload: %s", packet.payload);
 	struct ulsr_internal_packet *internal_packet = ulsr_internal_packet_new(&packet);
-
+    LOG_INFO("DONE WITH EXTERNAL PACKET INPUT");
 	internal_packet->prev_node_id = data->node->node_id;
 
 	internal_packet->dest_node_id = data->node->node_id;
