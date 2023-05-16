@@ -50,6 +50,12 @@ struct ulsr_internal_packet {
 };
 
 /* Methods */
-struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *ext_packet);
+
+/**
+ * Creates a new internal packet from an external packet.
+ * @param external_packet The external packet to create the internal packet from.
+ * @return The new internal packet.
+*/
+struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *external_packet);
 
 #endif /* PACKET_H */
