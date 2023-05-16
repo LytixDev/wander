@@ -144,15 +144,7 @@ int run_node(struct node_t *node)
 	if (client_socket != -1) {
 	    insert_connection(node->connections, client_socket);
 
-	    LOG_INFO("Connection with client %d established", client_socket);
-
-	    char buffer[4096] = { 0 };
-	    size_t bytes_recv = 0;
-
-	    bytes_recv = recv(client_socket, buffer, 4096, 0);
-
-	    LOG_INFO("Received %zu bytes", bytes_recv);
-	    LOG_INFO("Received: %s", buffer);
+        // TODO: Handle connection.
 
 	    client_socket = -1;
 	}
