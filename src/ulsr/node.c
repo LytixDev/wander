@@ -19,8 +19,8 @@
 #include <netinet/in.h>
 #include <stdarg.h>
 #include <stdlib.h>
-#include <sys/socket.h>
 #include <string.h>
+#include <sys/socket.h>
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
@@ -105,7 +105,8 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
 
     char response[1024] = { 0 };
 
-    // REMOVE THIS IN FUTURE, THIS IS NOT A GOOD WAY TO DO THIS AND DOES NOT WORK WITH MULTIPLE NODES
+    // REMOVE THIS IN FUTURE, THIS IS NOT A GOOD WAY TO DO THIS AND DOES NOT WORK WITH MULTIPLE
+    // NODES
 
     int rec_socket = socket(PF_INET, SOCK_STREAM, 0);
     if (rec_socket < 0) {
@@ -119,10 +120,9 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
     rec_server.sin_port = htons(ULSR_DEFAULT_PORT);
 
     while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
-
 	struct ulsr_packet packet = { 0 };
 	strncpy(packet.source_ipv4, internal_payload->dest_ipv4, 16);
-    	strncpy(packet.dest_ipv4, internal_payload->source_ipv4, 16);
+	strncpy(packet.dest_ipv4, internal_payload->source_ipv4, 16);
 	packet.dest_port = ULSR_DEFAULT_PORT;
 	packet.payload_len = strlen(response);
 	strncpy(packet.payload, response, packet.payload_len);
