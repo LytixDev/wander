@@ -160,12 +160,16 @@ static void handle_send_request(void *arg)
 	    LOG_INFO("Destination: %s", payload->dest_ipv4);
 	    LOG_INFO("Payload: %s", payload->payload);
 
-	    if (payload->dest_ipv4 == node->node_id) {
+	//     if (payload->dest_ipv4 == node->node_id) {
+	    if (node->node_id == 2) {
 		LOG_INFO("Packet is for this node");
 		handle_send_external_request(node, packet);
 	    } else {
 		LOG_INFO("Packet is not for this node");
-		node->send_func(&packet, node->node_id);
+
+                // This is a hack, but it works for now as we only have 2 nodes
+                if (node->node_id < 2)
+		        node->send_func(&packet, node->node_id + 1);
 	    }
 	}
     }
