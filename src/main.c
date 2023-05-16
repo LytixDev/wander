@@ -30,7 +30,7 @@ int main(void)
 {
     struct node_t node = { 0 };
 
-    if (init_node(&node, 1, 8, 8, 8, NULL, NULL, NULL, NULL, NULL, 8087) == -1) {
+    if (init_node(&node, 1, 8, 8, 8, NULL, send_func, NULL, NULL, NULL, 8087) == -1) {
 	exit(1);
     }
 
