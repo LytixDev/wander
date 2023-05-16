@@ -26,6 +26,6 @@
  * @return A pointer to the lambda function.
  */
 #define LAMBDA(return_type, func_args, func_body) \
-    ({ return_type __fn__ func_args func_body &__fn__; })
+    ({ return_type __call__ func_args func_body &__call__; })
 
 #endif
