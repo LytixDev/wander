@@ -19,16 +19,37 @@
 
 #include "lib/common.h"
 #include "lib/lambda.h"
+#include "lib/threadpool.h"
+#include "lib/logger.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
 
-#define MESH_NODE_COUNT 2
+#define MESH_NODE_COUNT 1
+
+static void check_quit(void *arg)
+{
+    while (getc(stdin) != 'q')
+	;
+
+    LOG_INFO("Quitting...");
+
+    bool *running = (bool *)arg;
+    *running = false;
+}
 
 int main(void)
 {
     struct node_t nodes[MESH_NODE_COUNT];
     struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT] = { 0 };
+    struct threadpool_t threadpool = { 0 };
+    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
+
+    start_threadpool(&threadpool);
+
+    bool running = true;
+
+    submit_worker_task(&threadpool, check_quit, &running);
 
     struct node_t node_one = { 0 };
 
@@ -40,9 +61,9 @@ int main(void)
 
     node_rec_func_t node_rec_func = LAMBDA(struct ulsr_internal_packet *, (u16 node_id), {
 	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
-	*packet = packet_limbo[node_id];
-	packet_limbo[node_id] = (struct ulsr_internal_packet){ 0 };
-	packet_limbo[node_id].pt = PACKET_NONE;
+	*packet = packet_limbo[node_id - 1];
+	packet_limbo[node_id - 1] = (struct ulsr_internal_packet){ 0 };
+	packet_limbo[node_id - 1].pt = PACKET_NONE;
 	return packet;
     });
 
@@ -51,14 +72,22 @@ int main(void)
 			   NULL, ULSR_DEVICE_PORT_START + i);
 	if (rc == -1)
 	    exit(1);
-	rc = run_node(&nodes[i]);
-	if (rc == -1)
-	    exit(1);
+
+	submit_worker_task(
+	    &threadpool, LAMBDA(void, (void *arg), { run_node((struct node_t *)arg); }), &nodes[i]);
     }
+
+    while (nodes[0].running = true || nodes[1].running == true && running == true);
+
+    LOG_INFO("Stopping threadpool... FOR MAIN");
+    threadpool_stop(&threadpool);
+
+    free_threadpool(&threadpool);
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	free_node(&nodes[i]);
     }
+
 
     return 0;
 }

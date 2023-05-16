@@ -130,7 +130,7 @@ static int handle_send_external_request(struct node_t *node, struct ulsr_interna
 	strncpy(ret_packet.source_ipv4, internal_payload->dest_ipv4, 16);
 	strncpy(ret_packet.dest_ipv4, internal_payload->source_ipv4, 16);
 	ret_packet.dest_port = ULSR_DEFAULT_PORT;
-	ret_packet.payload_len = strlen((const char)response);
+	ret_packet.payload_len = strlen(response);
 	strncpy(ret_packet.payload, response, ret_packet.payload_len);
 	ret_packet.type = ULSR_HTTP;
 
@@ -160,16 +160,16 @@ static void handle_send_request(void *arg)
 	    LOG_INFO("Destination: %s", payload->dest_ipv4);
 	    LOG_INFO("Payload: %s", payload->payload);
 
-	//     if (payload->dest_ipv4 == node->node_id) {
+	    //     if (payload->dest_ipv4 == node->node_id) {
 	    if (node->node_id == 2) {
 		LOG_INFO("Packet is for this node");
 		handle_send_external_request(node, packet);
 	    } else {
 		LOG_INFO("Packet is not for this node");
 
-                // This is a hack, but it works for now as we only have 2 nodes
-                if (node->node_id < 2)
-		        node->send_func(&packet, node->node_id + 1);
+		// This is a hack, but it works for now as we only have 2 nodes
+		if (node->node_id < 2)
+		    node->send_func(&packet, node->node_id + 1);
 	    }
 	}
     }
@@ -231,7 +231,7 @@ int init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u1
 
     LOG_INFO("Created socket");
 
-    if (setsockopt(node->sockfd, SOL_SOCKET, SO_REUSEADDR, &(int){ 1 }, sizeof(int)) < 0) {
+    if (setsockopt(node->sockfd, SOL_SOCKET, SO_REUSEADDR | 15, &(int){ 1 }, sizeof(int)) < 0) {
 	LOG_ERR("Failed to set socket options");
 	return -1;
     }
@@ -317,6 +317,8 @@ int run_node(struct node_t *node)
     LOG_INFO("Stopping threadpool");
 
     threadpool_stop(node->threadpool);
+
+    close(node->sockfd);
 
     LOG_INFO("Shutdown complete");
 
