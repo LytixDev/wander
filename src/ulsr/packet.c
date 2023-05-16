@@ -20,3 +20,13 @@
 
 #include "lib/common.h"
 #include "ulsr/packet.h"
+
+struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *external_packet)
+{
+    struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
+    packet->payload_len = sizeof(struct ulsr_packet);
+    packet->payload = external_packet;
+    packet->prev_node_id = 0;
+    packet->pt = PACKET_DATA;
+    return packet;
+}

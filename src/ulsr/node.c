@@ -27,6 +27,14 @@
 #include "lib/logger.h"
 #include "lib/socket_utils.h"
 #include "ulsr/node.h"
+#include "ulsr/packet.h"
+
+struct thread_data_t {
+    u16 connection;
+    bool *running;
+    u16 node_id;
+    node_send_func_t send_func;
+};
 
 static void close_connections(struct connections_t *connections)
 {
@@ -60,6 +68,36 @@ static void check_quit(void *arg)
     LOG_INFO("Quitting...");
 
     node->running = false;
+}
+
+static void handle_external_request(void *arg)
+{
+    struct thread_data_t *data = (struct thread_data_t *)arg;
+
+    struct ulsr_packet packet = { 0 };
+
+    ssize_t bytes_read = recv(data->connection, &packet, sizeof(struct ulsr_packet), 0);
+
+    if (bytes_read <= 0) {
+	LOG_ERR("Failed to read from socket");
+    } else {
+	LOG_INFO("Received packet");
+	struct ulsr_internal_packet *internal_packet = ulsr_internal_packet_new(&packet);
+
+	internal_packet->prev_node_id = data->node_id;
+
+	// TODO: Find path to destination
+
+	// Add path to send func
+	data->send_func(internal_packet);
+    }
+
+    shutdown(data->connection, SHUT_RDWR);
+    close(data->connection);
+
+    free(data);
+
+    LOG_INFO("Closed connection");
 }
 
 int init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
@@ -144,7 +182,11 @@ int run_node(struct node_t *node)
 	if (client_socket != -1) {
 	    insert_connection(node->connections, client_socket);
 
-	    // TODO: Handle connection.
+	    struct thread_data_t *data = malloc(sizeof(struct thread_data_t));
+	    data->connection = client_socket;
+	    data->running = true;
+
+	    submit_worker_task(node->threadpool, handle_external_request, (void *)data);
 
 	    client_socket = -1;
 	}
