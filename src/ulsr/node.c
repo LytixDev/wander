@@ -56,44 +56,45 @@ static void check_quit(void *arg)
     while (getc(stdin) != 'q')
 	;
 
-    shutdown(node->socket, SHUT_RDWR);
-    close(node->socket);
+    shutdown(node->sockfd, SHUT_RDWR);
+    close(node->sockfd);
     LOG_INFO("Quitting...");
 
     node->running = false;
 }
 
 int init_node(struct node_t *node, u16 node_id, int connections, int threads, int queue_size,
-	      distance_func_t distance_func, send_func_t send_func, rec_func_t rec_func, ...)
+	      node_distance_func_t distance_func, node_send_func_t send_func,
+	      node_rec_func_t rec_func, void *data, int port)
 {
     node->node_id = node_id;
 
-    node->socket = socket(AF_PACKET, SOCK_RAW, htons(ETH_P_ALL));
-    if (node->socket < 0) {
+    node->sockfd = socket(PF_INET, SOCK_STREAM, 0);
+    if (node->sockfd < 0) {
 	LOG_ERR("Failed to create socket");
 	return -1;
     }
 
     LOG_INFO("Created socket");
 
-    if (setsockopt(node->socket, SOL_SOCKET, IP_HDRINCL, &(int){ 1 }, sizeof(int)) < 0) {
+    if (setsockopt(node->sockfd, SOL_SOCKET, (SO_REUSEPORT | SO_REUSEADDR), &(int){1}, sizeof(int)) < 0) {
 	LOG_ERR("Failed to set socket options");
 	return -1;
     }
 
     LOG_INFO("Set socket options");
 
-    struct sockaddr_in address = { 0 };
+    struct sockaddr_in address = {0};
     address.sin_family = AF_INET;
-    address.sin_addr.s_addr = htonl(INADDR_ANY);
-    address.sin_port = htons(ULSR_DEFAULT_PORT);
-
-    if (bind(node->socket, (struct sockaddr *)&address, sizeof(address)) < 0) {
+    address.sin_addr.s_addr = INADDR_ANY;
+    address.sin_port = htons(port);
+    
+    if (bind(node->sockfd, (struct sockaddr *)&address, sizeof(address)) < 0) {
 	LOG_ERR("Failed to bind socket");
 	return -1;
     }
 
-    if (listen(node->socket, threads) != 0) {
+    if (listen(node->sockfd, threads) != 0) {
 	LOG_ERR("Failed to listen on socket");
 	return -1;
     }
@@ -109,17 +110,6 @@ int init_node(struct node_t *node, u16 node_id, int connections, int threads, in
 
     node->threadpool = malloc(sizeof(struct threadpool_t));
     init_threadpool(node->threadpool, threads, queue_size);
-
-    node->all_nodes = malloc(sizeof(struct node_array_t));
-
-    va_list args;
-    u16 num_args = VA_NUMBER_OF_ARGS(args);
-    va_start(args, num_args);
-
-    for (int i = 0; i < num_args; i++)
-        ARRAY_PUSH(*node->all_nodes, va_arg(args, struct sockaddr_in));
-
-    va_end(args);
 
     LOG_INFO("Initialized node");
 
@@ -140,10 +130,10 @@ int run_node(struct node_t *node)
 
     submit_worker_task(node->threadpool, check_quit, (void *)node);
 
-    set_nonblocking(node->socket);
+    set_nonblocking(node->sockfd);
 
     while (node->running) {
-	client_socket = accept(node->socket, NULL, NULL);
+	client_socket = accept(node->sockfd, NULL, NULL);
 
 	if (client_socket != -1) {
 	    insert_connection(node->connections, client_socket);
@@ -176,6 +166,7 @@ void free_node(struct node_t *node)
 {
     free(node->connections->connections);
     free(node->connections);
-    free(node->threadpool);
-    free(node->all_nodes);
+    free_threadpool(node->threadpool);
+    ARRAY_FREE(*(node->neighbors));
+    node->data_free_func(node->data);
 }

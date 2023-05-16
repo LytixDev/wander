@@ -32,22 +32,22 @@
 /**
  * Function definition for a function that finds the distance to a node.
  */
-typedef u16 (*distance_func_t)(void *);
+typedef u16 (*node_distance_func_t)(void *);
 
 /**
  * Function definition for a function that sends a message.
  */
-typedef u16 (*send_func_t)(void *);
+typedef u16 (*node_send_func_t)(struct packet_h *);
 
 /**
  * Function definition for a function that receives a message.
  */
-typedef u16 (*rec_func_t)(void *);
+typedef u16 (*node_rec_func_t)(struct packet_h *);
 
 /**
- * Arraylist struct for node_t.
+ * Function definition for a function that frees the data of a node.
  */
-ARRAY_T(node_array_t, struct node_t)
+typedef void (*data_free_func_t)(void *);
 
 /**
  * Arraylist struct for neighbor_t.
@@ -78,25 +78,31 @@ struct connections_t {
 
 /**
  * Struct used to represent a node in the network.
- * @param socket The socket of the node.
+ * @param node_id The id of the node.
+ * @param sockfd The socket file descriptor.
  * @param running Whether the node is running.
+ * @param data The data of the node.
+ * @param distance_func The function used to find the distance to a node.
+ * @param send_func The function used to send a message.
+ * @param rec_func The function used to receive a message.
  * @param connections The connections of the node.
  * @param threadpool The threadpool of the node.
  * @param neighbors The neighbors of the node.
- * @param all_nodes All nodes in the network.
  */
 struct node_t {
     u16 node_id;
-    int socket;
+    int sockfd;
     bool running;
-    distance_func_t distance_func;
-    send_func_t send_func;
-    rec_func_t rec_func;
+    void *data;
+    data_free_func_t data_free_func;
+    node_distance_func_t distance_func;
+    node_send_func_t send_func;
+    node_rec_func_t rec_func;
     struct connections_t *connections;
     struct threadpool_t *threadpool;
     struct neighbor_array_t *neighbors;
-    struct node_array_t *all_nodes;
 };
+
 
 /* Methods */
 
@@ -110,7 +116,8 @@ struct node_t {
  * @param ... The current nodes known in the network.
  */
 int init_node(struct node_t *node, u16 node_id, int connections, int threads, int queue_size,
-	      distance_func_t distance_func, send_func_t send_func, rec_func_t rec_func, ...);
+	      node_distance_func_t distance_func, node_send_func_t send_func,
+	      node_rec_func_t rec_func, void *data);
 
 /**
  * Runs a node.
