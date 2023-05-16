@@ -43,7 +43,7 @@ int main(void)
     struct node_t nodes[MESH_NODE_COUNT];
     struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT] = { 0 };
     for (int i = 0; i < MESH_NODE_COUNT; i++)
-	packet_limbo[i].pt = PACKET_NONE;
+	packet_limbo[i].type = PACKET_NONE;
 
     struct threadpool_t threadpool = { 0 };
     init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
@@ -59,13 +59,13 @@ int main(void)
 	});
 
     node_rec_func_t node_rec_func = LAMBDA(struct ulsr_internal_packet *, (u16 node_id), {
-	if (packet_limbo[node_id - 1].pt == PACKET_NONE)
+	if (packet_limbo[node_id - 1].type == PACKET_NONE)
 	    return NULL;
 
 	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
 	*packet = packet_limbo[node_id - 1];
 	packet_limbo[node_id - 1] = (struct ulsr_internal_packet){ 0 };
-	packet_limbo[node_id - 1].pt = PACKET_NONE;
+	packet_limbo[node_id - 1].type = PACKET_NONE;
 	return packet;
     });
 

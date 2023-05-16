@@ -45,7 +45,8 @@ enum ulsr_internal_packet_type {
 };
 
 struct ulsr_internal_packet {
-    enum ulsr_internal_packet_type pt;
+    u32 checksum;
+    enum ulsr_internal_packet_type type;
     u16 prev_node_id;
     u16 dest_node_id;
     u32 payload_len;
@@ -61,6 +62,6 @@ struct ulsr_internal_packet {
  */
 struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *external_packet);
 
-u32 ulsr_checksum(struct ulsr_packet *packet);
+u32 ulsr_checksum(u8 *packet, unsigned long size);
 
 #endif /* PACKET_H */
