@@ -24,8 +24,12 @@
  * @param func_args The arguments of the lambda function.
  * @param func_body The body of the lambda function.
  * @return A pointer to the lambda function.
- */
-#define LAMBDA(return_type, func_args, func_body) \
-    __extension__ ({ return_type __lambda__  func_args func_body &__lambda__; })
-
+*/
+#ifdef __APPLE__
+    #define LAMBDA(return_type, func_args, func_body) \
+        ({ return_type (*__lambda__) func_args = func_body; __lambda__; })
+#else
+    #define LAMBDA(return_type, func_args, func_body) \
+        ({ return_type __lambda__ func_args func_body &__lambda__; })
+#endif
 #endif
