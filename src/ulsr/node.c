@@ -42,7 +42,8 @@ static void close_connections(struct connections_t *connections)
 
 static void insert_connection(struct connections_t *connections, int connection)
 {
-    connections->index = ++connections->index % connections->cap;
+    connections->index++;
+    connections->index = connections->index % connections->cap;
     connections->connections[connections->index] = connection;
     LOG_INFO("Inserted connection");
 }
@@ -175,23 +176,23 @@ int run_node(struct node_t *node)
 }
 
 void free_node(struct node_t *node)
-{    
+{
     if (node->connections != NULL) {
-        if (node->connections->connections != NULL) {
-            free(node->connections->connections);
-        }
-        free(node->connections);
+	if (node->connections->connections != NULL) {
+	    free(node->connections->connections);
+	}
+	free(node->connections);
     }
 
     if (node->threadpool != NULL) {
-        free_threadpool(node->threadpool);
+	free_threadpool(node->threadpool);
     }
 
     if (node->neighbors != NULL) {
-        ARRAY_FREE(*(node->neighbors));
+	ARRAY_FREE(*(node->neighbors));
     }
 
     if (node->data != NULL) {
-        node->data_free_func(node->data);
+	node->data_free_func(node->data);
     }
 }

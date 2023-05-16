@@ -26,6 +26,7 @@
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/threadpool.h"
+#include "ulsr/packet.h"
 
 /* Function definitions. */
 
