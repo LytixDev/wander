@@ -82,6 +82,9 @@ static void handle_external_request(void *arg)
 	LOG_ERR("Failed to read from socket");
     } else {
 	LOG_INFO("Received packet");
+	LOG_INFO("Source: %s", packet.source_ipv4);
+	LOG_INFO("Destination: %s", packet.dest_ipv4);
+	LOG_INFO("Payload: %s", packet.payload);
 	struct ulsr_internal_packet *internal_packet = ulsr_internal_packet_new(&packet);
 
 	internal_packet->prev_node_id = data->node_id;
