@@ -16,35 +16,27 @@
  */
 
 #include <stdlib.h>
-#include <netinet/in.h>
 #include <string.h>
 
-#include "ulsr/packet.h"
 #include "lib/common.h"
+#include "ulsr/packet.h"
 
 
-void packet_init_hello(struct packet_t *p, struct sockaddr_in source, struct sockaddr_in dest)
+void packet_send(struct packet_t *p, enum packet_type pt, u16 source, u16 destination, u16 len,
+		 void *payload)
 {
-    u16 len = 32;
-    p->header = (struct packet_header_t){ .source_ip = source, .destination_ip = dest,
-                                          .pt = PACKET_HELLO, .len = len};
-    char *payload = malloc(len);
-    strncpy(payload, "Hello", len);
+    p->header = (struct packet_header_t){
+	.pt = pt, .source_node_id = source, .destination_node_id = destination, .len = len
+    };
     p->payload = payload;
 }
 
-void packet_destroy(struct packet_t *p)
+u16 packet_recv(struct packet_t *p)
 {
-    if (p->payload != NULL)
-        free(p->payload);
+    /* if checksum fail, return 0 or something */
+    /*
+     * if (!checksum(p))
+     *   return ERROR
+     */
+    return sizeof(p->header) + p->header.len;
 }
-
-/*
-* use:
-* struct packet_t packet;
-* packet_init_hello(p, my_ip, destination_ip)
-*
-* // send the packet
-*
-* packet_destroy(p);
-*/

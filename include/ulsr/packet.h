@@ -18,16 +18,13 @@
 #ifndef PACKET_H
 #define PACKET_H
 
-#include <netinet/in.h>
-
 #include "lib/common.h"
 
-/**
- * Enum used to represent the type of a packet.
- * @param PACKET_DATA A packet containing data.
- * @param PACKET_HELLO A packet used to establish a connection.
- * @param PACKET_PURGE A packet used to purge a connection.
+
+/*
+ * packets used for internal communication between devices in the simulation
  */
+
 enum packet_type {
     PACKET_DATA,
     PACKET_HELLO,
@@ -35,21 +32,12 @@ enum packet_type {
 };
 
 struct packet_header_t {
-    struct sockaddr_in source_ip;
-    struct sockaddr_in destination_ip;
     enum packet_type pt;
+    u16 source_node_id;
+    u16 destination_node_id;
     u16 len;
 };
 
-/**
- * Struct used to represent a packet.
- * @param source_ip The source IP address of the packet.
- * @param destination_ip The destination IP address of the packet.
- * @param pt The type of packet.
- * @param data The data contained in the packet.
- * @param len The length of the data contained in the packet.
- * This is also the maximum length of the data in an IPv4 packet.
- */
 struct packet_t {
     struct packet_header_t header;
     void *payload;
