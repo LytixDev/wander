@@ -27,9 +27,9 @@
 #include "lib/logger.h"
 #include "ulsr/packet.h"
 
-#define MY_IP "10.24.3.21"
+#define MY_IP "10.22.13.94"
 
-#define MESH_DEVICE_IP "127.0.0.1"
+#define MESH_DEVICE_IP "10.24.3.21"
 #define MESH_DEVICE_PORT 8087
 
 /*
