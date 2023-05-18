@@ -21,7 +21,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/poll.h>
 #include <sys/select.h>
 #include <sys/socket.h>
 
@@ -278,21 +277,22 @@ int run_node(struct node_t *node)
     start_threadpool(node->threadpool);
     node->running = true;
 
-    struct timeval timeout;
-    timeout.tv_sec = 10;
-    timeout.tv_usec = 0;
-
     submit_worker_task(node->threadpool, handle_send_request, (void *)node);
 
     LOG_NODE_INFO(node->node_id, "Node properly initialized");
 
-    while (node->running) {
-	struct pollfd fds[1];
-	fds[0].fd = node->sockfd;
-	fds[0].events = POLLIN;
 
-	int ready = poll(fds, 1, 10);
-	if (ready > 0 && (fds[0].revents & POLLIN)) {
+    while (node->running) {
+	fd_set readfds;
+	FD_ZERO(&readfds);
+	FD_SET(node->sockfd, &readfds);
+
+	struct timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 10000;
+
+	int ready = select(node->sockfd + 1, &readfds, NULL, NULL, &timeout);
+	if (ready > 0 && FD_ISSET(node->sockfd, &readfds)) {
 	    int client_sockfd = accept(node->sockfd, NULL, NULL);
 
 	    if (client_sockfd != -1) {
@@ -309,7 +309,6 @@ int run_node(struct node_t *node)
 	    }
 	}
     }
-
     return 0;
 }
 
