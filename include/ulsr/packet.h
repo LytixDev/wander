@@ -58,12 +58,11 @@ struct ulsr_internal_packet {
 
 /* Methods */
 
-/**
+/*
  * Creates a new internal packet from an external packet.
- * @param external_packet The external packet to create the internal packet from.
- * @return The new internal packet.
+ * Allocates the internal packet on the heap.
  */
-struct ulsr_internal_packet *ulsr_internal_packet_new(struct ulsr_packet *external_packet);
+struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *external_packet);
 
 u32 ulsr_checksum(u8 *packet, unsigned long size);
 
