@@ -101,22 +101,19 @@ int main(void)
 	submit_worker_task(&threadpool, run_node_stub, &nodes[i]);
     }
 
-    while ((nodes[0].running == true || nodes[1].running == true))
-	;
-
     bool running = true;
     submit_worker_task(&threadpool, check_quit, &running);
-    while (running == true)
+    while (running)
 	;
 
-    LOG_INFO("Stopping threadpool... FOR MAIN");
+    LOG_INFO("Stopping MAIN threadpool");
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	close_node(&nodes[i]);
 	free_node(&nodes[i]);
     }
 
     threadpool_stop(&threadpool);
-
     free_threadpool(&threadpool);
     return 0;
 }

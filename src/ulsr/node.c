@@ -282,7 +282,7 @@ int run_node(struct node_t *node)
     // submit_worker_task(node->threadpool, check_quit, (void *)node);
     submit_worker_task(node->threadpool, handle_send_request, (void *)node);
 
-    LOG_NODE_INFO(node->node_id, "Node properly initialized, press 'q' to quit\n");
+    LOG_NODE_INFO(node->node_id, "Node properly initialized");
 
     while (node->running) {
 	int client_sockfd = accept(node->sockfd, NULL, NULL);
@@ -301,11 +301,17 @@ int run_node(struct node_t *node)
 	}
     }
 
+    return 0;
+}
+
+void close_node(struct node_t *node)
+{
+    node->running = false;
+
     close_connections(node->connections);
     threadpool_stop(node->threadpool);
     close(node->sockfd);
     LOG_NODE_INFO(node->node_id, "Shutdown complete");
-    return 0;
 }
 
 void free_node(struct node_t *node)
