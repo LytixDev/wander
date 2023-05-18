@@ -1,5 +1,5 @@
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 #define MAX_NODES 100
@@ -10,41 +10,46 @@ typedef struct {
 } Graph;
 
 // Function to initialize the graph
-void initializeGraph(Graph* graph, int numNodes) {
+void initializeGraph(Graph *graph, int numNodes)
+{
     graph->numNodes = numNodes;
     for (int i = 0; i < numNodes; i++) {
-        for (int j = 0; j < numNodes; j++) {
-            graph->edges[i][j] = 0;
-        }
+	for (int j = 0; j < numNodes; j++) {
+	    graph->edges[i][j] = 0;
+	}
     }
 }
 
 // Function to add an edge between two nodes in the graph
-void addEdge(Graph* graph, int node1, int node2) {
+void addEdge(Graph *graph, int node1, int node2)
+{
     graph->edges[node1][node2] = 1;
 }
 
 // Function to print a path array
-void printPath(int* path, int pathLength) {
+void printPath(int *path, int pathLength)
+{
     for (int i = 0; i < pathLength; i++) {
-        printf("%d ", path[i]);
+	printf("%d ", path[i]);
     }
     printf("\n");
 }
 
 // Recursive function to find all paths from source to destination
-void findAllPaths(Graph* graph, int source, int destination, bool* visited, int* path, int pathLength) {
+void findAllPaths(Graph *graph, int source, int destination, bool *visited, int *path,
+		  int pathLength)
+{
     visited[source] = true;
     path[pathLength++] = source;
 
     if (source == destination) {
-        printPath(path, pathLength);
+	printPath(path, pathLength);
     } else {
-        for (int i = 0; i < graph->numNodes; i++) {
-            if (graph->edges[source][i] == 1 && !visited[i]) {
-                findAllPaths(graph, i, destination, visited, path, pathLength);
-            }
-        }
+	for (int i = 0; i < graph->numNodes; i++) {
+	    if (graph->edges[source][i] == 1 && !visited[i]) {
+		findAllPaths(graph, i, destination, visited, path, pathLength);
+	    }
+	}
     }
 
     visited[source] = false;
@@ -52,7 +57,8 @@ void findAllPaths(Graph* graph, int source, int destination, bool* visited, int*
 }
 
 // Function to find all paths from source to destination in the graph
-void findPaths(Graph* graph, int source, int destination) {
+void findPaths(Graph *graph, int source, int destination)
+{
     bool visited[MAX_NODES] = { false };
     int path[MAX_NODES];
     int pathLength = 0;
@@ -60,7 +66,8 @@ void findPaths(Graph* graph, int source, int destination) {
     findAllPaths(graph, source, destination, visited, path, pathLength);
 }
 
-int main() {
+int main()
+{
     // Create a graph with 6 nodes (0-5)
     Graph graph;
     initializeGraph(&graph, 6);

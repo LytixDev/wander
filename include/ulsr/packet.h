@@ -43,6 +43,8 @@ enum ulsr_internal_packet_type {
     PACKET_HELLO,
     PACKET_PURGE,
     PACKET_NONE,
+    PACKET_ROUTING,
+    PACKET_ROUTING_DONE,
 };
 
 struct ulsr_internal_packet {

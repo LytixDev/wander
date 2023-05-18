@@ -22,43 +22,94 @@
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "ulsr/node.h"
+#include "ulsr/packet.h"
 #include "ulsr/routing.h"
 
-void find_all_routes_recursive(struct node_t *source, struct node_t *destination, u16 total_nodes,
-			       bool *visited, u16 *path, u64 path_length,
-			       struct u16_arraylist_t *routes)
+void init_routing_data(u16 source_id, u16 destination_id, u16 total_nodes, bool *visited, u16 *path,
+		       u16 path_length, struct routing_data_t *routing_data)
 {
-    visited[source->node_id - 1] = true;
-    path[path_length++] = source->node_id;
+    routing_data->source_id = source_id;
+    routing_data->destination_id = destination_id;
+    routing_data->total_nodes = total_nodes;
 
-    if (source->node_id == destination->node_id) {
-	u16 *new_path = malloc(sizeof(u16) * path_length);
-	memcpy(new_path, path, sizeof(u16) * path_length);
-	ARRAY_PUSH(*routes, new_path);
+    routing_data->visited = malloc(sizeof(bool) * total_nodes);
+    memcpy(routing_data->visited, visited, sizeof(bool) * total_nodes);
+
+    routing_data->path = malloc(sizeof(u16) * total_nodes);
+    memcpy(routing_data->path, path, sizeof(u16) * total_nodes);
+
+    routing_data->path_length = path_length;
+}
+
+void init_route(u16 source_id, u16 destination_id, u16 *path, u16 path_length,
+		struct route_t *route)
+{
+    route->source_id = source_id;
+    route->destination_id = destination_id;
+    route->path = malloc(sizeof(u16) * path_length);
+    memcpy(route->path, path, sizeof(u16) * path_length);
+    route->path_length = path_length;
+}
+
+void free_routing_data(struct routing_data_t *routing_data)
+{
+    free(routing_data->visited);
+    free(routing_data->path);
+}
+
+void free_route(struct route_t *route)
+{
+    free(route->path);
+}
+
+void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nodes, bool *visited,
+			  u16 *path, u16 path_length)
+{
+    visited[curr->node_id - 1] = true;
+    path[path_length++] = curr->node_id;
+
+    if (curr->node_id == destination_id) {
+	struct route_t *route = malloc(sizeof(struct route_t));
+	init_route(curr->node_id, destination_id, path, path_length, route);
+	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
+	packet->type = PACKET_ROUTING_DONE;
+	packet->payload = route;
+	packet->payload_len = sizeof(struct route_t) + sizeof(u16) * path_length;
+	packet->prev_node_id = curr->node_id;
+	packet->dest_node_id = path[0];
+	packet->checksum = 0;
+	// Send back the path to the the original source node through the route that was taken.
     } else {
 	u16 i = 0;
 	struct neighbor_t *neighbor = NULL;
-	ARRAY_FOR_EACH(*source->neighbors, i, neighbor)
+	ARRAY_FOR_EACH(*curr->neighbors, i, neighbor)
 	{
 	    if (!visited[neighbor->node_id - 1]) {
-                // Send the packet with the new path to the neighbor
-		find_all_routes_recursive(neighbor, destination, total_nodes, visited, path,
-					  path_length, routes);
+		struct routing_data_t *routing_data = malloc(sizeof(struct routing_data_t));
+		init_routing_data(curr->node_id, destination_id, total_nodes, visited, path,
+				  path_length, routing_data);
+		struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
+		packet->type = PACKET_ROUTING;
+		packet->payload = routing_data;
+		packet->payload_len = sizeof(struct routing_data_t) + sizeof(bool) * total_nodes +
+				      sizeof(u16) * total_nodes;
+		packet->prev_node_id = curr->node_id;
+		packet->dest_node_id = neighbor->node_id;
+		packet->checksum = 0;
+		// Send the packet with the new path to the neighbor that then calls this function.
+		// find_all_routes_recursive(neighbor->node_id, destination_id, total_nodes,
+		// visited, path, path_length);
 	    }
 	}
     }
-
-    visited[source->node_id - 1] = false;
-    path_length--;
 }
 
-void find_all_routes(struct node_t *start, struct node_t *destination, u16 total_nodes,
-		     struct u16_arraylist_t *routes)
+void find_all_routes(struct node_t *start, u16 destination_id, u16 total_nodes)
 {
     bool visited[total_nodes];
     memset(visited, false, total_nodes);
     u16 path[total_nodes];
-    u64 path_length = 0;
+    u16 path_length = 0;
 
-    find_all_routes_recursive(start, destination, total_nodes, visited, path, path_length, routes);
+    find_all_routes_send(start, destination_id, total_nodes, visited, path, path_length);
 }
