@@ -29,7 +29,7 @@
 #include "ulsr/ulsr.h"
 
 
-bool running;
+static bool running;
 struct node_t nodes[MESH_NODE_COUNT];
 struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
 struct await_t node_locks[MESH_NODE_COUNT];
