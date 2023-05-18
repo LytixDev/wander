@@ -15,9 +15,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h>
 
 #include "lib/common.h"
 #include "lib/logger.h"
@@ -60,8 +60,9 @@ u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 struct ulsr_internal_packet *recv_func(u16 node_id)
 {
     while (packet_limbo[node_id - 1].type == PACKET_NONE)
-        pthread_cond_wait(&node_locks[node_id - 1].cond_variable, &node_locks[node_id - 1].cond_lock);
-    
+	pthread_cond_wait(&node_locks[node_id - 1].cond_variable,
+			  &node_locks[node_id - 1].cond_lock);
+
     if (packet_limbo[node_id - 1].type == PACKET_NONE)
 	return NULL;
 
