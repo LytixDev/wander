@@ -50,6 +50,7 @@ void construct_test_packet(struct ulsr_packet *p)
 
     /* construct packet */
     p->type = ULSR_HTTP;
+    p->seq_nr = 0;
     strncpy(p->source_ipv4, MY_IP, 16);
     strncpy(p->dest_ipv4, host, 16);
     p->dest_port = 80;
@@ -134,6 +135,10 @@ void listen_for_response()
 	exit(1);
     }
 
+/* naive, but works for this test */
+#define max_packets_recieved 32
+    struct ulsr_packet packets[max_packets_recieved];
+    int packets_received = 0;
 
     while (1) {
 	struct ulsr_packet packet;
@@ -143,7 +148,16 @@ void listen_for_response()
 	    break;
 	}
 
-	LOG_INFO("%s", packet.payload);
+	packets[packets_received++] = packet;
+	if (packets_received == max_packets_recieved) {
+	    LOG_ERR("Can not receive more packets");
+	    break;
+	}
+    }
+
+    LOG_INFO("Recieved %d packets", packets_received);
+    for (int i = 0; i < packets_received; i++) {
+	printf("%s\n", packets[i].payload);
     }
 
     close(connfd);

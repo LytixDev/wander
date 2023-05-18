@@ -16,6 +16,7 @@
  */
 
 #include <stdio.h>
+#include <sys/select.h>
 
 #include "lib/common.h"
 #include "lib/logger.h"
@@ -29,6 +30,14 @@
 struct node_t nodes[MESH_NODE_COUNT];
 struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
 
+
+static void sleep_microseconds(unsigned int microseconds)
+{
+    struct timeval tv;
+    tv.tv_sec = microseconds / 1000000;
+    tv.tv_usec = microseconds % 1000000;
+    select(0, NULL, NULL, NULL, &tv);
+}
 
 static void check_quit(void *arg)
 {
@@ -49,6 +58,9 @@ u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 
 struct ulsr_internal_packet *recv_func(u16 node_id)
 {
+    // TODO: better polling or no polling at all!
+    // poll every second
+    sleep_microseconds(10000);
     if (packet_limbo[node_id - 1].type == PACKET_NONE)
 	return NULL;
 

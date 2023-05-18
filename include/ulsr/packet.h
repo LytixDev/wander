@@ -27,6 +27,7 @@ enum ulsr_packet_type {
 struct ulsr_packet {
     u32 checksum;
     enum ulsr_packet_type type;
+    u16 seq_nr;
     char source_ipv4[16];
     char dest_ipv4[16];
     u16 dest_port;
