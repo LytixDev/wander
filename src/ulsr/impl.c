@@ -62,20 +62,21 @@ u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 
 struct ulsr_internal_packet *recv_func(u16 node_id)
 {
-    pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
+    u16 node_idx = node_id - 1;
+    pthread_mutex_lock(&node_locks[node_idx].cond_lock);
 
     while (packet_limbo[node_id - 1].type == PACKET_NONE && running)
-	pthread_cond_wait(&node_locks[node_id - 1].cond_variable,
-			  &node_locks[node_id - 1].cond_lock);
-    pthread_mutex_unlock(&node_locks[node_id - 1].cond_lock);
+	pthread_cond_wait(&node_locks[node_idx].cond_variable, &node_locks[node_idx].cond_lock);
+    pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
 
     if (packet_limbo[node_id - 1].type == PACKET_NONE)
 	return NULL;
 
+    /* consume the packet */
     struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
-    *packet = packet_limbo[node_id - 1];
-    packet_limbo[node_id - 1] = (struct ulsr_internal_packet){ 0 };
-    packet_limbo[node_id - 1].type = PACKET_NONE;
+    *packet = packet_limbo[node_idx];
+    packet_limbo[node_idx] = (struct ulsr_internal_packet){ 0 };
+    packet_limbo[node_idx].type = PACKET_NONE;
 
     return packet;
 }

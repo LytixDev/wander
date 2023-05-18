@@ -165,6 +165,8 @@ static void handle_send_request(void *arg)
 		if (node->node_id < 2)
 		    node->send_func(packet, node->node_id + 1);
 	    }
+
+	    free(packet);
 	}
     }
 }
@@ -194,7 +196,7 @@ static void handle_external_request(void *arg)
     }
 
     /* pack external packet into internal packet for routing between nodes */
-    struct ulsr_internal_packet *internal_packet = ulsr_internal_packet_new(&packet);
+    struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&packet);
     internal_packet->prev_node_id = data->node->node_id;
     // TEMP HACK
     internal_packet->dest_node_id = 2;
@@ -209,6 +211,8 @@ static void handle_external_request(void *arg)
     } else {
 	data->node->send_func(internal_packet, data->node->node_id);
     }
+
+    free(internal_packet);
 
 cleanup:
     shutdown(data->connection, SHUT_RDWR);
