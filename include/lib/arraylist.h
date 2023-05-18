@@ -147,7 +147,17 @@
 /**
  * Macro to create a for loop for an array.
  * @param array The array to create the for loop for.
+ * @param i The index variable to use.
  */
 #define ARRAY_FOR(array, i) for ((i) = 0; (i) < (array).len; (i)++)
+
+/**
+ * Macro to create a for loop for an array.
+ * @param array The array to create the for loop for.
+ * @param i The index variable to use.
+ * @param item The item variable to use.
+ */
+#define ARRAY_FOR_EACH(array, i, item) \
+    for ((i) = 0, item = (array).items; (i) < (array).len; item = ((array).items + ++(i)))
 
 #endif
