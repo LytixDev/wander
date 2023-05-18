@@ -20,6 +20,7 @@
 #include <stdlib.h>
 #include <sys/select.h>
 
+#include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
 #include "lib/threadpool.h"
@@ -33,6 +34,7 @@ bool running;
 struct node_t nodes[MESH_NODE_COUNT];
 struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
 struct await_t node_locks[MESH_NODE_COUNT];
+struct simulation_coord_t coords[MESH_NODE_COUNT];
 
 
 static void sleep_microseconds(unsigned int microseconds)
@@ -46,6 +48,13 @@ static void sleep_microseconds(unsigned int microseconds)
 static void run_node_stub(void *arg)
 {
     run_node((struct node_t *)arg);
+}
+
+void set_initial_node_ids(struct node_t *node)
+{
+    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	ARRAY_PUSH(node->known_ids, (u16)(i + 1));
+    }
 }
 
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)

@@ -27,6 +27,7 @@
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
+#include "ulsr/impl.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
@@ -56,6 +57,7 @@ static void insert_connection(struct connections_t *connections, int connection)
     LOG_INFO("Inserted connection");
 }
 
+/* node communication functions */
 static bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *packet)
 {
     struct ulsr_packet *internal_payload = packet->payload;
@@ -138,36 +140,64 @@ static bool handle_send_external(struct node_t *node, struct ulsr_internal_packe
     return true;
 }
 
+static void handle_internal_data_packet(struct node_t *node, struct ulsr_internal_packet *packet)
+{
+    struct ulsr_packet *payload = packet->payload;
+    LOG_NODE_INFO(node->node_id, "Received packet");
+    LOG_NODE_INFO(node->node_id, "Source: %s", payload->source_ipv4);
+    LOG_NODE_INFO(node->node_id, "Destination: %s", payload->dest_ipv4);
+    LOG_NODE_INFO(node->node_id, "Payload: %s", payload->payload);
+
+    if (node->node_id == 2) {
+	LOG_NODE_INFO(node->node_id, "Packet is for this node");
+	handle_send_external(node, packet);
+    } else {
+	LOG_NODE_INFO(node->node_id, "Packet is not for this node");
+
+	// This is a hack, but it works for now as we only have 2 nodes
+	if (node->node_id < 2)
+	    node->send_func(packet, node->node_id + 1);
+    }
+}
+
+static void handle_internal_hello_packet(struct node_t *node, struct ulsr_internal_packet *packet)
+{
+    LOG_NODE_INFO(node->node_id, "Received HELLO from %d", packet->prev_node_id);
+    u16 neighbor_id = packet->prev_node_id;
+    struct neighbor_t *neighbor = node->neighbors[neighbor_id - 1];
+    if (neighbor == NULL) {
+	LOG_NODE_INFO(node->node_id, "Found new neighbor %d", neighbor_id);
+	neighbor = malloc(sizeof(struct neighbor_t));
+	neighbor->node_id = neighbor_id;
+	neighbor->cost = 10;
+	node->neighbors[neighbor_id - 1] = neighbor;
+    }
+    neighbor->last_seen = time(NULL);
+}
+
 static void handle_send_internal(void *arg)
 {
     struct node_t *node = (struct node_t *)arg;
-
     struct ulsr_internal_packet *packet = NULL;
 
     while (node->running) {
 	packet = node->rec_func(node->node_id);
-	if (packet != NULL) {
-	    struct ulsr_packet *payload = packet->payload;
-	    LOG_NODE_INFO(node->node_id, "Received packet from rec_func");
-	    LOG_NODE_INFO(node->node_id, "Received packet");
-	    LOG_NODE_INFO(node->node_id, "Source: %s", payload->source_ipv4);
-	    LOG_NODE_INFO(node->node_id, "Destination: %s", payload->dest_ipv4);
-	    LOG_NODE_INFO(node->node_id, "Payload: %s", payload->payload);
-
-	    //     if (payload->dest_ipv4 == node->node_id) {
-	    if (node->node_id == 2) {
-		LOG_NODE_INFO(node->node_id, "Packet is for this node");
-		handle_send_external(node, packet);
-	    } else {
-		LOG_NODE_INFO(node->node_id, "Packet is not for this node");
-
-		// This is a hack, but it works for now as we only have 2 nodes
-		if (node->node_id < 2)
-		    node->send_func(packet, node->node_id + 1);
-	    }
-
-	    free(packet);
+	if (packet == NULL) {
+	    continue;
 	}
+
+	switch (packet->type) {
+	case PACKET_DATA:
+	    handle_internal_data_packet(node, packet);
+	    break;
+	case PACKET_HELLO:
+	    handle_internal_hello_packet(node, packet);
+	    break;
+	default:
+	    break;
+	}
+
+	free(packet);
     }
 }
 
@@ -221,6 +251,27 @@ cleanup:
     LOG_NODE_INFO(node->node_id, "Closed connection");
 }
 
+static void hello_poll_thread(void *arg)
+{
+    struct node_t *node = (struct node_t *)arg;
+    while (node->running) {
+	for (size_t i = 0; i < ARRAY_LEN(node->known_ids); i++) {
+	    u16 to_id = ARRAY_GET(node->known_ids, i);
+	    if (to_id == node->node_id)
+		continue;
+
+	    LOG_NODE_INFO(node->node_id, "Sent HELLO to %d", to_id);
+
+	    struct ulsr_internal_packet *packet = ulsr_internal_create_hello(node->node_id, to_id);
+	    // TODO: mock distance
+	    node->send_func(packet, to_id);
+	    free(packet);
+	}
+	sleep(HELLO_POLL_INTERVAL);
+    }
+}
+
+/* node lifetime functions */
 bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
 	       node_send_func_t send_func, node_recv_func_t rec_func, u16 port)
 {
@@ -268,12 +319,18 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     node->send_func = send_func;
     node->rec_func = rec_func;
 
-    /* init neighbor list and known id list */
-    node->neighbors = malloc(sizeof(struct neighbor_array_t));
-    node->known_ids = malloc(sizeof(struct u16_arraylist_t));
-    ARRAY_INIT(node->neighbors);
-    ARRAY_INIT(node->known_ids);
+    /* init neighbor list */
+    node->neighbors = malloc(sizeof(struct neighbor_t *) * MESH_NODE_COUNT);
+    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	node->neighbors[i] = NULL;
+    }
 
+    /* known id list */
+    node->known_ids = malloc(sizeof(struct u16_arraylist_t));
+    ARRAY_INIT(node->known_ids);
+    set_initial_node_ids(node);
+
+    /* set initial node ids */
     LOG_NODE_INFO(node->node_id, "Completed initialization");
     return true;
 }
@@ -285,6 +342,7 @@ int run_node(struct node_t *node)
     node->running = true;
 
     submit_worker_task(node->threadpool, handle_send_internal, (void *)node);
+    submit_worker_task(node->threadpool, hello_poll_thread, (void *)node);
 
     LOG_NODE_INFO(node->node_id, "Node properly initialized");
 
@@ -342,7 +400,10 @@ void free_node(struct node_t *node)
 	free_threadpool(node->threadpool);
     }
     if (node->neighbors != NULL) {
-	ARRAY_FREE(node->neighbors);
+	for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	    if (node->neighbors[i] != NULL)
+		free(node->neighbors[i]);
+	}
 	free(node->neighbors);
     }
     if (node->known_ids != NULL) {

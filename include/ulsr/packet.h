@@ -62,6 +62,8 @@ struct ulsr_internal_packet {
  */
 struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *external_packet);
 
+struct ulsr_internal_packet *ulsr_internal_create_hello(u16 from, u16 to);
+
 u32 ulsr_checksum(u8 *packet, unsigned long size);
 
 #endif /* PACKET_H */
