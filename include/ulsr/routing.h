@@ -138,4 +138,6 @@ void find_all_routes(struct node_t *start, u16 destination_id, u16 total_nodes);
  */
 u32 find_longest_time_taken(struct route_array_t *routes);
 
+u16 *reverse_route(u16 *route, u16 route_length);
+
 #endif /* ROUTING_H */

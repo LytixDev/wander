@@ -140,3 +140,14 @@ struct route_t get_random_route(struct route_array_t *routes)
 {
     return ARRAY_GET(routes, (u16)rand() % routes->len);
 }
+
+u16 *reverse_route(u16 *route, u16 route_length)
+{
+    u16 *reversed_route = malloc(sizeof(u16) * route_length);
+    u16 i = 0;
+    for (i = 0; i < route_length; i++) {
+	reversed_route[i] = route[route_length - i - 1];
+    }
+
+    return reversed_route;
+}

@@ -29,9 +29,9 @@
 #include "lib/logger.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
-#include "ulsr/ulsr.h"
-#include "ulsr/routing.h"
 #include "ulsr/route_table.h"
+#include "ulsr/routing.h"
+#include "ulsr/ulsr.h"
 
 struct external_request_thread_data_t {
     u16 connection;
@@ -96,6 +96,32 @@ static bool handle_send_external(struct node_t *node, struct ulsr_internal_packe
 		  internal_payload->dest_port);
 
     u8 response[1024] = { 0 };
+
+
+    u32 seq_nr = 0;
+    while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
+	struct ulsr_packet ret_packet = { 0 };
+	strncpy(ret_packet.source_ipv4, internal_payload->dest_ipv4, 16);
+	strncpy(ret_packet.dest_ipv4, internal_payload->source_ipv4, 16);
+	ret_packet.dest_port = ULSR_DEFAULT_PORT;
+	ret_packet.payload_len = strlen((char *)response);
+	strncpy(ret_packet.payload, (char *)response, ret_packet.payload_len);
+	ret_packet.type = ULSR_HTTP;
+	ret_packet.seq_nr = seq_nr;
+
+	u16 *reversed = reverse_route(packet->route->path, packet->route->len);
+
+	struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&ret_packet);
+	internal_packet->route = malloc(sizeof(struct packet_route_t));
+	internal_packet->route->len = packet->route->len;
+	internal_packet->route->step = 1;
+	internal_packet->route->path = reversed;
+
+	node->send_func(internal_packet, packet->route->path[packet->route->step]);
+	LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d", seq_nr);
+	memset(response, 0, 1024);
+	seq_nr++;
+    }
     // REMOVE THIS IN FUTURE, THIS IS NOT A GOOD WAY TO DO THIS AND DOES NOT WORK WITH MULTIPLE
     // NODES
     int recv_socket = socket(PF_INET, SOCK_STREAM, 0);
@@ -154,9 +180,9 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	handle_send_external(node, packet);
     } else {
 	LOG_NODE_INFO(node->node_id, "Packet is not for this node");
-	packet->step++;
+	packet->route->step++;
 	packet->prev_node_id = node->node_id;
-	node->send_func(packet, packet->route[packet->step]);
+	node->send_func(packet, packet->route->path[packet->route->step]);
     }
 
     // free(packet);
@@ -234,14 +260,19 @@ static void handle_external(void *arg)
     path[1] = 3;
     path[2] = 4;
     path[3] = 8;
-    // struct route_t *route = route_table_get(data->node->route_table, internal_packet->dest_node_id);
-    // free(path);
-    
-// In the future, we will need to check if the route is NULL, and if it is, we will need to find a new route with a lock and condition variable etc.
-//     if (route == NULL) {
-//         find_all_routes(data->node, internal_packet->dest_node_id, 16);
+    internal_packet->route = malloc(sizeof(struct packet_route_t));
+    internal_packet->route->path = path;
+    internal_packet->route->len = 4;
+    internal_packet->route->step = 0;
+    // struct route_t *route = route_table_get(data->node->route_table,
+    // internal_packet->dest_node_id); free(path);
 
-//     }
+    // In the future, we will need to check if the route is NULL, and if it is, we will need to find
+    // a new route with a lock and condition variable etc.
+    //     if (route == NULL) {
+    //         find_all_routes(data->node, internal_packet->dest_node_id, 16);
+
+    //     }
 
     /* add path to send func */
     if (internal_packet->dest_node_id == data->node->node_id) {
@@ -250,9 +281,9 @@ static void handle_external(void *arg)
 	    goto cleanup;
 	}
     } else {
-        internal_packet->step = 1;
-        internal_packet->route = path;
-	data->node->send_func(internal_packet, path[1]);
+	internal_packet->route->step = 1;
+	internal_packet->route->path = path;
+	data->node->send_func(internal_packet, path[internal_packet->route->step]);
     }
 
     free(internal_packet);
@@ -386,6 +417,6 @@ void free_node(struct node_t *node)
 	free(node->neighbors);
     }
     if (node->route_table != NULL) {
-    route_table_free(node->route_table);
+	route_table_free(node->route_table);
     }
 }

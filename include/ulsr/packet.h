@@ -47,6 +47,12 @@ enum ulsr_internal_packet_type {
     PACKET_ROUTING_DONE,
 };
 
+struct packet_route_t {
+    u16 *path;
+    u16 len;
+    u16 step;
+};
+
 struct ulsr_internal_packet {
     u32 checksum;
     enum ulsr_internal_packet_type type;
@@ -54,8 +60,7 @@ struct ulsr_internal_packet {
     u16 dest_node_id;
     u32 payload_len;
     void *payload;
-    u16 *route;
-    u16 step;
+    struct packet_route_t *route;
 };
 
 /* Methods */
