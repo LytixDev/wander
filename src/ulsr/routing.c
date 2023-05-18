@@ -26,7 +26,7 @@
 #include "ulsr/routing.h"
 
 void init_routing_data(u16 source_id, u16 destination_id, u16 total_nodes, bool *visited, u16 *path,
-		       u16 path_length, struct routing_data_t *routing_data)
+		       u16 path_length, u32 time_taken, struct routing_data_t *routing_data)
 {
     routing_data->source_id = source_id;
     routing_data->destination_id = destination_id;
@@ -39,9 +39,11 @@ void init_routing_data(u16 source_id, u16 destination_id, u16 total_nodes, bool 
     memcpy(routing_data->path, path, sizeof(u16) * total_nodes);
 
     routing_data->path_length = path_length;
+
+    routing_data->time_taken = time_taken;
 }
 
-void init_route(u16 source_id, u16 destination_id, u16 *path, u16 path_length,
+void init_route(u16 source_id, u16 destination_id, u16 *path, u16 path_length, u32 time_taken,
 		struct route_t *route)
 {
     route->source_id = source_id;
@@ -49,6 +51,8 @@ void init_route(u16 source_id, u16 destination_id, u16 *path, u16 path_length,
     route->path = malloc(sizeof(u16) * path_length);
     memcpy(route->path, path, sizeof(u16) * path_length);
     route->path_length = path_length;
+
+    route->time_taken = time_taken;
 }
 
 void free_routing_data(struct routing_data_t *routing_data)
@@ -63,14 +67,14 @@ void free_route(struct route_t *route)
 }
 
 void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nodes, bool *visited,
-			  u16 *path, u16 path_length)
+			  u16 *path, u16 path_length, u32 time_taken)
 {
     visited[curr->node_id - 1] = true;
     path[path_length++] = curr->node_id;
 
     if (curr->node_id == destination_id) {
 	struct route_t *route = malloc(sizeof(struct route_t));
-	init_route(curr->node_id, destination_id, path, path_length, route);
+	init_route(curr->node_id, destination_id, path, path_length, time_taken, route);
 	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
 	packet->type = PACKET_ROUTING_DONE;
 	packet->payload = route;
@@ -87,7 +91,7 @@ void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nod
 	    if (!visited[neighbor->node_id - 1]) {
 		struct routing_data_t *routing_data = malloc(sizeof(struct routing_data_t));
 		init_routing_data(curr->node_id, destination_id, total_nodes, visited, path,
-				  path_length, routing_data);
+				  path_length, time_taken, routing_data);
 		struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
 		packet->type = PACKET_ROUTING;
 		packet->payload = routing_data;
@@ -110,8 +114,9 @@ void find_all_routes(struct node_t *start, u16 destination_id, u16 total_nodes)
     memset(visited, false, total_nodes);
     u16 path[total_nodes];
     u16 path_length = 0;
+    u32 time_taken = 0;
 
-    find_all_routes_send(start, destination_id, total_nodes, visited, path, path_length);
+    find_all_routes_send(start, destination_id, total_nodes, visited, path, path_length, time_taken);
 }
 
 u32 find_longest_time(struct route_array_t *routes)
@@ -125,6 +130,11 @@ u32 find_longest_time(struct route_array_t *routes)
 	    longest_time = route->time_taken;
 	}
     }
-    
+
     return longest_time;
+}
+
+struct route_t get_random_route(struct route_array_t *routes)
+{
+    return ARRAY_GET(*routes, (u16)rand() % routes->len);
 }
