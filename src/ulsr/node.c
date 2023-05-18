@@ -268,6 +268,12 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     node->send_func = send_func;
     node->rec_func = rec_func;
 
+    /* init neighbor list and known id list */
+    node->neighbors = malloc(sizeof(struct neighbor_array_t));
+    node->known_ids = malloc(sizeof(struct u16_arraylist_t));
+    ARRAY_INIT(node->neighbors);
+    ARRAY_INIT(node->known_ids);
+
     LOG_NODE_INFO(node->node_id, "Completed initialization");
     return true;
 }
@@ -336,6 +342,11 @@ void free_node(struct node_t *node)
 	free_threadpool(node->threadpool);
     }
     if (node->neighbors != NULL) {
-	ARRAY_FREE(*(node->neighbors));
+	ARRAY_FREE(node->neighbors);
+	free(node->neighbors);
+    }
+    if (node->known_ids != NULL) {
+	ARRAY_FREE(node->known_ids);
+	free(node->known_ids);
     }
 }

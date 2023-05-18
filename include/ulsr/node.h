@@ -50,6 +50,8 @@ typedef void (*data_free_func_t)(void *);
  */
 ARRAY_T(neighbor_array_t, struct neighbor_t)
 
+ARRAY_T(u16_arraylist_t, u16);
+
 /**
  * Struct used to represent a neighbor of a node.
  * @param addr The address of the neighbor.
@@ -92,6 +94,7 @@ struct node_t {
     struct connections_t *connections;
     struct threadpool_t *threadpool;
     struct neighbor_array_t *neighbors;
+    struct u16_arraylist_t *known_ids;
 };
 
 
