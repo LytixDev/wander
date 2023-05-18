@@ -116,7 +116,8 @@ void find_all_routes(struct node_t *start, u16 destination_id, u16 total_nodes)
     u16 path_length = 0;
     u32 time_taken = 0;
 
-    find_all_routes_send(start, destination_id, total_nodes, visited, path, path_length, time_taken);
+    find_all_routes_send(start, destination_id, total_nodes, visited, path, path_length,
+			 time_taken);
 }
 
 u32 find_longest_time(struct route_array_t *routes)
