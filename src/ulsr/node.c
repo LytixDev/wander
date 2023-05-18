@@ -56,7 +56,7 @@ static void insert_connection(struct connections_t *connections, int connection)
     LOG_INFO("Inserted connection");
 }
 
-static bool handle_send_external_request(struct node_t *node, struct ulsr_internal_packet *packet)
+static bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *packet)
 {
     struct ulsr_packet *internal_payload = packet->payload;
     LOG_NODE_INFO(node->node_id, "Handling outgoing request to IP %s at port %d",
@@ -138,7 +138,7 @@ static bool handle_send_external_request(struct node_t *node, struct ulsr_intern
     return true;
 }
 
-static void handle_send_request(void *arg)
+static void handle_send_internal(void *arg)
 {
     struct node_t *node = (struct node_t *)arg;
 
@@ -157,7 +157,7 @@ static void handle_send_request(void *arg)
 	    //     if (payload->dest_ipv4 == node->node_id) {
 	    if (node->node_id == 2) {
 		LOG_NODE_INFO(node->node_id, "Packet is for this node");
-		handle_send_external_request(node, packet);
+		handle_send_external(node, packet);
 	    } else {
 		LOG_NODE_INFO(node->node_id, "Packet is not for this node");
 
@@ -171,7 +171,7 @@ static void handle_send_request(void *arg)
     }
 }
 
-static void handle_external_request(void *arg)
+static void handle_external(void *arg)
 {
     struct external_request_thread_data_t *data = (struct external_request_thread_data_t *)arg;
     struct node_t *node = data->node;
@@ -204,7 +204,7 @@ static void handle_external_request(void *arg)
 
     /* add path to send func */
     if (internal_packet->dest_node_id == data->node->node_id) {
-	if (!handle_send_external_request(data->node, internal_packet)) {
+	if (!handle_send_external(data->node, internal_packet)) {
 	    LOG_NODE_ERR(node->node_id, "ABORT!: Failed to handle sending of external request");
 	    goto cleanup;
 	}
@@ -278,7 +278,7 @@ int run_node(struct node_t *node)
     start_threadpool(node->threadpool);
     node->running = true;
 
-    submit_worker_task(node->threadpool, handle_send_request, (void *)node);
+    submit_worker_task(node->threadpool, handle_send_internal, (void *)node);
 
     LOG_NODE_INFO(node->node_id, "Node properly initialized");
 
@@ -304,7 +304,7 @@ int run_node(struct node_t *node)
 		data->connection = client_sockfd;
 		data->node = node;
 
-		submit_worker_task(node->threadpool, handle_external_request, (void *)data);
+		submit_worker_task(node->threadpool, handle_external, (void *)data);
 
 		client_sockfd = -1;
 	    }
