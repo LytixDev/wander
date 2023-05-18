@@ -52,12 +52,10 @@ ARRAY_T(neighbor_array_t, struct neighbor_t)
 
 /**
  * Struct used to represent a neighbor of a node.
- * @param addr The address of the neighbor.
- * @param cost The cost to the neighbor.
+ * @param node_id The id of the neighbor.
  */
 struct neighbor_t {
     u16 node_id;
-    u16 cost;
 };
 
 /**
