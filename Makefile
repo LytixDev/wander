@@ -9,7 +9,8 @@ OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
 CFLAGS = -Iinclude -Wall -Wextra -Wshadow -std=c11
 CFLAGS += -DLOGGING
-LDFLAGS = -pthread -lm
+LDFLAGS = -pthread
+LDLIBS = -lm
 
 .PHONY: format clean tags bear $(OBJDIR)
 TARGET = ulsr
@@ -23,7 +24,7 @@ $(OBJDIR)/%.o: %.c Makefile | $(OBJDIR)
 
 $(TARGET): $(OBJS)
 	@echo [LD] $@
-	@$(CC) $(LDFLAGS) -o $@ $^
+	@$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 debug: CFLAGS += -g -DDEBUG
 debug: $(TARGET)
