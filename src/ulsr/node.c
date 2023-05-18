@@ -292,7 +292,7 @@ int run_node(struct node_t *node)
 	fds[0].events = POLLIN;
 
 	int ready = poll(fds, 1, 10);
-    if (ready > 0 && (fds[0].revents & POLLIN)) {
+	if (ready > 0 && (fds[0].revents & POLLIN)) {
 	    int client_sockfd = accept(node->sockfd, NULL, NULL);
 
 	    if (client_sockfd != -1) {
