@@ -15,10 +15,28 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include "ulsr/impl.h"
+#ifndef IMPL_H
+#define IMPL_H
+
+#include <pthread.h>
+#include <stdbool.h>
+
+#include "lib/common.h"
+#include "ulsr/packet.h"
+
+#define MESH_NODE_COUNT 8
 
 
-int main(void)
-{
-    simulate();
-}
+struct await_t {
+    pthread_mutex_t cond_lock;
+    pthread_cond_t cond_variable;
+};
+
+
+u16 send_func(struct ulsr_internal_packet *packet, u16 node_id);
+
+struct ulsr_internal_packet *recv_func(u16 node_id);
+
+bool simulate(void);
+
+#endif /* IMPL_H */
