@@ -27,6 +27,7 @@
 #include "lib/common.h"
 #include "lib/threadpool.h"
 #include "ulsr/packet.h"
+#include "ulsr/route_table.h"
 
 /* Function definitions. */
 
@@ -90,6 +91,7 @@ struct node_t {
     struct connections_t *connections;
     struct threadpool_t *threadpool;
     struct neighbor_array_t *neighbors;
+    struct route_table_t *route_table;
 };
 
 

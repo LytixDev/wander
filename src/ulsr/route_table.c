@@ -21,6 +21,7 @@
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "ulsr/route_table.h"
+#include "ulsr/routing.h"
 
 void route_table_init(struct route_table_t *table)
 {

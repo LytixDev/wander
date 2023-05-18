@@ -30,6 +30,8 @@
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
+#include "ulsr/routing.h"
+#include "ulsr/route_table.h"
 
 struct external_request_thread_data_t {
     u16 connection;
@@ -138,6 +140,28 @@ static bool handle_send_external(struct node_t *node, struct ulsr_internal_packe
     return true;
 }
 
+static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet *packet)
+{
+    struct ulsr_packet *payload = packet->payload;
+    LOG_NODE_INFO(node->node_id, "Received packet from rec_func");
+    LOG_NODE_INFO(node->node_id, "Received packet");
+    LOG_NODE_INFO(node->node_id, "Source: %s", payload->source_ipv4);
+    LOG_NODE_INFO(node->node_id, "Destination: %s", payload->dest_ipv4);
+    LOG_NODE_INFO(node->node_id, "Payload: %s", payload->payload);
+
+    if (node->node_id == packet->dest_node_id) {
+	LOG_NODE_INFO(node->node_id, "Packet is for this node");
+	handle_send_external(node, packet);
+    } else {
+	LOG_NODE_INFO(node->node_id, "Packet is not for this node");
+	packet->step++;
+	packet->prev_node_id = node->node_id;
+	node->send_func(packet, packet->route[packet->step]);
+    }
+
+    free(packet);
+}
+
 static void handle_send_internal(void *arg)
 {
     struct node_t *node = (struct node_t *)arg;
@@ -147,25 +171,27 @@ static void handle_send_internal(void *arg)
     while (node->running) {
 	packet = node->rec_func(node->node_id);
 	if (packet != NULL) {
-	    struct ulsr_packet *payload = packet->payload;
-	    LOG_NODE_INFO(node->node_id, "Received packet from rec_func");
-	    LOG_NODE_INFO(node->node_id, "Received packet");
-	    LOG_NODE_INFO(node->node_id, "Source: %s", payload->source_ipv4);
-	    LOG_NODE_INFO(node->node_id, "Destination: %s", payload->dest_ipv4);
-	    LOG_NODE_INFO(node->node_id, "Payload: %s", payload->payload);
+	    switch (packet->type) {
+	    case PACKET_DATA:
+		handle_data_packet(node, packet);
+		break;
 
-	    //     if (payload->dest_ipv4 == node->node_id) {
-	    if (node->node_id == 2) {
-		LOG_NODE_INFO(node->node_id, "Packet is for this node");
-		handle_send_external(node, packet);
-	    } else {
-		LOG_NODE_INFO(node->node_id, "Packet is not for this node");
+	    case PACKET_HELLO:
+		LOG_NODE_INFO(node->node_id, "Received HELLO packet");
+		break;
 
-		// This is a hack, but it works for now as we only have 2 nodes
-		if (node->node_id < 2)
-		    node->send_func(packet, node->node_id + 1);
+	    case PACKET_PURGE:
+		LOG_NODE_INFO(node->node_id, "Received PURGE packet");
+		break;
+
+	    case PACKET_ROUTING:
+		LOG_NODE_INFO(node->node_id, "Received ROUTING packet");
+		break;
+
+	    case PACKET_ROUTING_DONE:
+		LOG_NODE_INFO(node->node_id, "Received ROUTING_DONE packet");
+		break;
 	    }
-
 	    free(packet);
 	}
     }
@@ -198,8 +224,19 @@ static void handle_external(void *arg)
     /* pack external packet into internal packet for routing between nodes */
     struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&packet);
     internal_packet->prev_node_id = data->node->node_id;
+
     // TEMP HACK
-    internal_packet->dest_node_id = 2;
+    internal_packet->dest_node_id = 8;
+
+    /* find path to destination */
+    struct route_t *route = route_table_get(data->node->route_table, internal_packet->dest_node_id);
+
+    
+// In the future, we will need to check if the route is NULL, and if it is, we will need to find a new route with a lock and condition variable etc.
+//     if (route == NULL) {
+//         find_all_routes(data->node, internal_packet->dest_node_id, 16);
+
+//     }
     // internal_packet->dest_node_id = find_path(data->node_id, packet.dest_ipv4);
 
     /* add path to send func */
@@ -209,7 +246,9 @@ static void handle_external(void *arg)
 	    goto cleanup;
 	}
     } else {
-	data->node->send_func(internal_packet, data->node->node_id);
+        internal_packet->step = 1;
+        internal_packet->route = route->path;
+	data->node->send_func(internal_packet, route->path[1]);
     }
 
     free(internal_packet);
