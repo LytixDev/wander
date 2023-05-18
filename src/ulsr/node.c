@@ -56,20 +56,6 @@ static void insert_connection(struct connections_t *connections, int connection)
     LOG_INFO("Inserted connection");
 }
 
-static void check_quit(void *arg)
-{
-    struct node_t *node = (struct node_t *)arg;
-
-    while (getc(stdin) != 'q')
-	;
-
-    shutdown(node->sockfd, SHUT_RDWR);
-    close(node->sockfd);
-    LOG_NODE_INFO(node->node_id, "Quitting");
-
-    node->running = false;
-}
-
 static bool handle_send_external_request(struct node_t *node, struct ulsr_internal_packet *packet)
 {
     struct ulsr_packet *internal_payload = packet->payload;
@@ -128,7 +114,7 @@ static bool handle_send_external_request(struct node_t *node, struct ulsr_intern
 
     LOG_NODE_INFO(node->node_id, "Connected to return socket");
 
-    size_t seq_nr = 1;
+    u32 seq_nr = 0;
     while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
 	struct ulsr_packet ret_packet = { 0 };
 	strncpy(ret_packet.source_ipv4, internal_payload->dest_ipv4, 16);
@@ -137,12 +123,13 @@ static bool handle_send_external_request(struct node_t *node, struct ulsr_intern
 	ret_packet.payload_len = strlen((char *)response);
 	strncpy((char *)ret_packet.payload, (const char *)response, ret_packet.payload_len);
 	ret_packet.type = ULSR_HTTP;
+	ret_packet.seq_nr = seq_nr;
 
 	if (send(recv_socket, &ret_packet, sizeof(ret_packet), 0) < 0) {
 	    LOG_NODE_ERR(node->node_id, "Failed to send return packet");
 	    return false;
 	}
-	LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %zu", seq_nr);
+	LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d", seq_nr);
 	memset(response, 0, 1024);
 	seq_nr++;
     }
@@ -291,10 +278,10 @@ int run_node(struct node_t *node)
     node->running = true;
 
     set_nonblocking(node->sockfd);
-    submit_worker_task(node->threadpool, check_quit, (void *)node);
+    // submit_worker_task(node->threadpool, check_quit, (void *)node);
     submit_worker_task(node->threadpool, handle_send_request, (void *)node);
 
-    LOG_NODE_INFO(node->node_id, "Node properly initialized, press 'q' to quit\n");
+    LOG_NODE_INFO(node->node_id, "Node properly initialized");
 
     while (node->running) {
 	int client_sockfd = accept(node->sockfd, NULL, NULL);
@@ -313,11 +300,17 @@ int run_node(struct node_t *node)
 	}
     }
 
+    return 0;
+}
+
+void close_node(struct node_t *node)
+{
+    node->running = false;
+
     close_connections(node->connections);
     threadpool_stop(node->threadpool);
     close(node->sockfd);
     LOG_NODE_INFO(node->node_id, "Shutdown complete");
-    return 0;
 }
 
 void free_node(struct node_t *node)

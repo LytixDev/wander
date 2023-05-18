@@ -124,4 +124,6 @@ int run_node(struct node_t *node);
  */
 void free_node(struct node_t *node);
 
+void close_node(struct node_t *node);
+
 #endif /* NODE_H */
