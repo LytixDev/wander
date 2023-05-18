@@ -16,6 +16,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <pthread.h>
 
 #include "lib/common.h"
 #include "lib/logger.h"
@@ -26,9 +28,14 @@
 
 #define MESH_NODE_COUNT 2
 
+struct await_t {
+    pthread_mutex_t cond_lock;
+    pthread_cond_t cond_variable;
+};
+
 struct node_t nodes[MESH_NODE_COUNT];
 struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
-
+struct await_t node_locks[MESH_NODE_COUNT];
 
 static void check_quit(void *arg)
 {
@@ -43,12 +50,18 @@ static void check_quit(void *arg)
 
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
+    pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
     packet_limbo[node_id] = *packet;
+    pthread_cond_signal(&node_locks[node_id - 1].cond_variable);
+    pthread_mutex_unlock(&node_locks[node_id - 1].cond_lock);
     return packet->payload_len;
 };
 
 struct ulsr_internal_packet *recv_func(u16 node_id)
 {
+    while (packet_limbo[node_id - 1].type == PACKET_NONE)
+        pthread_cond_wait(&node_locks[node_id - 1].cond_variable, &node_locks[node_id - 1].cond_lock);
+    
     if (packet_limbo[node_id - 1].type == PACKET_NONE)
 	return NULL;
 
@@ -56,6 +69,7 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
     *packet = packet_limbo[node_id - 1];
     packet_limbo[node_id - 1] = (struct ulsr_internal_packet){ 0 };
     packet_limbo[node_id - 1].type = PACKET_NONE;
+
     return packet;
 }
 
