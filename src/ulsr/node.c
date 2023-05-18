@@ -336,7 +336,7 @@ void free_node(struct node_t *node)
 	free_threadpool(node->threadpool);
     }
     if (node->neighbors != NULL) {
-	    ARRAY_FREE(node->neighbors);
-        free(node->neighbors);
+	ARRAY_FREE(node->neighbors);
+	free(node->neighbors);
     }
 }

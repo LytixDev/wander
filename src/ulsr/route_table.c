@@ -24,45 +24,45 @@
 
 void route_table_init(struct route_table_t *table)
 {
-        table->entries = malloc(sizeof(struct route_t) * STD_ROUTE_TABLE_SIZE);
-        table->size = 0;
-        table->cap = STD_ROUTE_TABLE_SIZE;
+    table->entries = malloc(sizeof(struct route_t) * STD_ROUTE_TABLE_SIZE);
+    table->size = 0;
+    table->cap = STD_ROUTE_TABLE_SIZE;
 }
 
 void route_table_free(struct route_table_t *table)
 {
-        free(table->entries);
+    free(table->entries);
 }
 
 void route_table_add(struct route_table_t *table, struct route_t *route)
 {
-        u32 tmp = route->destination_id - 1;
-        if (tmp >= table->cap) {
-                table->cap <<= 1;
-                table->entries = realloc(table->entries, sizeof(struct route_t) * table->cap);
-        }
+    u32 tmp = route->destination_id - 1;
+    if (tmp >= table->cap) {
+	table->cap <<= 1;
+	table->entries = realloc(table->entries, sizeof(struct route_t) * table->cap);
+    }
 
-        table->entries[tmp] = route;
-        table->size++;
+    table->entries[tmp] = route;
+    table->size++;
 }
 
 void route_table_remove(struct route_table_t *table, u16 key)
 {
-        table->entries[key - 1] = NULL;
-        table->size--;
+    table->entries[key - 1] = NULL;
+    table->size--;
 }
 
 bool route_table_contains(struct route_table_t *table, u16 key)
 {
-        return table->entries[key - 1] != NULL;
+    return table->entries[key - 1] != NULL;
 }
 
 struct route_t *route_table_get(struct route_table_t *table, u16 key)
 {
-        return table->entries[key - 1];
+    return table->entries[key - 1];
 }
 
 void route_table_set(struct route_table_t *table, u16 key, struct route_t *value)
 {
-        table->entries[key - 1] = value;
+    table->entries[key - 1] = value;
 }
