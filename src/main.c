@@ -15,7 +15,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <pthread.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <sys/select.h>
 
 #include "lib/common.h"
@@ -25,11 +27,18 @@
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
 
-#define MESH_NODE_COUNT 32
+#define MESH_NODE_COUNT 64
+
+struct await_t {
+    pthread_mutex_t cond_lock;
+    pthread_cond_t cond_variable;
+};
 
 struct node_t nodes[MESH_NODE_COUNT];
 struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
+struct await_t node_locks[MESH_NODE_COUNT];
 
+bool running;
 
 static void sleep_microseconds(unsigned int microseconds)
 {
@@ -39,28 +48,27 @@ static void sleep_microseconds(unsigned int microseconds)
     select(0, NULL, NULL, NULL, &tv);
 }
 
-static void check_quit(void *arg)
-{
-    while (getc(stdin) != 'q')
-	;
-
-    LOG_INFO("Quitting");
-
-    bool *running = (bool *)arg;
-    *running = false;
-}
-
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
-    packet_limbo[node_id] = *packet;
+    pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
+
+    packet_limbo[node_id - 1] = *packet;
+
+    pthread_cond_signal(&node_locks[node_id - 1].cond_variable);
+    pthread_mutex_unlock(&node_locks[node_id - 1].cond_lock);
+
     return packet->payload_len;
 };
 
 struct ulsr_internal_packet *recv_func(u16 node_id)
 {
-    // TODO: better polling or no polling at all!
-    // poll every second
-    sleep_microseconds(10000);
+    pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
+
+    while (packet_limbo[node_id - 1].type == PACKET_NONE && running)
+	pthread_cond_wait(&node_locks[node_id - 1].cond_variable,
+			  &node_locks[node_id - 1].cond_lock);
+    pthread_mutex_unlock(&node_locks[node_id - 1].cond_lock);
+
     if (packet_limbo[node_id - 1].type == PACKET_NONE)
 	return NULL;
 
@@ -68,6 +76,7 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
     *packet = packet_limbo[node_id - 1];
     packet_limbo[node_id - 1] = (struct ulsr_internal_packet){ 0 };
     packet_limbo[node_id - 1].type = PACKET_NONE;
+
     return packet;
 }
 
@@ -91,13 +100,12 @@ int main(void)
     init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
     start_threadpool(&threadpool);
 
-    bool running = true;
-    submit_worker_task(&threadpool, check_quit, &running);
+    running = true;
 
     /* init all nodes and make them run on the threadpool */
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, NULL, node_send_func, node_recv_func, NULL,
-			   NULL, ULSR_DEVICE_PORT_START + i);
+	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, node_send_func, node_recv_func, NULL, NULL,
+			   ULSR_DEVICE_PORT_START + i);
 	if (rc == -1)
 	    exit(1);
 
@@ -105,7 +113,14 @@ int main(void)
     }
 
     while (running)
-	;
+	running = (getc(stdin) != 'q');
+    ;
+
+    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	pthread_mutex_lock(&node_locks[i].cond_lock);
+	pthread_cond_signal(&node_locks[i].cond_variable);
+	pthread_mutex_unlock(&node_locks[i].cond_lock);
+    }
 
     LOG_INFO("Stopping MAIN threadpool");
 

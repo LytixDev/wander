@@ -21,12 +21,12 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
-#include "lib/socket_utils.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
@@ -218,8 +218,8 @@ cleanup:
 }
 
 bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
-	       node_distance_func_t distance_func, node_send_func_t send_func,
-	       node_recv_func_t rec_func, void *data, data_free_func_t data_free_func, u16 port)
+	       node_send_func_t send_func, node_recv_func_t rec_func, void *data,
+	       data_free_func_t data_free_func, u16 port)
 {
     node->node_id = node_id;
     node->sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -264,7 +264,6 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     /* set node options */
     node->data_free_func = data_free_func;
     node->data = data;
-    node->distance_func = distance_func;
     node->send_func = send_func;
     node->rec_func = rec_func;
 
@@ -278,29 +277,38 @@ int run_node(struct node_t *node)
     start_threadpool(node->threadpool);
     node->running = true;
 
-    set_nonblocking(node->sockfd);
-    // submit_worker_task(node->threadpool, check_quit, (void *)node);
     submit_worker_task(node->threadpool, handle_send_request, (void *)node);
 
     LOG_NODE_INFO(node->node_id, "Node properly initialized");
 
+
     while (node->running) {
-	int client_sockfd = accept(node->sockfd, NULL, NULL);
+	fd_set readfds;
+	FD_ZERO(&readfds);
+	FD_SET(node->sockfd, &readfds);
 
-	if (client_sockfd != -1) {
-	    insert_connection(node->connections, client_sockfd);
+	struct timeval timeout;
+	timeout.tv_sec = 0;
+	timeout.tv_usec = 10000;
 
-	    struct external_request_thread_data_t *data =
-		malloc(sizeof(struct external_request_thread_data_t));
-	    data->connection = client_sockfd;
-	    data->node = node;
+	int ready = select(node->sockfd + 1, &readfds, NULL, NULL, &timeout);
+	if (ready > 0 && FD_ISSET(node->sockfd, &readfds)) {
+	    int client_sockfd = accept(node->sockfd, NULL, NULL);
 
-	    submit_worker_task(node->threadpool, handle_external_request, (void *)data);
+	    if (client_sockfd != -1) {
+		insert_connection(node->connections, client_sockfd);
 
-	    client_sockfd = -1;
+		struct external_request_thread_data_t *data =
+		    malloc(sizeof(struct external_request_thread_data_t));
+		data->connection = client_sockfd;
+		data->node = node;
+
+		submit_worker_task(node->threadpool, handle_external_request, (void *)data);
+
+		client_sockfd = -1;
+	    }
 	}
     }
-
     return 0;
 }
 
