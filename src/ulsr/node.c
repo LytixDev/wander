@@ -277,7 +277,7 @@ int run_node(struct node_t *node)
     start_threadpool(node->threadpool);
     node->running = true;
 
-    set_nonblocking(node->sockfd);
+//     set_nonblocking(node->sockfd);
     // submit_worker_task(node->threadpool, check_quit, (void *)node);
     submit_worker_task(node->threadpool, handle_send_request, (void *)node);
 
