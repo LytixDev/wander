@@ -21,6 +21,8 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/poll.h>
+#include <sys/select.h>
 #include <sys/socket.h>
 
 #include "lib/arraylist.h"
@@ -277,26 +279,35 @@ int run_node(struct node_t *node)
     start_threadpool(node->threadpool);
     node->running = true;
 
-//     set_nonblocking(node->sockfd);
-    // submit_worker_task(node->threadpool, check_quit, (void *)node);
+    struct timeval timeout;
+    timeout.tv_sec = 10;
+    timeout.tv_usec = 0;
+
     submit_worker_task(node->threadpool, handle_send_request, (void *)node);
 
     LOG_NODE_INFO(node->node_id, "Node properly initialized");
 
     while (node->running) {
-	int client_sockfd = accept(node->sockfd, NULL, NULL);
+	struct pollfd fds[1];
+	fds[0].fd = node->sockfd;
+	fds[0].events = POLLIN;
 
-	if (client_sockfd != -1) {
-	    insert_connection(node->connections, client_sockfd);
+	int ready = poll(fds, 1, 10);
+    if (ready > 0 && (fds[0].revents & POLLIN)) {
+	    int client_sockfd = accept(node->sockfd, NULL, NULL);
 
-	    struct external_request_thread_data_t *data =
-		malloc(sizeof(struct external_request_thread_data_t));
-	    data->connection = client_sockfd;
-	    data->node = node;
+	    if (client_sockfd != -1) {
+		insert_connection(node->connections, client_sockfd);
 
-	    submit_worker_task(node->threadpool, handle_external_request, (void *)data);
+		struct external_request_thread_data_t *data =
+		    malloc(sizeof(struct external_request_thread_data_t));
+		data->connection = client_sockfd;
+		data->node = node;
 
-	    client_sockfd = -1;
+		submit_worker_task(node->threadpool, handle_external_request, (void *)data);
+
+		client_sockfd = -1;
+	    }
 	}
     }
 

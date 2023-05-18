@@ -27,12 +27,11 @@
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
 
-#define MESH_NODE_COUNT 4
+#define MESH_NODE_COUNT 64
 
 struct await_t {
     pthread_mutex_t cond_lock;
     pthread_cond_t cond_variable;
-    bool cond_predicate;
 };
 
 struct node_t nodes[MESH_NODE_COUNT];
@@ -52,17 +51,24 @@ static void sleep_microseconds(unsigned int microseconds)
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
-    packet_limbo[node_id] = *packet;
+
+    packet_limbo[node_id - 1] = *packet;
+
     pthread_cond_signal(&node_locks[node_id - 1].cond_variable);
     pthread_mutex_unlock(&node_locks[node_id - 1].cond_lock);
+
     return packet->payload_len;
 };
 
 struct ulsr_internal_packet *recv_func(u16 node_id)
 {
+    pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
+
     while (packet_limbo[node_id - 1].type == PACKET_NONE && running)
 	pthread_cond_wait(&node_locks[node_id - 1].cond_variable,
 			  &node_locks[node_id - 1].cond_lock);
+    pthread_mutex_unlock(&node_locks[node_id - 1].cond_lock);
+
     if (packet_limbo[node_id - 1].type == PACKET_NONE)
 	return NULL;
 
@@ -107,13 +113,13 @@ int main(void)
     }
 
     while (running)
-    running = (getc(stdin) != 'q');
-	;
+	running = (getc(stdin) != 'q');
+    ;
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-        pthread_mutex_lock(&node_locks[i].cond_lock);
-        pthread_cond_signal(&node_locks[i].cond_variable);
-        pthread_mutex_unlock(&node_locks[i].cond_lock);
+	pthread_mutex_lock(&node_locks[i].cond_lock);
+	pthread_cond_signal(&node_locks[i].cond_variable);
+	pthread_mutex_unlock(&node_locks[i].cond_lock);
     }
 
     LOG_INFO("Stopping MAIN threadpool");
