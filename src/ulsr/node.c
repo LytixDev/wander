@@ -218,8 +218,7 @@ cleanup:
 }
 
 bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
-	       node_send_func_t send_func, node_recv_func_t rec_func, void *data,
-	       data_free_func_t data_free_func, u16 port)
+	       node_send_func_t send_func, node_recv_func_t rec_func, u16 port)
 {
     node->node_id = node_id;
     node->sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -262,8 +261,6 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     init_threadpool(node->threadpool, threads, queue_size);
 
     /* set node options */
-    node->data_free_func = data_free_func;
-    node->data = data;
     node->send_func = send_func;
     node->rec_func = rec_func;
 
@@ -336,8 +333,5 @@ void free_node(struct node_t *node)
     }
     if (node->neighbors != NULL) {
 	ARRAY_FREE(*(node->neighbors));
-    }
-    if (node->data != NULL) {
-	node->data_free_func(node->data);
     }
 }

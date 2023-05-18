@@ -104,7 +104,7 @@ int main(void)
 
     /* init all nodes and make them run on the threadpool */
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, node_send_func, node_recv_func, NULL, NULL,
+	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, node_send_func, node_recv_func,
 			   ULSR_DEVICE_PORT_START + i);
 	if (rc == -1)
 	    exit(1);
