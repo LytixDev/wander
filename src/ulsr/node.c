@@ -28,7 +28,6 @@
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
-#include "lib/socket_utils.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
