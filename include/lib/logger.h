@@ -28,7 +28,7 @@
 	fprintf(stdout, "\033[0m\n");         \
     })
 #else
-#define LOG_INFO(...) (void)0;
+#define LOG_INFO(...) (void)0
 #endif
 
 #ifdef LOGGING
@@ -39,7 +39,7 @@
 	fprintf(stderr, "\033[0m\n");         \
     })
 #else
-#define LOGG_ERR(...) (void)0;
+#define LOGG_ERR(...) (void)0
 #endif
 
 /*
@@ -54,7 +54,7 @@
 	fprintf(stdout, "\033[0m\n");                 \
     })
 #else
-#define LOGG_NODE_INFO(node_id...) (void)0;
+#define LOGG_NODE_INFO(node_id...) (void)0
 #endif
 
 #ifdef LOGGING
@@ -65,7 +65,7 @@
 	fprintf(stderr, "\033[0m\n");                  \
     })
 #else
-#define LOGG_NODE_ERR(node_id, ...) (void)0;
+#define LOGG_NODE_ERR(node_id, ...) (void)0
 #endif
 
 #endif /* LOGGER_H */

@@ -15,6 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <math.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -50,6 +51,48 @@ static void run_node_stub(void *arg)
     run_node((struct node_t *)arg);
 }
 
+static void init_coords()
+{
+    /* defaults */
+    if (MESH_NODE_COUNT == 8) {
+	coords[0].x = 50;
+	coords[0].y = 50;
+
+	coords[1].x = 225;
+	coords[1].y = 150;
+
+	coords[2].x = 250;
+	coords[2].y = 275;
+
+	coords[3].x = 300;
+	coords[3].y = 400;
+
+	coords[4].x = 425;
+	coords[4].y = 275;
+
+	coords[5].x = 400;
+	coords[5].y = 400;
+
+	coords[6].x = 550;
+	coords[6].y = 450;
+
+	coords[7].x = 600;
+	coords[7].y = 50;
+
+    } else {
+	/* random */
+    }
+}
+
+u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b)
+{
+    // some yolo type conversions here
+    double delta_x = b->x - a->x;
+    double delta_y = b->y - a->y;
+    double d = sqrt(delta_x * delta_x + delta_y * delta_y);
+    return (u16)d;
+}
+
 void set_initial_node_ids(struct node_t *node)
 {
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
@@ -59,6 +102,10 @@ void set_initial_node_ids(struct node_t *node)
 
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
+    // the mock
+    if (distance(&coords[packet->prev_node_id - 1], &coords[node_id - 1]) > SIMULATION_NODE_RANGE)
+	return 0;
+
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
 
     packet_limbo[node_id - 1] = *packet;
@@ -92,6 +139,9 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 
 bool simulate(void)
 {
+    /* mock distance */
+    init_coords();
+
     /* send and recv implementations declared in ulsr/impl.h and defined in uslr/impl.c */
     node_send_func_t node_send_func = send_func;
     node_recv_func_t node_recv_func = recv_func;

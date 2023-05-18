@@ -28,6 +28,10 @@
 #define MESH_NODE_COUNT 8
 #define HELLO_POLL_INTERVAL 5
 
+#define SIMULATION_NODE_RANGE 200
+#define SIMULATION_WIDTH 800
+#define SIMULATION_LENGTH 800
+
 
 struct await_t {
     pthread_mutex_t cond_lock;
@@ -38,6 +42,9 @@ struct simulation_coord_t {
     u16 x;
     u16 y;
 };
+
+
+u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b);
 
 void set_initial_node_ids(struct node_t *node);
 

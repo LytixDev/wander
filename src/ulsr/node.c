@@ -263,7 +263,7 @@ static void hello_poll_thread(void *arg)
 	    LOG_NODE_INFO(node->node_id, "Sent HELLO to %d", to_id);
 
 	    struct ulsr_internal_packet *packet = ulsr_internal_create_hello(node->node_id, to_id);
-	    // TODO: mock distance
+
 	    node->send_func(packet, to_id);
 	    free(packet);
 	}
