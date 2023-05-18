@@ -159,7 +159,7 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	node->send_func(packet, packet->route[packet->step]);
     }
 
-    free(packet);
+    // free(packet);
 }
 
 static void handle_send_internal(void *arg)
@@ -192,7 +192,7 @@ static void handle_send_internal(void *arg)
 		LOG_NODE_INFO(node->node_id, "Received ROUTING_DONE packet");
 		break;
 	    }
-	    free(packet);
+	    // free(packet);
 	}
     }
 }
@@ -229,15 +229,19 @@ static void handle_external(void *arg)
     internal_packet->dest_node_id = 8;
 
     /* find path to destination */
-    struct route_t *route = route_table_get(data->node->route_table, internal_packet->dest_node_id);
-
+    u16 *path = malloc(sizeof(u16) * 4);
+    path[0] = 1;
+    path[1] = 3;
+    path[2] = 4;
+    path[3] = 8;
+    // struct route_t *route = route_table_get(data->node->route_table, internal_packet->dest_node_id);
+    // free(path);
     
 // In the future, we will need to check if the route is NULL, and if it is, we will need to find a new route with a lock and condition variable etc.
 //     if (route == NULL) {
 //         find_all_routes(data->node, internal_packet->dest_node_id, 16);
 
 //     }
-    // internal_packet->dest_node_id = find_path(data->node_id, packet.dest_ipv4);
 
     /* add path to send func */
     if (internal_packet->dest_node_id == data->node->node_id) {
@@ -247,8 +251,8 @@ static void handle_external(void *arg)
 	}
     } else {
         internal_packet->step = 1;
-        internal_packet->route = route->path;
-	data->node->send_func(internal_packet, route->path[1]);
+        internal_packet->route = path;
+	data->node->send_func(internal_packet, path[1]);
     }
 
     free(internal_packet);
@@ -306,6 +310,9 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     /* set node options */
     node->send_func = send_func;
     node->rec_func = rec_func;
+
+    route_table_init(&node->route_table);
+    LOG_NODE_INFO(node->node_id, "Succesfully initialized route table");
 
     LOG_NODE_INFO(node->node_id, "Completed initialization");
     return true;
@@ -377,5 +384,8 @@ void free_node(struct node_t *node)
     if (node->neighbors != NULL) {
 	ARRAY_FREE(node->neighbors);
 	free(node->neighbors);
+    }
+    if (node->route_table != NULL) {
+    route_table_free(node->route_table);
     }
 }

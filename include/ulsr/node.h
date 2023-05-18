@@ -27,7 +27,6 @@
 #include "lib/common.h"
 #include "lib/threadpool.h"
 #include "ulsr/packet.h"
-#include "ulsr/route_table.h"
 
 /* Function definitions. */
 
