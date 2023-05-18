@@ -77,7 +77,6 @@ struct connections_t {
  * @param node_id The id of the node.
  * @param sockfd The socket file descriptor.
  * @param running Whether the node is running.
- * @param data The data of the node.
  * @param send_func The function used to send a message.
  * @param rec_func The function used to receive a message.
  * @param connections The connections of the node.
@@ -88,8 +87,6 @@ struct node_t {
     u16 node_id;
     int sockfd;
     bool running;
-    void *data;
-    data_free_func_t data_free_func;
     node_send_func_t send_func;
     node_recv_func_t rec_func;
     struct connections_t *connections;
@@ -109,8 +106,7 @@ struct node_t {
  * @param queue_size The size of the queue.
  */
 bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
-	       node_send_func_t send_func, node_recv_func_t rec_func, void *data,
-	       data_free_func_t data_free_func, u16 port);
+	       node_send_func_t send_func, node_recv_func_t rec_func, u16 port);
 
 /**
  * Runs a node.
