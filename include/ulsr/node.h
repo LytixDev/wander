@@ -31,11 +31,6 @@
 /* Function definitions. */
 
 /**
- * Function definition for a function that finds the distance to a node.
- */
-typedef u16 (*node_distance_func_t)(void *);
-
-/**
  * Function definition for a function that sends a message.
  */
 typedef u16 (*node_send_func_t)(struct ulsr_internal_packet *packet, u16 node_id);
@@ -83,7 +78,6 @@ struct connections_t {
  * @param sockfd The socket file descriptor.
  * @param running Whether the node is running.
  * @param data The data of the node.
- * @param distance_func The function used to find the distance to a node.
  * @param send_func The function used to send a message.
  * @param rec_func The function used to receive a message.
  * @param connections The connections of the node.
@@ -96,7 +90,6 @@ struct node_t {
     bool running;
     void *data;
     data_free_func_t data_free_func;
-    node_distance_func_t distance_func;
     node_send_func_t send_func;
     node_recv_func_t rec_func;
     struct connections_t *connections;
@@ -114,11 +107,10 @@ struct node_t {
  * @param connections The amount of connections.
  * @param threads The amount of threads.
  * @param queue_size The size of the queue.
- * @param ... The current nodes known in the network.
  */
 bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
-	       node_distance_func_t distance_func, node_send_func_t send_func,
-	       node_recv_func_t rec_func, void *data, data_free_func_t data_free_func, u16 port);
+	       node_send_func_t send_func, node_recv_func_t rec_func, void *data,
+	       data_free_func_t data_free_func, u16 port);
 
 /**
  * Runs a node.
