@@ -17,6 +17,7 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
@@ -30,7 +31,7 @@ void find_all_routes_recursive(struct node_t *source, struct node_t *destination
     visited[source->node_id - 1] = true;
     path[path_length++] = source->node_id;
 
-    if (source->node_id = destination->node_id) {
+    if (source->node_id == destination->node_id) {
 	u16 *new_path = malloc(sizeof(u16) * path_length);
 	memcpy(new_path, path, sizeof(u16) * path_length);
 	ARRAY_PUSH(*routes, new_path);
@@ -40,17 +41,22 @@ void find_all_routes_recursive(struct node_t *source, struct node_t *destination
 	ARRAY_FOR_EACH(*source->neighbors, i, neighbor)
 	{
 	    if (!visited[neighbor->node_id - 1]) {
+                // Send the packet with the new path to the neighbor
 		find_all_routes_recursive(neighbor, destination, total_nodes, visited, path,
 					  path_length, routes);
 	    }
 	}
     }
+
+    visited[source->node_id - 1] = false;
+    path_length--;
 }
 
 void find_all_routes(struct node_t *start, struct node_t *destination, u16 total_nodes,
 		     struct u16_arraylist_t *routes)
 {
-    bool visited[total_nodes] = { false };
+    bool visited[total_nodes];
+    memset(visited, false, total_nodes);
     u16 path[total_nodes];
     u64 path_length = 0;
 
