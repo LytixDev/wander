@@ -75,6 +75,9 @@ void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nod
     if (curr->node_id == destination_id) {
 	struct route_t *route = malloc(sizeof(struct route_t));
 	init_route(curr->node_id, destination_id, path, path_length, time_taken, route);
+	struct route_payload_t *route_payload = malloc(sizeof(struct route_payload_t));
+	route_payload->route = route;
+	route_payload->step_from_destination = 0;
 	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
 	packet->type = PACKET_ROUTING_DONE;
 	packet->payload = route;
@@ -82,11 +85,11 @@ void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nod
 	packet->prev_node_id = curr->node_id;
 	packet->dest_node_id = path[0];
 	packet->checksum = 0;
-	// Send back the path to the the original source node through the route that was taken.
+	curr->send_func(packet, path[path_length - route_payload->step_from_destination - 1]);
     } else {
 	u16 i = 0;
 	struct neighbor_t *neighbor = NULL;
-	ARRAY_FOR_EACH(*curr->neighbors, i, neighbor)
+	ARRAY_FOR_EACH(curr->neighbors, i, neighbor)
 	{
 	    if (!visited[neighbor->node_id - 1]) {
 		struct routing_data_t *routing_data = malloc(sizeof(struct routing_data_t));
@@ -100,9 +103,7 @@ void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nod
 		packet->prev_node_id = curr->node_id;
 		packet->dest_node_id = neighbor->node_id;
 		packet->checksum = 0;
-		// Send the packet with the new path to the neighbor that then calls this function.
-		// find_all_routes_recursive(neighbor->node_id, destination_id, total_nodes,
-		// visited, path, path_length);
+		curr->send_func(packet, neighbor->node_id);
 	    }
 	}
     }
@@ -125,7 +126,7 @@ u32 find_longest_time(struct route_array_t *routes)
     struct route_t *route = NULL;
     u16 i = 0;
     u32 longest_time = 0;
-    ARRAY_FOR_EACH(*routes, i, route)
+    ARRAY_FOR_EACH(routes, i, route)
     {
 	if (route->time_taken > longest_time) {
 	    longest_time = route->time_taken;
@@ -137,5 +138,5 @@ u32 find_longest_time(struct route_array_t *routes)
 
 struct route_t get_random_route(struct route_array_t *routes)
 {
-    return ARRAY_GET(*routes, (u16)rand() % routes->len);
+    return ARRAY_GET(routes, (u16)rand() % routes->len);
 }

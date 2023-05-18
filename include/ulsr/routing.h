@@ -1,3 +1,20 @@
+/*
+ *  Copyright (C) 2023 Nicolai Brand, Callum Gran
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License
+ *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
 #ifndef ROUTING_H
 #define ROUTING_H
 
@@ -6,6 +23,7 @@
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
+#include "ulsr/node.h"
 
 /**
  * Struct for an arraylist of routes
@@ -34,6 +52,14 @@ struct route_t {
     u16 *path;
     u16 path_length;
     u32 time_taken;
+};
+
+/**
+ * Struct for a route payload
+ */
+struct route_payload_t {
+    struct route_t *route;
+    u16 step_from_destination;
 };
 
 /* Methods */
