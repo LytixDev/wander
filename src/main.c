@@ -25,7 +25,7 @@
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
 
-#define MESH_NODE_COUNT 2
+#define MESH_NODE_COUNT 32
 
 struct node_t nodes[MESH_NODE_COUNT];
 struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
@@ -88,8 +88,11 @@ int main(void)
 
     /* main threadpool */
     struct threadpool_t threadpool;
-    init_threadpool(&threadpool, MESH_NODE_COUNT, 8);
+    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
     start_threadpool(&threadpool);
+
+    bool running = true;
+    submit_worker_task(&threadpool, check_quit, &running);
 
     /* init all nodes and make them run on the threadpool */
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
@@ -101,8 +104,6 @@ int main(void)
 	submit_worker_task(&threadpool, run_node_stub, &nodes[i]);
     }
 
-    bool running = true;
-    submit_worker_task(&threadpool, check_quit, &running);
     while (running)
 	;
 
