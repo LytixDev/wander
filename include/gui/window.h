@@ -36,6 +36,7 @@ static char *toolbar_items[] = { "Hello Packets", "Data Packets", "Purge Packets
 
 struct window_data_t {
     int selected_radio_button;
+    i16 selected_node;
 };
 
 /**

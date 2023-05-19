@@ -26,8 +26,20 @@
 #include "lib/common.h"
 #include "ulsr/impl.h"
 
+static i16 node_find(int x, int y)
+{
+    for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
+        struct simulation_coord_t *coord = &coords[i];
+        if (coord->x < x + 5 && coord->x > x - 5 && coord->y < y + 5 && coord->y > y - 5) {
+            return i;
+        }
+    }
+    return -1;
+}
+
 void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
 {
+    i16 node_idx = -1;
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
 	double x_pos;
 	double y_pos;
@@ -40,7 +52,17 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
 	    int clicked_idx = x_pos / radio_button_width;
 
 	    window_data->selected_radio_button = clicked_idx;
-	}
+	} else if ((node_idx = node_find(x_pos, SIMULATION_LENGTH - y_pos)) != -1) {
+        if (window_data->selected_node == node_idx) {
+            window_data->selected_node = -1;
+        } else {
+            window_data->selected_node = node_idx;
+        }
+    } else {
+        if (window_data->selected_node != -1) {            
+            update_coord(window_data->selected_node + 1, (int) x_pos, (int)(SIMULATION_LENGTH - y_pos));
+        }
+    }
     }
 }
 
@@ -107,6 +129,7 @@ GLFWwindow *window_create()
 
     struct window_data_t *window_data = malloc(sizeof(struct window_data_t));
     window_data->selected_radio_button = 0;
+    window_data->selected_node = -1;
 
     glfwSetWindowUserPointer(window, (void *)window_data);
 
@@ -119,7 +142,7 @@ static void draw_circle(float center_x, float center_y, float radius)
     glBegin(GL_LINE_LOOP);
     u16 i;
     for (i = 0; i < 360; i++) {
-	float theta = i * (3.14159265358979323846 / 180.0);
+	float theta = i * 0.017;
 	float x = center_x + radius * cos(theta);
 	float y = center_y + radius * sin(theta);
 	glVertex2f(x, y);
@@ -127,26 +150,40 @@ static void draw_circle(float center_x, float center_y, float radius)
     glEnd();
 }
 
-static void draw_node_coords()
+static void draw_node_coords(u16 selected_node)
 {
     glEnableClientState(GL_VERTEX_ARRAY);
-    glEnable(GL_POINT);
     glEnableClientState(GL_COLOR_ARRAY);
     glPointSize(10);
+    glEnable(GL_POINT);
 
-    GLfloat colors[] = { 0, 0, 255, 0, 0, 255, 0, 0, 255 };
+    GLfloat colors[MESH_NODE_COUNT * 3];
 
-    glColorPointer(3, GL_FLOAT, 0, colors);
-
-    // For loop here to iterate through all nodes
     for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
-	GLfloat point_vertex[] = { coords[i].x, coords[i].y, 0 };
-	glVertexPointer(2, GL_FLOAT, 0, point_vertex);
-	glDrawArrays(GL_POINTS, 0, 1);
+        if (i == selected_node) {
+            colors[i * 3] = 255;
+            colors[i * 3 + 1] = 0;
+            colors[i * 3 + 2] = 255;
+        } else {
+            colors[i * 3] = 0;
+            colors[i * 3 + 1] = 0;
+            colors[i * 3 + 2] = 255;
+        }
     }
 
-    glDisableClientState(GL_COLOR_ARRAY);
+    GLfloat point_vertices[MESH_NODE_COUNT * 2];
+
+    for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
+        point_vertices[i * 2] = coords[i].x;
+        point_vertices[i * 2 + 1] = coords[i].y;
+    }
+
+    glColorPointer(3, GL_FLOAT, 0, colors);
+    glVertexPointer(2, GL_FLOAT, 0, point_vertices);
+    glDrawArrays(GL_POINTS, 0, MESH_NODE_COUNT);
+
     glDisable(GL_POINT);
+    glDisableClientState(GL_COLOR_ARRAY);
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
@@ -191,19 +228,17 @@ static void draw_toolbar(int selected_radio_button)
     u16 radio_button_width = SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT;
     u8 i;
     for (i = 0; i < TOOLBAR_ITEM_COUNT; i++) {
-	// Calculate the position and size of each radio button
+
 	int x = i * radio_button_width;
 	int y = SIMULATION_LENGTH - TOOLBAR_HEIGHT;
 	int radio_button_height = TOOLBAR_HEIGHT;
 
-	// Determine the color of the radio button based on selection
 	if (i == selected_radio_button) {
-	    glColor3f(0.5f, 0.5f, 1.0f); // Selected color
+	    glColor3f(1.0f, 0.0f, 1.0f);
 	} else {
-	    glColor3f(0.5f, 0.5f, 0.5f); // Unselected color
+	    glColor3f(0.5f, 0.5f, 0.5f); 
 	}
 
-	// Draw the radio button
 	glBegin(GL_QUADS);
 	glVertex2f(x, y);
 	glVertex2f(x + radio_button_width, y);
@@ -224,7 +259,7 @@ void window_update(GLFWwindow *window)
 
     glClear(GL_COLOR_BUFFER_BIT);
 
-    draw_node_coords();
+    draw_node_coords(window_data->selected_node);
 
     draw_target_coords();
 
