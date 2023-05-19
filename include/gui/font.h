@@ -11,10 +11,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-void init_free_type(FT_Library *ft);
+FT_Library ft;
+FT_Face face;
 
-void load_font(FT_Library *ft, FT_Face *face);
+void init_free_type();
 
-void render_text(FT_Face *face, const char *text, float x, float y, float scale);
+void load_font();
+
+void render_text(const char *text, float x, float y, float scale);
 
 #endif /* FONT_H */

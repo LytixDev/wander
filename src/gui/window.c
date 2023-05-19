@@ -17,6 +17,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include <math.h>
 #include <stb/stb_image.h>
@@ -80,6 +81,10 @@ GLFWwindow *window_create()
 
     int width = 0;
     int height = 0;
+
+    glfwSetWindowSizeLimits(window, SIMULATION_WIDTH, SIMULATION_LENGTH, SIMULATION_WIDTH, SIMULATION_LENGTH);
+    glfwSetWindowAspectRatio(window, SIMULATION_WIDTH, SIMULATION_LENGTH);
+    glfwSetWindowAspectRatio(window, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
     glfwGetFramebufferSize(window, &width, &height);
 
@@ -180,10 +185,8 @@ void draw_ranges()
 
 static void draw_toolbar(int selected_radio_button)
 {
-    FT_Library ft;
-    FT_Face face;
-    init_free_type(&ft);
-    load_font(&ft, &face);
+    init_free_type();
+    load_font();
     u16 radio_button_width = SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT;
     u8 i;
     for (i = 0; i < TOOLBAR_ITEM_COUNT; i++) {
@@ -206,10 +209,9 @@ static void draw_toolbar(int selected_radio_button)
 	glVertex2f(x + radio_button_width, y + radio_button_height);
 	glVertex2f(x, y + radio_button_height);
 	glEnd();
-	render_text(&face, toolbar_items[i], x + radio_button_width / 2, y - TOOLBAR_HEIGHT / 2,
+	render_text(toolbar_items[i], x + ((radio_button_width - (strlen(toolbar_items[i]) * 4)) / 5), y + (TOOLBAR_HEIGHT - 12) / 2,
 		    1.0f);
     }
-    render_text(&face, "Hello, ASCII Text!", 200.0f, 200.0f, 10.0f);
 }
 
 void window_update(GLFWwindow *window)
