@@ -21,15 +21,16 @@
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
+#include "lib/logger.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/routing.h"
 
-void init_routing_data(u16 source_id, u16 destination_id, u16 total_nodes, bool *visited, u16 *path,
-		       u16 path_length, u32 time_taken, struct routing_data_t *routing_data)
+void init_routing_data(u16 source_id, u16 total_nodes, bool *visited, u16 *path, u16 path_length,
+		       u32 time_taken, struct routing_data_t *routing_data)
 {
     routing_data->source_id = source_id;
-    routing_data->destination_id = destination_id;
+
     routing_data->total_nodes = total_nodes;
 
     routing_data->visited = malloc(sizeof(bool) * total_nodes);
@@ -66,22 +67,23 @@ void free_route(struct route_t *route)
     free(route->path);
 }
 
-void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nodes, bool *visited,
-			  u16 *path, u16 path_length, u32 time_taken)
+void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited, u16 *path,
+			  u16 path_length, u32 time_taken)
 {
     visited[curr->node_id - 1] = true;
     path[path_length++] = curr->node_id;
 
-    if (curr->node_id == destination_id) {
+    if (curr->can_connect_func(curr)) {
 	struct route_t *route = malloc(sizeof(struct route_t));
-	init_route(curr->node_id, destination_id, path, path_length, time_taken, route);
+	init_route(path[0], curr->node_id, path, path_length, time_taken, route);
 	struct route_payload_t *route_payload = malloc(sizeof(struct route_payload_t));
 	route_payload->route = route;
-	route_payload->step_from_destination = 0;
+	route_payload->step_from_destination = 1;
 	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
 	packet->type = PACKET_ROUTING_DONE;
-	packet->payload = route;
-	packet->payload_len = sizeof(struct route_t) + sizeof(u16) * path_length;
+	packet->payload = route_payload;
+	packet->payload_len =
+	    sizeof(struct route_t) + sizeof(u16) * path_length + sizeof(struct route_payload_t);
 	packet->prev_node_id = curr->node_id;
 	packet->dest_node_id = path[0];
 	packet->checksum = 0;
@@ -95,8 +97,8 @@ void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nod
 	    }
 
 	    struct routing_data_t *routing_data = malloc(sizeof(struct routing_data_t));
-	    init_routing_data(curr->node_id, destination_id, total_nodes, visited, path,
-			      path_length, time_taken, routing_data);
+	    init_routing_data(curr->node_id, total_nodes, visited, path, path_length, time_taken,
+			      routing_data);
 	    struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
 	    packet->type = PACKET_ROUTING;
 	    packet->payload = routing_data;
@@ -110,36 +112,16 @@ void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nod
     }
 }
 
-void find_all_routes(struct node_t *start, u16 destination_id, u16 total_nodes)
+void find_all_routes(struct node_t *start, u16 total_nodes)
 {
+    LOG_INFO("Finding all routes from node %d", start->node_id);
     bool visited[total_nodes];
     memset(visited, false, total_nodes);
     u16 path[total_nodes];
     u16 path_length = 0;
     u32 time_taken = 0;
 
-    find_all_routes_send(start, destination_id, total_nodes, visited, path, path_length,
-			 time_taken);
-}
-
-u32 find_longest_time(struct route_array_t *routes)
-{
-    struct route_t *route = NULL;
-    u16 i = 0;
-    u32 longest_time = 0;
-    ARRAY_FOR_EACH(routes, i, route)
-    {
-	if (route->time_taken > longest_time) {
-	    longest_time = route->time_taken;
-	}
-    }
-
-    return longest_time;
-}
-
-struct route_t *get_random_route(struct route_array_t *routes)
-{
-    return ARRAY_GET(routes, (u16)rand() % routes->len);
+    find_all_routes_send(start, total_nodes, visited, path, path_length, time_taken);
 }
 
 u16 *reverse_route(u16 *route, u16 route_length)
@@ -149,8 +131,6 @@ u16 *reverse_route(u16 *route, u16 route_length)
     for (i = 0; i < route_length; i++) {
 	reversed_route[i] = route[route_length - i - 1];
     }
-    for (i = 0; i < route_length; i++) {
-	printf("%d ", reversed_route[i]);
-    }
+
     return reversed_route;
 }

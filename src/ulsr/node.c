@@ -30,9 +30,9 @@
 #include "ulsr/impl.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
-#include "ulsr/route_table.h"
 #include "ulsr/routing.h"
 #include "ulsr/ulsr.h"
+
 
 struct external_request_thread_data_t {
     u16 connection;
@@ -57,6 +57,21 @@ static void insert_connection(struct connections_t *connections, int connection)
     connections->index = connections->index % connections->cap;
     connections->connections[connections->index] = connection;
     LOG_INFO("Inserted connection");
+}
+
+static u16 find_random_neighbor(struct node_t *node)
+{
+    struct neighbor_t *neighbors[MESH_NODE_COUNT];
+    u16 counter = 0;
+    for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
+	if (node->neighbors[i] != 0)
+	    neighbors[counter++] = node->neighbors[i];
+    }
+
+    if (counter == 0)
+	return 0;
+
+    return neighbors[rand() % counter]->node_id;
 }
 
 /* node communication functions */
@@ -117,9 +132,13 @@ static bool handle_send_external(struct node_t *node, struct ulsr_internal_packe
 	    internal_packet->route->len = packet->route->len;
 	    internal_packet->route->step = 1;
 	    internal_packet->route->path = reversed;
+	    internal_packet->prev_node_id = node->node_id;
 	    internal_packet->dest_node_id = packet->route->path[0];
 	    internal_packet->is_response = true;
-
+	    LOG_NODE_INFO(node->node_id, "Route length: %d", internal_packet->route->len);
+	    for (int i = 0; i < internal_packet->route->len; i++) {
+		LOG_NODE_INFO(node->node_id, "Route: %d", internal_packet->route->path[i]);
+	    }
 	    node->send_func(internal_packet,
 			    internal_packet->route->path[internal_packet->route->step]);
 	    LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d to node %d", seq_nr,
@@ -134,6 +153,36 @@ static bool handle_send_external(struct node_t *node, struct ulsr_internal_packe
     return true;
 }
 
+static void packet_use_route(struct ulsr_internal_packet *packet, struct node_t *node)
+{
+    struct route_t *new_route = (struct route_t *)queue_pop(node->route_queue);
+    u16 new_len = new_route->path_length + packet->route->step;
+    packet->route->path = realloc(packet->route->path, new_len * sizeof(u16));
+
+    for (int i = packet->route->step; i < packet->route->step + new_route->path_length; i++) {
+	packet->route->path[i] = new_route->path[i - packet->route->step];
+    }
+
+    packet->route->len = new_len;
+    packet->route->step++;
+
+    node->send_func(packet, packet->route->path[packet->route->step]);
+}
+
+
+static void packet_bogo_and_find_route(struct ulsr_internal_packet *packet, struct node_t *node)
+{
+    packet->route->len++;
+    packet->route->step++;
+    packet->route->path = realloc(packet->route->path, packet->route->len * sizeof(u16));
+    packet->route->path[packet->route->step] = find_random_neighbor(node);
+    node->send_func(packet, packet->route->path[packet->route->step]);
+
+    /* This is called because this node doesn't have any routes to the destination */
+
+    find_all_routes(node, MESH_NODE_COUNT);
+}
+
 static void handle_internal_data_packet(struct node_t *node, struct ulsr_internal_packet *packet)
 {
     struct ulsr_packet *payload = packet->payload;
@@ -143,9 +192,27 @@ static void handle_internal_data_packet(struct node_t *node, struct ulsr_interna
     LOG_NODE_INFO(node->node_id, "Destination: %s", payload->dest_ipv4);
     // LOG_NODE_INFO(node->node_id, "Payload: %s", payload->payload);
 
-    if (node->node_id == packet->dest_node_id) {
-	LOG_NODE_INFO(node->node_id, "Packet is for this node");
-	handle_send_external(node, packet);
+    // Checks if node is at final hop in the packet's route
+    if (node->node_id == packet->route->path[packet->route->len - 1]) {
+	// Checks if packet can be sent to external network
+	if (node->can_connect_func(node) && !packet->is_response) {
+	    LOG_NODE_INFO(node->node_id, "Node can connect to external network");
+	    handle_send_external(node, packet);
+	    LOG_NODE_INFO(node->node_id, "Node sent packet to external network");
+	} else if (packet->is_response) {
+	    handle_send_external(node, packet);
+	    LOG_NODE_INFO(node->node_id, "Node sent packet to receiver");
+	} else {
+	    packet->prev_node_id = node->node_id;
+	    LOG_NODE_INFO(node->node_id, "Node cannot connect to external network");
+	    // Check if packet can be sent to another node that can connect to external network
+	    if (!queue_empty(node->route_queue)) {
+		packet_use_route(packet, node);
+	    } else {
+		// Send packet to random neighbor
+		packet_bogo_and_find_route(packet, node);
+	    }
+	}
     } else {
 	LOG_NODE_INFO(node->node_id, "Packet is not for this node");
 	packet->route->step++;
@@ -168,6 +235,31 @@ static void handle_internal_hello_packet(struct node_t *node, struct ulsr_intern
 	node->neighbors[neighbor_id - 1] = neighbor;
     }
     neighbor->last_seen = time(NULL);
+}
+
+static void handle_internal_routing_packet(struct node_t *node, struct ulsr_internal_packet *packet)
+{
+    LOG_NODE_INFO(node->node_id, "Received ROUTING from %d", packet->prev_node_id);
+    struct routing_data_t *routing_data = packet->payload;
+    find_all_routes_send(node, routing_data->total_nodes, routing_data->visited, routing_data->path,
+			 routing_data->path_length, routing_data->time_taken);
+}
+
+static void handle_internal_routing_packet_done(struct node_t *node,
+						struct ulsr_internal_packet *packet)
+{
+    LOG_NODE_INFO(node->node_id, "Received ROUTING_DONE from %d", packet->prev_node_id);
+    struct route_payload_t *route = (struct route_payload_t *)packet->payload;
+    if (packet->dest_node_id == node->node_id) {
+	queue_push(node->route_queue, route->route);
+	LOG_NODE_INFO(node->node_id, "Found route to %d",
+		      route->route->path[route->route->path_length - 1]);
+    } else {
+	packet->prev_node_id = node->node_id;
+	node->send_func(
+	    packet,
+	    route->route->path[route->route->path_length - ++route->step_from_destination - 1]);
+    }
 }
 
 static void handle_send_internal(void *arg)
@@ -196,15 +288,16 @@ static void handle_send_internal(void *arg)
 
 	case PACKET_ROUTING:
 	    LOG_NODE_INFO(node->node_id, "Received ROUTING packet");
+	    handle_internal_routing_packet(node, packet);
 	    break;
 
 	case PACKET_ROUTING_DONE:
-	    LOG_NODE_INFO(node->node_id, "Received ROUTING_DONE packet");
+	    handle_internal_routing_packet_done(node, packet);
 	    break;
 	default:
 	    break;
 	}
-	free(packet);
+	// free(packet);
     }
 }
 
@@ -234,46 +327,33 @@ static void handle_external(void *arg)
 
     /* pack external packet into internal packet for routing between nodes */
     struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&packet);
-    internal_packet->prev_node_id = data->node->node_id;
+    internal_packet->prev_node_id = node->node_id;
 
-    // TEMP HACK
-    internal_packet->dest_node_id = 8;
+    // // TEMP HACK
 
     internal_packet->is_response = false;
+    internal_packet->route = malloc(sizeof(struct packet_route_t));
 
     /* find path to destination */
-    u16 *path = malloc(sizeof(u16) * 4);
-    path[0] = 1;
-    path[1] = 3;
-    path[2] = 4;
-    path[3] = 8;
-    internal_packet->route = malloc(sizeof(struct packet_route_t));
-    internal_packet->route->path = path;
-    internal_packet->route->len = 4;
-    internal_packet->route->step = 0;
-    // struct route_t *route = route_table_get(data->node->route_table,
-    // internal_packet->dest_node_id); free(path);
-
-    // In the future, we will need to check if the route is NULL, and if it is, we will need to find
-    // a new route with a lock and condition variable etc.
-    //     if (route == NULL) {
-    //         find_all_routes(data->node, internal_packet->dest_node_id, 16);
-
-    //     }
-
-    /* add path to send func */
-    if (internal_packet->dest_node_id == data->node->node_id) {
-	if (!handle_send_external(data->node, internal_packet)) {
-	    LOG_NODE_ERR(node->node_id, "ABORT!: Failed to handle sending of external request");
-	    goto cleanup;
-	}
-    } else {
+    if (!queue_empty(node->route_queue)) {
+	struct route_t *route = (struct route_t *)queue_pop(node->route_queue);
+	internal_packet->route->path = route->path;
+	internal_packet->route->len = route->path_length;
 	internal_packet->route->step = 1;
-	internal_packet->route->path = path;
-	data->node->send_func(internal_packet, path[internal_packet->route->step]);
+	node->send_func(internal_packet,
+			internal_packet->route->path[internal_packet->route->step]);
+    } else {
+	internal_packet->route->path = malloc(sizeof(u16) * 2);
+	internal_packet->route->path[0] = node->node_id;
+	// Uses first neighbor as next hop
+	internal_packet->route->path[1] = find_random_neighbor(node);
+	internal_packet->route->len = 2;
+	internal_packet->route->step = 1;
+	node->send_func(internal_packet,
+			internal_packet->route->path[internal_packet->route->step]);
+	find_all_routes(data->node, MESH_NODE_COUNT);
     }
-
-    free(internal_packet);
+    // free(internal_packet);
 
 cleanup:
     shutdown(data->connection, SHUT_RDWR);
@@ -304,7 +384,8 @@ static void hello_poll_thread(void *arg)
 
 /* node lifetime functions */
 bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
-	       node_send_func_t send_func, node_recv_func_t rec_func, u16 port)
+	       node_can_connect_func_t can_connect_func, node_send_func_t send_func,
+	       node_recv_func_t rec_func, u16 port)
 {
     node->node_id = node_id;
     node->sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -347,15 +428,17 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     init_threadpool(node->threadpool, threads, queue_size);
 
     /* set node options */
+    node->can_connect_func = can_connect_func;
     node->send_func = send_func;
     node->rec_func = rec_func;
 
     /* init route table */
-    route_table_init(&node->route_table);
-    LOG_NODE_INFO(node->node_id, "Succesfully initialized route table");
+    node->route_queue = (struct queue_t *)(malloc(sizeof(struct queue_t)));
+    init_queue(node->route_queue, MESH_NODE_COUNT);
+    LOG_NODE_INFO(node->node_id, "Succesfully initialized route queue");
 
     /* init neighbor list */
-    node->neighbors = malloc(sizeof(struct neighbor_t *) * MESH_NODE_COUNT);
+    node->neighbors = calloc(MESH_NODE_COUNT, sizeof(struct neighbor_t *));
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	node->neighbors[i] = NULL;
     }
@@ -443,8 +526,9 @@ void free_node(struct node_t *node)
 	free(node->neighbors);
     }
 
-    if (node->route_table != NULL) {
-	route_table_free(node->route_table);
+    if (node->route_queue != NULL) {
+	free_queue(node->route_queue);
+	free(node->route_queue);
     }
 
     if (node->known_ids != NULL) {
