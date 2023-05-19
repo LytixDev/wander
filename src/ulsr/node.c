@@ -95,74 +95,40 @@ static bool handle_send_external(struct node_t *node, struct ulsr_internal_packe
     LOG_NODE_INFO(node->node_id, "Sent packet to %s/%d", internal_payload->dest_ipv4,
 		  internal_payload->dest_port);
 
-    u8 response[1024] = { 0 };
+    if (!packet->is_response) {
+	u8 response[UINT16_MAX] = { 0 };
 
-
-    u32 seq_nr = 0;
-    while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
-	struct ulsr_packet ret_packet = { 0 };
-	strncpy(ret_packet.source_ipv4, internal_payload->dest_ipv4, 16);
-	strncpy(ret_packet.dest_ipv4, internal_payload->source_ipv4, 16);
-	ret_packet.dest_port = ULSR_DEFAULT_PORT;
-	ret_packet.payload_len = strlen((char *)response);
-	strncpy(ret_packet.payload, (char *)response, ret_packet.payload_len);
-	ret_packet.type = ULSR_HTTP;
-	ret_packet.seq_nr = seq_nr;
-
+	u32 seq_nr = 0;
 	u16 *reversed = reverse_route(packet->route->path, packet->route->len);
+	while (node->running && recv(ext_sockfd, response, UINT16_MAX - 1, 0) > 0) {
+	    struct ulsr_packet ret_packet = { 0 };
+	    strncpy(ret_packet.source_ipv4, internal_payload->dest_ipv4, 16);
+	    strncpy(ret_packet.dest_ipv4, internal_payload->source_ipv4, 16);
+	    ret_packet.dest_port = ULSR_DEFAULT_PORT;
+	    ret_packet.payload_len = strlen((char *)response);
+	    strncpy(ret_packet.payload, (char *)response, ret_packet.payload_len);
+	    ret_packet.type = ULSR_HTTP;
+	    ret_packet.seq_nr = seq_nr;
 
-	struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&ret_packet);
-	internal_packet->route = malloc(sizeof(struct packet_route_t));
-	internal_packet->route->len = packet->route->len;
-	internal_packet->route->step = 1;
-	internal_packet->route->path = reversed;
+	    struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&ret_packet);
+	    internal_packet->route = malloc(sizeof(struct packet_route_t));
+	    internal_packet->route->len = packet->route->len;
+	    internal_packet->route->step = 1;
+	    internal_packet->route->path = reversed;
+	    internal_packet->dest_node_id = packet->route->path[0];
+	    internal_packet->is_response = true;
 
-	node->send_func(internal_packet, packet->route->path[packet->route->step]);
-	LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d", seq_nr);
-	memset(response, 0, 1024);
-	seq_nr++;
-    }
-    // REMOVE THIS IN FUTURE, THIS IS NOT A GOOD WAY TO DO THIS AND DOES NOT WORK WITH MULTIPLE
-    // NODES
-    int recv_socket = socket(PF_INET, SOCK_STREAM, 0);
-    if (recv_socket < 0) {
-	LOG_NODE_ERR(node->node_id, "Failed to create return socket");
-	return false;
-    }
-
-    struct sockaddr_in recv_server = { 0 };
-    recv_server.sin_family = AF_INET;
-    recv_server.sin_addr.s_addr = inet_addr(internal_payload->source_ipv4);
-    recv_server.sin_port = htons(ULSR_DEFAULT_PORT);
-
-    if (connect(recv_socket, (struct sockaddr *)&recv_server, sizeof(recv_server)) < 0) {
-	LOG_NODE_ERR(node->node_id, "Failed to create connect to socket");
-	return false;
-    }
-
-    LOG_NODE_INFO(node->node_id, "Connected to return socket");
-
-    u32 seq_nr = 0;
-    while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
-	struct ulsr_packet ret_packet = { 0 };
-	strncpy(ret_packet.source_ipv4, internal_payload->dest_ipv4, 16);
-	strncpy(ret_packet.dest_ipv4, internal_payload->source_ipv4, 16);
-	ret_packet.dest_port = ULSR_DEFAULT_PORT;
-	ret_packet.payload_len = strlen((char *)response);
-	strncpy((char *)ret_packet.payload, (const char *)response, ret_packet.payload_len);
-	ret_packet.type = ULSR_HTTP;
-	ret_packet.seq_nr = seq_nr;
-
-	if (send(recv_socket, &ret_packet, sizeof(ret_packet), 0) < 0) {
-	    LOG_NODE_ERR(node->node_id, "Failed to send return packet");
-	    return false;
+	    node->send_func(internal_packet,
+			    internal_packet->route->path[internal_packet->route->step]);
+	    LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d to node %d", seq_nr,
+			  internal_packet->route->path[internal_packet->route->step]);
+	    memset(response, 0, UINT16_MAX);
+	    seq_nr++;
 	}
-	LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d", seq_nr);
-	memset(response, 0, 1024);
-	seq_nr++;
     }
 
-    close(recv_socket);
+    close(ext_sockfd);
+
     return true;
 }
 
@@ -253,6 +219,8 @@ static void handle_external(void *arg)
 
     // TEMP HACK
     internal_packet->dest_node_id = 8;
+
+    internal_packet->is_response = false;
 
     /* find path to destination */
     u16 *path = malloc(sizeof(u16) * 4);

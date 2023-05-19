@@ -148,6 +148,8 @@ u16 *reverse_route(u16 *route, u16 route_length)
     for (i = 0; i < route_length; i++) {
 	reversed_route[i] = route[route_length - i - 1];
     }
-
+    for (i = 0; i < route_length; i++) {
+	printf("%d ", reversed_route[i]);
+    }
     return reversed_route;
 }

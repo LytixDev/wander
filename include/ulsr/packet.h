@@ -18,6 +18,7 @@
 #ifndef PACKET_H
 #define PACKET_H
 
+#include <stdbool.h>
 #include "lib/common.h"
 
 enum ulsr_packet_type {
@@ -32,7 +33,7 @@ struct ulsr_packet {
     char dest_ipv4[16];
     u16 dest_port;
     u16 payload_len;
-    u8 payload[1024];
+    u8 payload[UINT16_MAX];
 };
 
 /*
@@ -61,6 +62,7 @@ struct ulsr_internal_packet {
     u32 payload_len;
     void *payload;
     struct packet_route_t *route;
+    bool is_response;
 };
 
 /* Methods */
