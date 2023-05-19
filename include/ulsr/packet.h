@@ -69,7 +69,9 @@ struct ulsr_internal_packet {
     bool is_response;
 };
 
-/* Methods */
+/* functions */
+
+struct ulsr_packet *ulsr_create_response(struct ulsr_packet *packet, u8 *response, u16 seq_nr);
 
 /*
  * Creates a new internal packet from an external packet.

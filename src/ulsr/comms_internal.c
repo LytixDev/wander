@@ -52,6 +52,7 @@ static void packet_bogo_and_find_route(struct ulsr_internal_packet *packet, stru
     packet->route->len++;
     packet->route->step++;
     packet->route->path = realloc(packet->route->path, packet->route->len * sizeof(u16));
+    // TODO: handle edge cases where find random "fails"
     packet->route->path[packet->route->step] = find_random_neighbor(node);
     node->send_func(packet, packet->route->path[packet->route->step]);
 

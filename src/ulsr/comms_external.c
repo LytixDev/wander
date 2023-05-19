@@ -45,8 +45,6 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	return false;
     }
 
-    // LOG_NODE_INFO(node->node_id, "Created socket");
-
     struct sockaddr_in server = { 0 };
     server.sin_family = AF_INET;
     server.sin_addr.s_addr = inet_addr(internal_payload->dest_ipv4);
@@ -58,34 +56,26 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	return false;
     }
 
-    //    LOG_NODE_INFO(node->node_id, "Connected to %s/%d", internal_payload->dest_ipv4,
-    //		  internal_payload->dest_port);
-
+    /* send packet to external entity */
     if (send(ext_sockfd, internal_payload->payload, internal_payload->payload_len, 0) < 0) {
 	LOG_NODE_ERR(node->node_id, "Failed to send packet to %s/%d", internal_payload->dest_ipv4,
 		     internal_payload->dest_port);
 	return false;
     }
 
-    //    LOG_NODE_INFO(node->node_id, "Sent packet to %s/%d", internal_payload->dest_ipv4,
-    //		  internal_payload->dest_port);
-
     if (!packet->is_response) {
-	u8 response[UINT16_MAX] = { 0 };
-
-	u32 seq_nr = 0;
+	u8 response[UINT16_MAX];
+	memset(response, 0, UINT16_MAX);
+	/* reverse the route we used to come here, and use that for the response */
 	u16 *reversed = reverse_route(packet->route->path, packet->route->len);
-	while (node->running && recv(ext_sockfd, response, UINT16_MAX - 1, 0) > 0) {
-	    struct ulsr_packet ret_packet = { 0 };
-	    strncpy(ret_packet.source_ipv4, internal_payload->dest_ipv4, 16);
-	    strncpy(ret_packet.dest_ipv4, internal_payload->source_ipv4, 16);
-	    ret_packet.dest_port = ULSR_DEFAULT_PORT;
-	    ret_packet.payload_len = strlen((char *)response);
-	    strncpy((char *)ret_packet.payload, (char *)response, ret_packet.payload_len);
-	    ret_packet.type = ULSR_HTTP;
-	    ret_packet.seq_nr = seq_nr;
+	u32 seq_nr = 0;
 
-	    struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&ret_packet);
+	while (node->running && recv(ext_sockfd, response, UINT16_MAX - 1, 0) > 0) {
+	    struct ulsr_packet *ret_packet =
+		ulsr_create_response(internal_payload, response, seq_nr);
+	    struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(ret_packet);
+
+	    /* init route */
 	    internal_packet->route = malloc(sizeof(struct packet_route_t));
 	    internal_packet->route->len = packet->route->len;
 	    internal_packet->route->step = 1;
@@ -93,21 +83,20 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	    internal_packet->prev_node_id = node->node_id;
 	    internal_packet->dest_node_id = packet->route->path[0];
 	    internal_packet->is_response = true;
-	    LOG_NODE_INFO(node->node_id, "Route length: %d", internal_packet->route->len);
-	    for (int i = 0; i < internal_packet->route->len; i++) {
-		LOG_NODE_INFO(node->node_id, "Route: %d", internal_packet->route->path[i]);
-	    }
+
+	    // LOG_NODE_INFO(node->node_id, "Route length: %d", internal_packet->route->len);
+	    // for (int i = 0; i < internal_packet->route->len; i++) {
+	    //     LOG_NODE_INFO(node->node_id, "Route: %d", internal_packet->route->path[i]);
+	    // }
 	    node->send_func(internal_packet,
 			    internal_packet->route->path[internal_packet->route->step]);
-	    LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d to node %d", seq_nr,
-			  internal_packet->route->path[internal_packet->route->step]);
-	    memset(response, 0, UINT16_MAX);
+	    // LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d to node %d", seq_nr,
+	    //		  internal_packet->route->path[internal_packet->route->step]);
 	    seq_nr++;
 	}
     }
 
     close(ext_sockfd);
-
     return true;
 }
 
@@ -126,7 +115,7 @@ void handle_external(void *arg)
     LOG_NODE_INFO(node->node_id, "Received external packet:");
     // LOG_NODE_INFO(node->node_id, "External packet source: %s", packet.source_ipv4);
     // LOG_NODE_INFO(node->node_id, "External packet destination: %s", packet.dest_ipv4);
-    LOG_NODE_INFO(node->node_id, "External payload: %s", packet.payload);
+    // LOG_NODE_INFO(node->node_id, "External payload: %s", packet.payload);
 
     /* validate checksum */
     u32 checksum = ulsr_checksum((u8 *)&packet, (unsigned long)bytes_read);
@@ -161,11 +150,9 @@ void handle_external(void *arg)
 			internal_packet->route->path[internal_packet->route->step]);
 	find_all_routes(data->node, MESH_NODE_COUNT);
     }
-    // free(internal_packet);
 
 cleanup:
     shutdown(data->connection, SHUT_RDWR);
     close(data->connection);
     free(data);
-    LOG_NODE_INFO(node->node_id, "Closed connection");
 }

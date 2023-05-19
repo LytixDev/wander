@@ -127,7 +127,7 @@ u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
     struct ulsr_internal_packet *new_packet = malloc(sizeof(struct ulsr_internal_packet));
     // TODO: this works for now, but we should implement a better copy function that recursively
     // copy the value of the pointers as well. This implementation only works before we (oh oh)
-    // never actually free a packets route
+    // never actually free a packets route or its payload...
     *new_packet = *packet;
     queue_push(&packet_limbo[node_id - 1], new_packet);
 
