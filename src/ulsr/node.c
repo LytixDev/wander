@@ -243,6 +243,7 @@ static void handle_external(void *arg)
     internal_packet->is_response = false;
 
     /* find path to destination */
+    struct route_t *route = route_table_get(data->node->route_table, internal_packet->dest_node_id);
 
     u16 *path = malloc(sizeof(u16) * 4);
     path[0] = 1;
