@@ -23,6 +23,7 @@
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
+#include "lib/queue.h"
 #include "lib/threadpool.h"
 #include "ulsr/impl.h"
 #include "ulsr/node.h"
@@ -32,11 +33,20 @@
 
 static bool running;
 struct node_t nodes[MESH_NODE_COUNT];
-struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
+// struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
+struct queue_t packet_limbo[MESH_NODE_COUNT];
 struct await_t node_locks[MESH_NODE_COUNT];
 struct simulation_coord_t coords[MESH_NODE_COUNT];
 /* the coordinates of the destination for the client's request */
 struct simulation_coord_t target_coords = { .x = 500, .y = 500 };
+
+
+static void init_packet_limbo_queue()
+{
+    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	init_queue(&packet_limbo[i], 32);
+    }
+}
 
 
 static void run_node_stub(void *arg)
@@ -116,7 +126,10 @@ u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
 
-    packet_limbo[node_id - 1] = *packet;
+    // packet_limbo[node_id - 1] = *packet;
+    struct ulsr_internal_packet *new_packet = malloc(sizeof(struct ulsr_internal_packet));
+    *new_packet = *packet;
+    queue_push(&packet_limbo[node_id - 1], new_packet);
 
     pthread_cond_signal(&node_locks[node_id - 1].cond_variable);
     pthread_mutex_unlock(&node_locks[node_id - 1].cond_lock);
@@ -129,21 +142,18 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
     u16 node_idx = node_id - 1;
     pthread_mutex_lock(&node_locks[node_idx].cond_lock);
 
-    while (packet_limbo[node_id - 1].type == PACKET_NONE && running)
+    while (queue_empty(&packet_limbo[node_idx]) && running)
 	pthread_cond_wait(&node_locks[node_idx].cond_variable, &node_locks[node_idx].cond_lock);
     pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
 
-    if (packet_limbo[node_id - 1].type == PACKET_NONE)
+    if (queue_empty(&packet_limbo[node_idx]))
 	return NULL;
 
     /* consume the packet */
-    struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
-    *packet = packet_limbo[node_idx];
+    struct ulsr_internal_packet *packet = queue_pop(&packet_limbo[node_idx]);
     if (packet->type == PACKET_DATA) {
 	LOG_INFO("Receiving data packet from node %d to node %d", packet->prev_node_id, node_id);
     }
-    packet_limbo[node_idx] = (struct ulsr_internal_packet){ 0 };
-    packet_limbo[node_idx].type = PACKET_NONE;
 
     return packet;
 }
@@ -157,9 +167,7 @@ bool simulate(void)
     node_send_func_t node_send_func = send_func;
     node_recv_func_t node_recv_func = recv_func;
 
-    /* init all packet limbos to be none */
-    for (int i = 0; i < MESH_NODE_COUNT; i++)
-	packet_limbo[i].type = PACKET_NONE;
+    init_packet_limbo_queue();
 
     /* main threadpool */
     struct threadpool_t threadpool;

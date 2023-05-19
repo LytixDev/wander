@@ -180,7 +180,7 @@ static void packet_bogo_and_find_route(struct ulsr_internal_packet *packet, stru
 
     /* This is called because this node doesn't have any routes to the destination */
 
-    //     find_all_routes(node, MESH_NODE_COUNT);
+    find_all_routes(node, MESH_NODE_COUNT);
 }
 
 static void handle_internal_data_packet(struct node_t *node, struct ulsr_internal_packet *packet)
@@ -351,7 +351,7 @@ static void handle_external(void *arg)
 	internal_packet->route->step = 1;
 	node->send_func(internal_packet,
 			internal_packet->route->path[internal_packet->route->step]);
-	// find_all_routes(data->node, MESH_NODE_COUNT);
+	find_all_routes(data->node, MESH_NODE_COUNT);
     }
     // free(internal_packet);
 
