@@ -141,7 +141,7 @@ static void handle_internal_data_packet(struct node_t *node, struct ulsr_interna
     LOG_NODE_INFO(node->node_id, "Received packet");
     LOG_NODE_INFO(node->node_id, "Source: %s", payload->source_ipv4);
     LOG_NODE_INFO(node->node_id, "Destination: %s", payload->dest_ipv4);
-    LOG_NODE_INFO(node->node_id, "Payload: %s", payload->payload);
+    // LOG_NODE_INFO(node->node_id, "Payload: %s", payload->payload);
 
     if (node->node_id == packet->dest_node_id) {
 	LOG_NODE_INFO(node->node_id, "Packet is for this node");
@@ -158,7 +158,7 @@ static void handle_internal_data_packet(struct node_t *node, struct ulsr_interna
 
 static void handle_internal_hello_packet(struct node_t *node, struct ulsr_internal_packet *packet)
 {
-    LOG_NODE_INFO(node->node_id, "Received HELLO from %d", packet->prev_node_id);
+    // LOG_NODE_INFO(node->node_id, "Received HELLO from %d", packet->prev_node_id);
     u16 neighbor_id = packet->prev_node_id;
     struct neighbor_t *neighbor = node->neighbors[neighbor_id - 1];
     if (neighbor == NULL) {
@@ -178,33 +178,33 @@ static void handle_send_internal(void *arg)
     while (node->running) {
 	packet = node->rec_func(node->node_id);
 	if (packet == NULL) {
-            continue;
-        }
+	    continue;
+	}
 
-        switch (packet->type) {
-        case PACKET_DATA:
-            handle_internal_data_packet(node, packet);
-            break;
+	switch (packet->type) {
+	case PACKET_DATA:
+	    handle_internal_data_packet(node, packet);
+	    break;
 
-        case PACKET_HELLO:
-            handle_internal_hello_packet(node, packet);
-            break;
+	case PACKET_HELLO:
+	    handle_internal_hello_packet(node, packet);
+	    break;
 
-        case PACKET_PURGE:
-            LOG_NODE_INFO(node->node_id, "Received PURGE packet");
-            break;
+	case PACKET_PURGE:
+	    LOG_NODE_INFO(node->node_id, "Received PURGE packet");
+	    break;
 
-        case PACKET_ROUTING:
-            LOG_NODE_INFO(node->node_id, "Received ROUTING packet");
-            break;
+	case PACKET_ROUTING:
+	    LOG_NODE_INFO(node->node_id, "Received ROUTING packet");
+	    break;
 
-        case PACKET_ROUTING_DONE:
-            LOG_NODE_INFO(node->node_id, "Received ROUTING_DONE packet");
-            break;
-        default:
-            break;
-        }
-        free(packet);
+	case PACKET_ROUTING_DONE:
+	    LOG_NODE_INFO(node->node_id, "Received ROUTING_DONE packet");
+	    break;
+	default:
+	    break;
+	}
+	free(packet);
     }
 }
 
@@ -291,7 +291,7 @@ static void hello_poll_thread(void *arg)
 	    if (to_id == node->node_id)
 		continue;
 
-	    LOG_NODE_INFO(node->node_id, "Sent HELLO to %d", to_id);
+	    // LOG_NODE_INFO(node->node_id, "Sent HELLO to %d", to_id);
 
 	    struct ulsr_internal_packet *packet = ulsr_internal_create_hello(node->node_id, to_id);
 
