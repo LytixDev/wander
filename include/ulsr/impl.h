@@ -38,17 +38,10 @@
 /* how often each node polls every other known node to see if its in range to receive */
 #define HELLO_POLL_INTERVAL 3
 
-<<<<<<< HEAD
+/* these values are in pixels */
 #define SIMULATION_NODE_RANGE 250
 #define SIMULATION_WIDTH 700
 #define SIMULATION_LENGTH 700
-=======
-/* these values are in pixels */
-#define SIMULATION_NODE_RANGE 200
-#define SIMULATION_WIDTH 800
-#define SIMULATION_LENGTH 800
-
->>>>>>> feat/refactor-and-cleanup
 
 struct await_t {
     pthread_mutex_t cond_lock;
