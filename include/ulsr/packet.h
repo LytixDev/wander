@@ -24,7 +24,7 @@
 enum ulsr_packet_type {
     ULSR_HTTP,
     ULSR_RESPONSE,
-    ULSR_FAILURE,
+    ULSR_INTERNAL_FAILURE,
 };
 
 struct ulsr_packet {
@@ -80,6 +80,8 @@ struct ulsr_packet *ulsr_create_response(struct ulsr_packet *packet, u8 *respons
  * Allocates the internal packet on the heap.
  */
 struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *external_packet);
+
+struct ulsr_packet *ulsr_create_failure(struct ulsr_packet *packet_that_failed);
 
 struct ulsr_internal_packet *ulsr_internal_create_hello(u16 from, u16 to);
 
