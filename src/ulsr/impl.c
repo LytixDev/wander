@@ -99,6 +99,11 @@ void set_initial_node_ids(struct node_t *node)
     }
 }
 
+bool can_connect_func(struct node_t *node)
+{
+    return can_reach_external_target(node->node_id);
+}
+
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
     // the mock
@@ -158,8 +163,8 @@ bool simulate(void)
 
     /* init all nodes and make them run on the threadpool */
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, node_send_func, node_recv_func,
-			   ULSR_DEVICE_PORT_START + i);
+	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, can_connect_func, node_send_func,
+			   node_recv_func, ULSR_DEVICE_PORT_START + i);
 	if (rc == -1)
 	    exit(1);
 

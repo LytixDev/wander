@@ -58,12 +58,14 @@ void set_initial_node_ids(struct node_t *node);
 
 bool can_reach_external_target(u16 node_id);
 
-/* must implement */
+bool simulate(void);
+
+/* required function implementations */
+
+bool can_connect_func(struct node_t *node);
 
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id);
 
 struct ulsr_internal_packet *recv_func(u16 node_id);
-
-bool simulate(void);
 
 #endif /* IMPL_H */

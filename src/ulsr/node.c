@@ -307,7 +307,8 @@ static void hello_poll_thread(void *arg)
 
 /* node lifetime functions */
 bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
-	       node_send_func_t send_func, node_recv_func_t rec_func, u16 port)
+	       node_can_connect_func_t can_connect_func, node_send_func_t send_func,
+	       node_recv_func_t rec_func, u16 port)
 {
     node->node_id = node_id;
     node->sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -350,6 +351,7 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     init_threadpool(node->threadpool, threads, queue_size);
 
     /* set node options */
+    node->can_connect_func = can_connect_func;
     node->send_func = send_func;
     node->rec_func = rec_func;
 
