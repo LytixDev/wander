@@ -26,7 +26,7 @@
 #include "ulsr/packet.h"
 
 #define MESH_NODE_COUNT 8
-#define HELLO_POLL_INTERVAL 5
+#define HELLO_POLL_INTERVAL 3
 
 #define SIMULATION_NODE_RANGE 200
 #define SIMULATION_WIDTH 800

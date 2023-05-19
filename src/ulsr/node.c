@@ -148,15 +148,15 @@ static void handle_internal_data_packet(struct node_t *node, struct ulsr_interna
     LOG_NODE_INFO(node->node_id, "Destination: %s", payload->dest_ipv4);
     LOG_NODE_INFO(node->node_id, "Payload: %s", payload->payload);
 
+    // ROUTING
+    // this is a hack, currently just send to node 2
+
     if (node->node_id == 2) {
 	LOG_NODE_INFO(node->node_id, "Packet is for this node");
 	handle_send_external(node, packet);
     } else {
 	LOG_NODE_INFO(node->node_id, "Packet is not for this node");
-
-	// This is a hack, but it works for now as we only have 2 nodes
-	if (node->node_id < 2)
-	    node->send_func(packet, node->node_id + 1);
+	node->send_func(packet, 2);
     }
 }
 
