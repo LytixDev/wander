@@ -45,7 +45,7 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	return false;
     }
 
-    LOG_NODE_INFO(node->node_id, "Created socket");
+    // LOG_NODE_INFO(node->node_id, "Created socket");
 
     struct sockaddr_in server = { 0 };
     server.sin_family = AF_INET;
@@ -58,8 +58,8 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	return false;
     }
 
-    LOG_NODE_INFO(node->node_id, "Connected to %s/%d", internal_payload->dest_ipv4,
-		  internal_payload->dest_port);
+    //    LOG_NODE_INFO(node->node_id, "Connected to %s/%d", internal_payload->dest_ipv4,
+    //		  internal_payload->dest_port);
 
     if (send(ext_sockfd, internal_payload->payload, internal_payload->payload_len, 0) < 0) {
 	LOG_NODE_ERR(node->node_id, "Failed to send packet to %s/%d", internal_payload->dest_ipv4,
@@ -67,8 +67,8 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	return false;
     }
 
-    LOG_NODE_INFO(node->node_id, "Sent packet to %s/%d", internal_payload->dest_ipv4,
-		  internal_payload->dest_port);
+    //    LOG_NODE_INFO(node->node_id, "Sent packet to %s/%d", internal_payload->dest_ipv4,
+    //		  internal_payload->dest_port);
 
     if (!packet->is_response) {
 	u8 response[UINT16_MAX] = { 0 };
@@ -124,8 +124,8 @@ void handle_external(void *arg)
     }
 
     LOG_NODE_INFO(node->node_id, "Received external packet:");
-    LOG_NODE_INFO(node->node_id, "External packet source: %s", packet.source_ipv4);
-    LOG_NODE_INFO(node->node_id, "External packet destination: %s", packet.dest_ipv4);
+    // LOG_NODE_INFO(node->node_id, "External packet source: %s", packet.source_ipv4);
+    // LOG_NODE_INFO(node->node_id, "External packet destination: %s", packet.dest_ipv4);
     LOG_NODE_INFO(node->node_id, "External payload: %s", packet.payload);
 
     /* validate checksum */
@@ -138,8 +138,6 @@ void handle_external(void *arg)
     /* pack external packet into internal packet for routing between nodes */
     struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&packet);
     internal_packet->prev_node_id = node->node_id;
-
-    // // TEMP HACK
 
     internal_packet->is_response = false;
     internal_packet->route = malloc(sizeof(struct packet_route_t));

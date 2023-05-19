@@ -160,6 +160,8 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 
 bool simulate(void)
 {
+    logger_init();
+
     /* mock distance */
     init_coords();
 
@@ -205,5 +207,7 @@ bool simulate(void)
 
     threadpool_stop(&threadpool);
     free_threadpool(&threadpool);
+
+    logger_destroy();
     return 0;
 }
