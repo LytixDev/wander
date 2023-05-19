@@ -31,24 +31,21 @@
 #include "ulsr/node.h"
 
 
-static void close_connections(struct connections_t *connections)
+static void close_all_external_connections(struct connections_t *connections)
 {
-    LOG_INFO("Closing connections");
     for (int i = 0; i < connections->cap; i++) {
 	if (send(connections->connections[i], "q", 2, MSG_NOSIGNAL) > 0) {
 	    shutdown(connections->connections[i], SHUT_RDWR);
 	    close(connections->connections[i]);
 	}
     }
-    LOG_INFO("Closed connections");
 }
 
-static void insert_connection(struct connections_t *connections, int connection)
+static void insert_external_connection(struct connections_t *connections, int connection)
 {
     connections->index++;
     connections->index = connections->index % connections->cap;
     connections->connections[connections->index] = connection;
-    LOG_INFO("Inserted connection");
 }
 
 /* node lifetime functions */
@@ -57,6 +54,7 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
 	       node_can_connect_func_t can_connect_func, node_send_func_t send_func,
 	       node_recv_func_t rec_func, u16 port)
 {
+    /* init socket to external connection from client */
     node->node_id = node_id;
     node->sockfd = socket(PF_INET, SOCK_STREAM, 0);
     if (node->sockfd < 0) {
@@ -68,8 +66,6 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
 	LOG_NODE_ERR(node->node_id, "ABORT!: Failed to set socket options");
 	return false;
     }
-
-    LOG_NODE_INFO(node->node_id, "Succesfully created socket");
 
     struct sockaddr_in address = { 0 };
     address.sin_family = AF_INET;
@@ -86,8 +82,6 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
 	return false;
     }
 
-    LOG_NODE_INFO(node->node_id, "Succesfully bound socket");
-
     node->connections = malloc(sizeof(struct connections_t));
     node->connections->connections = calloc(connections, sizeof(int));
     node->connections->index = -1;
@@ -102,10 +96,9 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     node->send_func = send_func;
     node->rec_func = rec_func;
 
-    /* init route table */
+    /* init route datastructure */
     node->route_queue = (struct queue_t *)(malloc(sizeof(struct queue_t)));
     init_queue(node->route_queue, MESH_NODE_COUNT);
-    LOG_NODE_INFO(node->node_id, "Succesfully initialized route queue");
 
     /* init neighbor list */
     node->neighbors = calloc(MESH_NODE_COUNT, sizeof(struct neighbor_t *));
@@ -118,8 +111,7 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     ARRAY_INIT(node->known_ids);
     set_initial_node_ids(node);
 
-    /* set initial node ids */
-    LOG_NODE_INFO(node->node_id, "Completed initialization");
+    LOG_NODE_INFO(node->node_id, "Successfully initialized");
     return true;
 }
 
@@ -132,34 +124,39 @@ int run_node(struct node_t *node)
     submit_worker_task(node->threadpool, handle_send_internal, (void *)node);
     submit_worker_task(node->threadpool, hello_poll_thread, (void *)node);
 
-    LOG_NODE_INFO(node->node_id, "Node properly initialized");
+    LOG_NODE_INFO(node->node_id, "Successfully started");
 
+    fd_set readfds;
+    struct timeval timeout;
 
+    /*
+     * polling for external connection from client.
+     * if client connects during the "sleeping" phase, the "sleeping" is woken up early in
+     * order to instantly handled the incoming external request.
+     */
     while (node->running) {
-	fd_set readfds;
 	FD_ZERO(&readfds);
 	FD_SET(node->sockfd, &readfds);
-
-	struct timeval timeout;
+	/* set polling timeout to 1/100th of a second */
 	timeout.tv_sec = 0;
 	timeout.tv_usec = 10000;
 
 	int ready = select(node->sockfd + 1, &readfds, NULL, NULL, &timeout);
-	if (ready > 0 && FD_ISSET(node->sockfd, &readfds)) {
-	    int client_sockfd = accept(node->sockfd, NULL, NULL);
+	if (!(ready > 0 && FD_ISSET(node->sockfd, &readfds))) {
+	    continue;
+	}
 
-	    if (client_sockfd != -1) {
-		insert_connection(node->connections, client_sockfd);
+	int client_sockfd = accept(node->sockfd, NULL, NULL);
+	if (client_sockfd != -1) {
+	    insert_external_connection(node->connections, client_sockfd);
+	    LOG_INFO("Inserted external connection");
 
-		struct external_request_thread_data_t *data =
-		    malloc(sizeof(struct external_request_thread_data_t));
-		data->connection = client_sockfd;
-		data->node = node;
+	    struct external_request_thread_data_t *data =
+		malloc(sizeof(struct external_request_thread_data_t));
+	    data->connection = client_sockfd;
+	    data->node = node;
 
-		submit_worker_task(node->threadpool, handle_external, (void *)data);
-
-		client_sockfd = -1;
-	    }
+	    submit_worker_task(node->threadpool, handle_external, (void *)data);
 	}
     }
     return 0;
@@ -168,8 +165,7 @@ int run_node(struct node_t *node)
 void close_node(struct node_t *node)
 {
     node->running = false;
-
-    close_connections(node->connections);
+    close_all_external_connections(node->connections);
     threadpool_stop(node->threadpool);
     close(node->sockfd);
     LOG_NODE_INFO(node->node_id, "Shutdown complete");
@@ -178,14 +174,14 @@ void close_node(struct node_t *node)
 void free_node(struct node_t *node)
 {
     if (node->connections != NULL) {
-	if (node->connections->connections != NULL) {
+	if (node->connections->connections != NULL)
 	    free(node->connections->connections);
-	}
 	free(node->connections);
     }
 
     if (node->threadpool != NULL) {
 	free_threadpool(node->threadpool);
+	free(node->threadpool);
     }
 
     if (node->neighbors != NULL) {

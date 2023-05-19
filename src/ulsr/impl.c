@@ -178,9 +178,9 @@ bool simulate(void)
 
     /* init all nodes and make them run on the threadpool */
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, node_can_connect_func, node_send_func,
-			   node_recv_func, ULSR_DEVICE_PORT_START + i);
-	if (rc == -1)
+	bool success = init_node(&nodes[i], i + 1, 8, 8, 8, node_can_connect_func, node_send_func,
+				 node_recv_func, ULSR_DEVICE_PORT_START + i);
+	if (!success)
 	    exit(1);
 
 	submit_worker_task(&threadpool, run_node_stub, &nodes[i]);
