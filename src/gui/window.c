@@ -82,7 +82,8 @@ GLFWwindow *window_create()
     int width = 0;
     int height = 0;
 
-    glfwSetWindowSizeLimits(window, SIMULATION_WIDTH, SIMULATION_LENGTH, SIMULATION_WIDTH, SIMULATION_LENGTH);
+    glfwSetWindowSizeLimits(window, SIMULATION_WIDTH, SIMULATION_LENGTH, SIMULATION_WIDTH,
+			    SIMULATION_LENGTH);
     glfwSetWindowAspectRatio(window, SIMULATION_WIDTH, SIMULATION_LENGTH);
     glfwSetWindowAspectRatio(window, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
@@ -209,8 +210,9 @@ static void draw_toolbar(int selected_radio_button)
 	glVertex2f(x + radio_button_width, y + radio_button_height);
 	glVertex2f(x, y + radio_button_height);
 	glEnd();
-	render_text(toolbar_items[i], x + ((radio_button_width - (strlen(toolbar_items[i]) * 4)) / 5), y + (TOOLBAR_HEIGHT - 12) / 2,
-		    1.0f);
+	render_text(toolbar_items[i],
+		    x + ((radio_button_width - (strlen(toolbar_items[i]) * 4)) / 5),
+		    y + (TOOLBAR_HEIGHT - 12) / 2, 1.0f);
     }
 }
 
