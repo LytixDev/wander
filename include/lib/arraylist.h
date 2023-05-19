@@ -158,6 +158,6 @@
  * @param item The item variable to use.
  */
 #define ARRAY_FOR_EACH(array, i, item) \
-    for ((i) = 0, item = (array)->items; (i) < (array)->len; item = ((array)->items + ++(i)))
+    for ((i) = 0, item = *(array)->items; (i) < (array)->len; item = *((array)->items + ++(i)))
 
 #endif

@@ -22,9 +22,15 @@
 #include <stdbool.h>
 
 #include "lib/common.h"
+#include "ulsr/node.h"
 #include "ulsr/packet.h"
 
 #define MESH_NODE_COUNT 8
+#define HELLO_POLL_INTERVAL 3
+
+#define SIMULATION_NODE_RANGE 1000
+#define SIMULATION_WIDTH 800
+#define SIMULATION_LENGTH 800
 
 
 struct await_t {
@@ -32,6 +38,15 @@ struct await_t {
     pthread_cond_t cond_variable;
 };
 
+struct simulation_coord_t {
+    u16 x;
+    u16 y;
+};
+
+
+u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b);
+
+void set_initial_node_ids(struct node_t *node);
 
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id);
 

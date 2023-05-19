@@ -45,10 +45,7 @@ typedef struct ulsr_internal_packet *(*node_recv_func_t)(u16 node_id);
  */
 typedef void (*data_free_func_t)(void *);
 
-/**
- * Arraylist struct for neighbor_t.
- */
-ARRAY_T(neighbor_array_t, struct neighbor_t)
+ARRAY_T(u16_arraylist_t, u16);
 
 /**
  * Struct used to represent a neighbor of a node.
@@ -56,6 +53,7 @@ ARRAY_T(neighbor_array_t, struct neighbor_t)
  */
 struct neighbor_t {
     u16 node_id;
+    time_t last_seen;
 };
 
 /**
@@ -89,8 +87,9 @@ struct node_t {
     node_recv_func_t rec_func;
     struct connections_t *connections;
     struct threadpool_t *threadpool;
-    struct neighbor_array_t *neighbors;
     struct route_table_t *route_table;
+    struct neighbor_t **neighbors;
+    struct u16_arraylist_t *known_ids;
 };
 
 

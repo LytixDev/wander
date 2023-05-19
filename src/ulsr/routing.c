@@ -87,24 +87,25 @@ void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nod
 	packet->checksum = 0;
 	curr->send_func(packet, path[path_length - route_payload->step_from_destination - 1]);
     } else {
-	u16 i = 0;
 	struct neighbor_t *neighbor = NULL;
-	ARRAY_FOR_EACH(curr->neighbors, i, neighbor)
-	{
-	    if (!visited[neighbor->node_id - 1]) {
-		struct routing_data_t *routing_data = malloc(sizeof(struct routing_data_t));
-		init_routing_data(curr->node_id, destination_id, total_nodes, visited, path,
-				  path_length, time_taken, routing_data);
-		struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
-		packet->type = PACKET_ROUTING;
-		packet->payload = routing_data;
-		packet->payload_len = sizeof(struct routing_data_t) + sizeof(bool) * total_nodes +
-				      sizeof(u16) * total_nodes;
-		packet->prev_node_id = curr->node_id;
-		packet->dest_node_id = neighbor->node_id;
-		packet->checksum = 0;
-		curr->send_func(packet, neighbor->node_id);
+	for (u16 i = 0; i < total_nodes; i++) {
+	    neighbor = curr->neighbors[i];
+	    if (neighbor == NULL || visited[neighbor->node_id - 1]) {
+		continue;
 	    }
+
+	    struct routing_data_t *routing_data = malloc(sizeof(struct routing_data_t));
+	    init_routing_data(curr->node_id, destination_id, total_nodes, visited, path,
+			      path_length, time_taken, routing_data);
+	    struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
+	    packet->type = PACKET_ROUTING;
+	    packet->payload = routing_data;
+	    packet->payload_len = sizeof(struct routing_data_t) + sizeof(bool) * total_nodes +
+				  sizeof(u16) * total_nodes;
+	    packet->prev_node_id = curr->node_id;
+	    packet->dest_node_id = neighbor->node_id;
+	    packet->checksum = 0;
+	    curr->send_func(packet, neighbor->node_id);
 	}
     }
 }
@@ -136,7 +137,7 @@ u32 find_longest_time(struct route_array_t *routes)
     return longest_time;
 }
 
-struct route_t get_random_route(struct route_array_t *routes)
+struct route_t *get_random_route(struct route_array_t *routes)
 {
     return ARRAY_GET(routes, (u16)rand() % routes->len);
 }

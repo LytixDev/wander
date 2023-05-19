@@ -28,7 +28,7 @@
 /**
  * Struct for an arraylist of routes
  */
-ARRAY_T(route_array_t, struct route_t);
+ARRAY_T(route_array_t, struct route_t *);
 
 /**
  * Struct for data to be sent to the routing thread

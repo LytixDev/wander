@@ -18,8 +18,8 @@
 #ifndef PACKET_H
 #define PACKET_H
 
-#include <stdbool.h>
 #include "lib/common.h"
+#include <stdbool.h>
 
 enum ulsr_packet_type {
     ULSR_HTTP,
@@ -72,6 +72,8 @@ struct ulsr_internal_packet {
  * Allocates the internal packet on the heap.
  */
 struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *external_packet);
+
+struct ulsr_internal_packet *ulsr_internal_create_hello(u16 from, u16 to);
 
 u32 ulsr_checksum(u8 *packet, unsigned long size);
 
