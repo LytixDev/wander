@@ -14,20 +14,25 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-#include <stdio.h>
-#include <stdlib.h>
-
+#ifndef WINDOW_H
+#define WINDOW_H
 #define GLFW_INCLUDE_NONE
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "font.h"
 #include "ulsr/impl.h"
 
 #define STARTING_RING_RADIUS 50.0f
 #define RING_SPEED 50.0f
 #define TOOLBAR_HEIGHT 50.0f
 #define TOOLBAR_ITEM_COUNT 5
+
+static char *toolbar_items[] = { "Hello Packets", "Data Packets", "Purge Packets",
+				 "Routing Packets", "Routing Done Packets" };
 
 struct window_data_t {
     int selected_radio_button;
@@ -44,3 +49,5 @@ GLFWwindow *window_create();
  * @param window the window to update
  */
 void window_update(GLFWwindow *window);
+
+#endif

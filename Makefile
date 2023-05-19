@@ -7,10 +7,10 @@ DIRS := $(shell find $(SRC) -type d -not -wholename "src/client")
 SRCS := $(shell find $(SRC) -type f -name "*.c" -not -wholename "src/client/*")
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
-CFLAGS = -Iinclude -Wall -Wextra -Wshadow -std=c11
+CFLAGS = -Iinclude -Wall -Wextra -Wshadow -std=c11 -I/usr/include/freetype2 -I/usr/include/libpng16
 CFLAGS += -DLOGGING
 LDFLAGS = -pthread
-LDLIBS = -lm -lglfw -lGLU -lGL -lXrandr -lXxf86vm -lXi -lXinerama -lX11 -lrt -ldl -lstb
+LDLIBS = -lm -lglfw -lGLU -lGL -lXrandr -lXxf86vm -lXi -lXinerama -lX11 -lrt -ldl -lstb -lfreetype -lGLEW
 
 .PHONY: format clean tags bear $(OBJDIR)
 TARGET = ulsr
