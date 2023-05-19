@@ -41,6 +41,11 @@ typedef u16 (*node_send_func_t)(struct ulsr_internal_packet *packet, u16 node_id
 typedef struct ulsr_internal_packet *(*node_recv_func_t)(u16 node_id);
 
 /**
+ * Function definition for a function that checks if a node can connect to a router.
+ */
+typedef bool (*node_can_connect_func_t)(void *data);
+
+/**
  * Function definition for a function that frees the data of a node.
  */
 typedef void (*data_free_func_t)(void *);
@@ -83,6 +88,7 @@ struct node_t {
     u16 node_id;
     int sockfd;
     bool running;
+    node_can_connect_func_t can_connect_func;
     node_send_func_t send_func;
     node_recv_func_t rec_func;
     struct connections_t *connections;

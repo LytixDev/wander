@@ -35,7 +35,7 @@ ARRAY_T(route_array_t, struct route_t *);
  */
 struct routing_data_t {
     u16 source_id;
-    u16 destination_id;
+    char *destination_ipv4;
     u16 total_nodes;
     bool *visited;
     u16 *path;
@@ -48,7 +48,7 @@ struct routing_data_t {
  */
 struct route_t {
     u16 source_id;
-    u16 destination_id;
+    char *destination_ipv4;
     u16 *path;
     u16 path_length;
     u32 time_taken;
