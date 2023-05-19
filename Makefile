@@ -3,16 +3,18 @@
 
 OBJDIR = .obj
 SRC = src
-DIRS := $(shell find $(SRC) -type d)
-SRCS := $(shell find $(SRC) -type f -name "*.c")
+DIRS := $(shell find $(SRC) -type d -not -wholename "src/client")
+SRCS := $(shell find $(SRC) -type f -name "*.c" -not -wholename "src/client/*")
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
-CC = gcc
-CFLAGS = -Iinclude -Wall -Wpedantic -Wextra -Wshadow -std=c11
+CFLAGS = -Iinclude -Wall -Wextra -Wshadow -std=c11
+CFLAGS += -DLOGGING
 LDFLAGS = -pthread
+LDLIBS = -lm
 
 .PHONY: format clean tags bear $(OBJDIR)
 TARGET = ulsr
+TARGET_CLIENT = client
 
 all: $(TARGET)
 
@@ -22,25 +24,25 @@ $(OBJDIR)/%.o: %.c Makefile | $(OBJDIR)
 
 $(TARGET): $(OBJS)
 	@echo [LD] $@
-	@$(CC) $(LDFLAGS) -o $@ $^
+	@$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
 debug: CFLAGS += -g -DDEBUG
 debug: $(TARGET)
 
-debug-verbose: CFLAGS += -DDEBUG_VERBOSE
-debug-verbose: debug
-
 clean:
-	@rm -rf $(OBJDIR) $(TARGET)
+	rm -rf $(OBJDIR) $(TARGET) $(TARGET_CLIENT)
 
 tags:
 	@ctags -R
 
 bear:
-	bear -- make
+	@bear -- make
 
 format:
 	python format.py
+
+$(TARGET_CLIENT):
+	$(CC) src/client/client.c src/ulsr/packet.c $(CFLAGS) -o $(TARGET_CLIENT)
 
 $(OBJDIR):
 	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))

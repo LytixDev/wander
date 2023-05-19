@@ -15,15 +15,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <fcntl.h>
+#ifndef ULSR_H
+#define ULSR_H
 
-#include "lib/socket_utils.h"
+/* ulsr default port */
+#define ULSR_DEFAULT_PORT 6969
 
-void set_nonblocking(int socket)
-{
-    int flags = fcntl(socket, F_GETFL, 0);
+#define ULSR_DEVICE_PORT_START 8087
 
-    flags |= O_NONBLOCK;
-
-    fcntl(socket, F_SETFL, flags);
-}
+#endif /* ULSR_H */

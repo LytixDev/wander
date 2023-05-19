@@ -11,6 +11,10 @@ compile_commands.json
 ulsr
 !src/ulsr
 !include/ulsr
+client
+!src/client
+!include/client
 
 # ignore soydev editor
 .vscode/*
+.vscode/**/*

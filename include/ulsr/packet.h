@@ -18,37 +18,63 @@
 #ifndef PACKET_H
 #define PACKET_H
 
-#include <netinet/in.h>
-
 #include "lib/common.h"
+#include <stdbool.h>
 
-/**
- * Enum used to represent the type of a packet.
- * @param PACKET_DATA A packet containing data.
- * @param PACKET_HELLO A packet used to establish a connection.
- * @param PACKET_PURGE A packet used to purge a connection.
+enum ulsr_packet_type {
+    ULSR_HTTP,
+};
+
+struct ulsr_packet {
+    u32 checksum;
+    enum ulsr_packet_type type;
+    u16 seq_nr;
+    char source_ipv4[16];
+    char dest_ipv4[16];
+    u16 dest_port;
+    u16 payload_len;
+    u8 payload[UINT16_MAX];
+};
+
+/*
+ * packets used for internal communication between devices in the simulation
  */
-enum packet_type {
+enum ulsr_internal_packet_type {
     PACKET_DATA,
     PACKET_HELLO,
     PACKET_PURGE,
+    PACKET_NONE,
+    PACKET_ROUTING,
+    PACKET_ROUTING_DONE,
 };
 
-/**
- * Struct used to represent a packet.
- * @param source_ip The source IP address of the packet.
- * @param destination_ip The destination IP address of the packet.
- * @param pt The type of packet.
- * @param data The data contained in the packet.
- * @param len The length of the data contained in the packet.
- * This is also the maximum length of the data in an IPv4 packet.
- */
-struct packet_h {
-    struct sockaddr_in source_ip;
-    struct sockaddr_in destination_ip;
-    enum packet_type pt;
-    void *data;
+struct packet_route_t {
+    u16 *path;
     u16 len;
+    u16 step;
 };
+
+struct ulsr_internal_packet {
+    u32 checksum;
+    enum ulsr_internal_packet_type type;
+    u16 prev_node_id;
+    u16 dest_node_id;
+    u32 payload_len;
+    void *payload;
+    struct packet_route_t *route;
+    bool is_response;
+};
+
+/* Methods */
+
+/*
+ * Creates a new internal packet from an external packet.
+ * Allocates the internal packet on the heap.
+ */
+struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *external_packet);
+
+struct ulsr_internal_packet *ulsr_internal_create_hello(u16 from, u16 to);
+
+u32 ulsr_checksum(u8 *packet, unsigned long size);
 
 #endif /* PACKET_H */

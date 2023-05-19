@@ -25,12 +25,16 @@ def format():
 
 
 def checkstyle():
+    fail = False
     for root, _, files in os.walk("."):
         for file in files:
             if file.endswith((".c", ".h")):
                 rc = os.system("clang-format --dry-run --Werror -style=file " + root + "/" + file)
                 if rc != 0:
-                    return exit(1)
+                    fail = True
+
+    if fail:
+        exit(1)
 
 
 def main():
@@ -41,7 +45,7 @@ def main():
     args = parser.parse_args()
 
     if args.checkstyle:
-        return checkstyle()
+        checkstyle()
     else:
         format()
 
