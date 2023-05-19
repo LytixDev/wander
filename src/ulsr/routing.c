@@ -26,6 +26,7 @@
 #include "ulsr/packet.h"
 #include "ulsr/routing.h"
 
+//TODO: fix/refactor/cleanup this entire file
 void init_routing_data(u16 source_id, u16 total_nodes, bool *visited, u16 *path, u16 path_length,
 		       u32 time_taken, struct routing_data_t *routing_data)
 {

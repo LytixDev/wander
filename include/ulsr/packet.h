@@ -23,6 +23,8 @@
 
 enum ulsr_packet_type {
     ULSR_HTTP,
+    ULSR_RESPONSE,
+    ULSR_FAILURE,
 };
 
 struct ulsr_packet {
