@@ -38,7 +38,7 @@ static bool running;
 static void init_packet_limbo_queue()
 {
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	init_queue(&packet_limbo[i], 32);
+	queue_init(&packet_limbo[i], 32);
     }
 }
 
@@ -87,6 +87,11 @@ static void init_target_coords()
     target_coords.y = 500;
 }
 
+void update_coord(u16 node_id, u16 new_x, u16 new_y)
+{
+    coords[node_id - 1] = (struct simulation_coord_t){ .x = new_x, .y = new_y };
+}
+
 u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b)
 {
     // some yolo type conversions here
@@ -116,9 +121,15 @@ bool can_connect_func(struct node_t *node)
 
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
-    /* how the simulation mocks whether a packet addressed for this node can't be received due too
-     * bad signal */
+    /*
+     * how the simulation mocks whether a packet addressed for this node can't be received due too
+     * bad signal
+     */
     if (distance(&coords[packet->prev_node_id - 1], &coords[node_id - 1]) > SIMULATION_NODE_RANGE)
+	return 0;
+
+    /* how the simulation mocks a packet can't be sent because a node is not active anymore */
+    if (nodes[node_id - 1].node_id == NODE_INACTIVE_ID)
 	return 0;
 
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
@@ -202,12 +213,22 @@ bool simulate(void)
 
     glfwTerminate();
 
+    /* run simulation until 'q' is pressed */
+    while (running) {
+	char c = getc(stdin);
+	if (c == 'q')
+	    running = false;
+	else if (c == 'm') {
+	    LOG_INFO("MOVE: node 5");
+	    update_coord(5, 500, 500);
+	} else if (c == 'd') {
+	    LOG_INFO("DESTROY: node 5");
+	    destroy_node(&nodes[4]);
+	}
+    }
+
 end_simulation:
     running = false;
-    /* run simulation until 'q' is pressed */
-    while (running)
-	running = (getc(stdin) != 'q');
-    ;
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	pthread_mutex_lock(&node_locks[i].cond_lock);
@@ -219,6 +240,8 @@ end_simulation:
 
     // TODO: parallelliser dette
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	if (nodes[i].node_id == NODE_INACTIVE_ID)
+	    continue;
 	close_node(&nodes[i]);
 	free_node(&nodes[i]);
     }

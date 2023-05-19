@@ -29,7 +29,7 @@
 void init_threadpool(struct threadpool_t *threadpool, int max_threads, int queue_size)
 {
     struct queue_t *queue = (struct queue_t *)(malloc(sizeof(struct queue_t)));
-    init_queue(queue, queue_size);
+    queue_init(queue, queue_size);
     threadpool->task_queue = queue;
 
     threadpool->max_threads = max_threads;

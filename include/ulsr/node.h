@@ -130,4 +130,8 @@ void free_node(struct node_t *node);
 
 void close_node(struct node_t *node);
 
+void remove_old_neighbors(struct node_t *node);
+
+void destroy_node(struct node_t *node);
+
 #endif /* NODE_H */

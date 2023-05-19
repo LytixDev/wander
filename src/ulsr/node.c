@@ -25,6 +25,7 @@
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
+#include "lib/queue.h"
 #include "ulsr/comms_external.h"
 #include "ulsr/comms_internal.h"
 #include "ulsr/impl.h"
@@ -46,6 +47,52 @@ static void insert_external_connection(struct connections_t *connections, int co
     connections->index++;
     connections->index = connections->index % connections->cap;
     connections->connections[connections->index] = connection;
+}
+
+static void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id)
+{
+    /* if route queue already empty, do nothing */
+    if (queue_empty(node->route_queue))
+	return;
+
+    struct queue_t *new_route_queue = malloc(sizeof(struct queue_t));
+    queue_init(new_route_queue, MESH_NODE_COUNT);
+
+    struct route_t *route = NULL;
+    while (!queue_empty(node->route_queue)) {
+	route = queue_pop(node->route_queue);
+	for (u16 i = 0; i < route->path_length; i++) {
+	    if (route->path[i] == invalid_node_id) {
+		free(route);
+		continue;
+	    }
+	}
+	/* will only enter here if invalid node is not a part of the route */
+	queue_push(new_route_queue, route);
+    }
+
+    free(node->route_queue);
+    node->route_queue = new_route_queue;
+}
+
+void remove_old_neighbors(struct node_t *node)
+{
+    time_t now = time(NULL);
+
+    struct neighbor_t *neighbor = NULL;
+    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	neighbor = node->neighbors[i];
+	if (neighbor == NULL)
+	    continue;
+
+	if (now - neighbor->last_seen > REMOVE_NEIGHBOR_THRESHOLD) {
+	    LOG_NODE_INFO(node->node_id, "%d removed as neighbor", i + 1);
+	    node->neighbors[i] = NULL;
+	    free(neighbor);
+	    // invalidate all routes that use this neighbor
+	    remove_route_with_old_neighbor(node, i + 1);
+	}
+    }
 }
 
 /* node lifetime functions */
@@ -98,7 +145,7 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
 
     /* init route datastructure */
     node->route_queue = (struct queue_t *)(malloc(sizeof(struct queue_t)));
-    init_queue(node->route_queue, MESH_NODE_COUNT);
+    queue_init(node->route_queue, MESH_NODE_COUNT);
 
     /* init neighbor list */
     node->neighbors = calloc(MESH_NODE_COUNT, sizeof(struct neighbor_t *));
@@ -201,4 +248,11 @@ void free_node(struct node_t *node)
 	ARRAY_FREE(node->known_ids);
 	free(node->known_ids);
     }
+}
+
+void destroy_node(struct node_t *node)
+{
+    // u16 idx = node->node_id + 1;
+    close_node(node);
+    free_node(node);
 }
