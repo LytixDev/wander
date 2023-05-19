@@ -297,7 +297,7 @@ static void handle_send_internal(void *arg)
 	default:
 	    break;
 	}
-	// free(packet);
+	free(packet);
     }
 }
 
