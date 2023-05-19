@@ -177,30 +177,34 @@ static void handle_send_internal(void *arg)
 
     while (node->running) {
 	packet = node->rec_func(node->node_id);
-	if (packet != NULL) {
-	    switch (packet->type) {
-	    case PACKET_DATA:
-		handle_internal_data_packet(node, packet);
-		break;
+	if (packet == NULL) {
+            continue;
+        }
 
-	    case PACKET_HELLO:
-		handle_internal_hello_packet(node, packet);
-		break;
+        switch (packet->type) {
+        case PACKET_DATA:
+            handle_internal_data_packet(node, packet);
+            break;
 
-	    case PACKET_PURGE:
-		LOG_NODE_INFO(node->node_id, "Received PURGE packet");
-		break;
+        case PACKET_HELLO:
+            handle_internal_hello_packet(node, packet);
+            break;
 
-	    case PACKET_ROUTING:
-		LOG_NODE_INFO(node->node_id, "Received ROUTING packet");
-		break;
+        case PACKET_PURGE:
+            LOG_NODE_INFO(node->node_id, "Received PURGE packet");
+            break;
 
-	    case PACKET_ROUTING_DONE:
-		LOG_NODE_INFO(node->node_id, "Received ROUTING_DONE packet");
-		break;
-	    }
-	    free(packet);
-	}
+        case PACKET_ROUTING:
+            LOG_NODE_INFO(node->node_id, "Received ROUTING packet");
+            break;
+
+        case PACKET_ROUTING_DONE:
+            LOG_NODE_INFO(node->node_id, "Received ROUTING_DONE packet");
+            break;
+        default:
+            break;
+        }
+        free(packet);
     }
 }
 
