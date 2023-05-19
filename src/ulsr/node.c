@@ -132,7 +132,7 @@ static bool handle_send_external(struct node_t *node, struct ulsr_internal_packe
 	    internal_packet->route->len = packet->route->len;
 	    internal_packet->route->step = 1;
 	    internal_packet->route->path = reversed;
-            internal_packet->prev_node_id = node->node_id;
+	    internal_packet->prev_node_id = node->node_id;
 	    internal_packet->dest_node_id = packet->route->path[0];
 	    internal_packet->is_response = true;
 	    LOG_NODE_INFO(node->node_id, "Route length: %d", internal_packet->route->len);
@@ -180,7 +180,7 @@ static void packet_bogo_and_find_route(struct ulsr_internal_packet *packet, stru
 
     /* This is called because this node doesn't have any routes to the destination */
 
-//     find_all_routes(node, MESH_NODE_COUNT);
+    //     find_all_routes(node, MESH_NODE_COUNT);
 }
 
 static void handle_internal_data_packet(struct node_t *node, struct ulsr_internal_packet *packet)
