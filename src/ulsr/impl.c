@@ -168,7 +168,7 @@ bool simulate(void)
 	pthread_mutex_unlock(&node_locks[i].cond_lock);
     }
 
-    LOG_INFO("Stopping MAIN threadpool");
+    LOG_INFO("Stopping MAIN threadpool (this may take some time)");
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	close_node(&nodes[i]);
