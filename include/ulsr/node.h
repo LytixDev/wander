@@ -43,7 +43,7 @@ typedef struct ulsr_internal_packet *(*node_recv_func_t)(u16 node_id);
 /**
  * Function definition for a function that checks if a node can connect to a router.
  */
-typedef bool (*node_can_connect_func_t)(struct node_t *node);
+typedef bool (*node_can_connect_func_t)(struct node_t *node, u16 target_id);
 
 /**
  * Function definition for a function that frees the data of a node.
