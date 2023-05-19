@@ -63,7 +63,8 @@ static void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node
 	route = queue_pop(node->route_queue);
 	for (u16 i = 0; i < route->path_length; i++) {
 	    if (route->path[i] == invalid_node_id) {
-		free(route);
+		// TODO: fix freeing of routes and packets
+		// free(route);
 		continue;
 	    }
 	}

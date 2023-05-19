@@ -41,7 +41,7 @@
 /* how often each node polls every other known node to see if its in range to receive */
 #define HELLO_POLL_INTERVAL 3
 /* how long until a neighboring node is considered no longer a neighbor */
-#define REMOVE_NEIGHBOR_THRESHOLD HELLO_POLL_INTERVAL * 5
+#define REMOVE_NEIGHBOR_THRESHOLD HELLO_POLL_INTERVAL * 3
 
 
 /* NOTE: simulation specific variables */
