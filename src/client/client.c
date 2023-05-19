@@ -31,7 +31,7 @@
 #define MY_IP "127.0.0.1"
 
 #define MESH_DEVICE_IP "127.0.0.1"
-#define MESH_DEVICE_PORT 8087
+#define MESH_DEVICE_PORT 8088
 
 /*
  * I want to send an HTTP GET request to http://datakom.no

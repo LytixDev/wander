@@ -99,8 +99,8 @@ struct node_t {
     struct connections_t *connections;
     struct threadpool_t *threadpool;
     struct queue_t *route_queue;
-    struct neighbor_t **neighbors;
     struct u16_arraylist_t *known_ids;
+    struct neighbor_t **neighbors;
 };
 
 

@@ -21,6 +21,7 @@
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
+#include "lib/logger.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/routing.h"
@@ -77,11 +78,12 @@ void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited, u
 	init_route(path[0], curr->node_id, path, path_length, time_taken, route);
 	struct route_payload_t *route_payload = malloc(sizeof(struct route_payload_t));
 	route_payload->route = route;
-	route_payload->step_from_destination = 0;
+	route_payload->step_from_destination = 1;
 	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
 	packet->type = PACKET_ROUTING_DONE;
 	packet->payload = route_payload;
-	packet->payload_len = sizeof(struct route_t) + sizeof(u16) * path_length + sizeof(struct route_payload_t);
+	packet->payload_len =
+	    sizeof(struct route_t) + sizeof(u16) * path_length + sizeof(struct route_payload_t);
 	packet->prev_node_id = curr->node_id;
 	packet->dest_node_id = path[0];
 	packet->checksum = 0;
@@ -112,6 +114,7 @@ void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited, u
 
 void find_all_routes(struct node_t *start, u16 total_nodes)
 {
+    LOG_INFO("Finding all routes from node %d", start->node_id);
     bool visited[total_nodes];
     memset(visited, false, total_nodes);
     u16 path[total_nodes];
@@ -119,26 +122,6 @@ void find_all_routes(struct node_t *start, u16 total_nodes)
     u32 time_taken = 0;
 
     find_all_routes_send(start, total_nodes, visited, path, path_length, time_taken);
-}
-
-u32 find_longest_time(struct route_array_t *routes)
-{
-    struct route_t *route = NULL;
-    u16 i = 0;
-    u32 longest_time = 0;
-    ARRAY_FOR_EACH(routes, i, route)
-    {
-	if (route->time_taken > longest_time) {
-	    longest_time = route->time_taken;
-	}
-    }
-
-    return longest_time;
-}
-
-struct route_t *get_random_route(struct route_array_t *routes)
-{
-    return ARRAY_GET(routes, (u16)rand() % routes->len);
 }
 
 u16 *reverse_route(u16 *route, u16 route_length)

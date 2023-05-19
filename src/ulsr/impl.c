@@ -107,9 +107,13 @@ bool can_connect_func(struct node_t *node)
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
     // the mock
+    if (packet->type == PACKET_DATA) {
+        LOG_INFO("Sending data packet from node %d to node %d", packet->prev_node_id, node_id);
+    }
+
     if (distance(&coords[packet->prev_node_id - 1], &coords[node_id - 1]) > SIMULATION_NODE_RANGE)
 	return 0;
-
+    
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
 
     packet_limbo[node_id - 1] = *packet;
@@ -135,6 +139,9 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
     /* consume the packet */
     struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
     *packet = packet_limbo[node_idx];
+    if (packet->type == PACKET_DATA) {
+        LOG_INFO("Receiving data packet from node %d to node %d", packet->prev_node_id, node_id);
+    }
     packet_limbo[node_idx] = (struct ulsr_internal_packet){ 0 };
     packet_limbo[node_idx].type = PACKET_NONE;
 
