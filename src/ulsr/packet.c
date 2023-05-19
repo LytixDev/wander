@@ -21,6 +21,20 @@
 
 #include "lib/common.h"
 #include "ulsr/packet.h"
+#include "ulsr/ulsr.h"
+
+struct ulsr_packet *ulsr_create_response(struct ulsr_packet *packet, u8 *response, u16 seq_nr)
+{
+    struct ulsr_packet *response_packet = malloc(sizeof(struct ulsr_packet));
+    strncpy(response_packet->source_ipv4, packet->dest_ipv4, 16);
+    strncpy(response_packet->dest_ipv4, packet->source_ipv4, 16);
+    response_packet->dest_port = ULSR_DEFAULT_PORT;
+    response_packet->payload_len = strlen((char *)response);
+    strncpy((char *)response_packet->payload, (char *)response, response_packet->payload_len);
+    response_packet->type = ULSR_HTTP;
+    response_packet->seq_nr = seq_nr;
+    return response_packet;
+}
 
 struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *external)
 {
@@ -45,6 +59,7 @@ struct ulsr_internal_packet *ulsr_internal_create_hello(u16 from, u16 to)
 }
 
 
+// TODO: use checksums everywhere
 u32 ulsr_checksum(u8 *packet, unsigned long size)
 {
     u32 checksum = 0;
