@@ -25,11 +25,11 @@
 #include "ulsr/packet.h"
 #include "ulsr/routing.h"
 
-void init_routing_data(u16 source_id, char destination_ipv4[16], u16 total_nodes, bool *visited, u16 *path,
+void init_routing_data(u16 source_id, u16 total_nodes, bool *visited, u16 *path,
 		       u16 path_length, u32 time_taken, struct routing_data_t *routing_data)
 {
     routing_data->source_id = source_id;
-    routing_data->destination_ipv4 = strdup(destination_ipv4);
+    
     routing_data->total_nodes = total_nodes;
 
     routing_data->visited = malloc(sizeof(bool) * total_nodes);
@@ -43,11 +43,11 @@ void init_routing_data(u16 source_id, char destination_ipv4[16], u16 total_nodes
     routing_data->time_taken = time_taken;
 }
 
-void init_route(u16 source_id, char destination_ipv4[16], u16 *path, u16 path_length, u32 time_taken,
+void init_route(u16 source_id, u16 destination_id, u16 *path, u16 path_length, u32 time_taken,
 		struct route_t *route)
 {
     route->source_id = source_id;
-    route->destination_ipv4 = strdup(destination_ipv4);
+    route->destination_id = destination_id;
     route->path = malloc(sizeof(u16) * path_length);
     memcpy(route->path, path, sizeof(u16) * path_length);
     route->path_length = path_length;
@@ -66,15 +66,15 @@ void free_route(struct route_t *route)
     free(route->path);
 }
 
-void find_all_routes_send(struct node_t *curr, char destination_ipv4[16], u16 total_nodes, bool *visited,
+void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited,
 			  u16 *path, u16 path_length, u32 time_taken)
 {
     visited[curr->node_id - 1] = true;
     path[path_length++] = curr->node_id;
 
-    if (curr->range_func(destination_id)) {
+    if (curr->can_connect_func(curr)) {
 	struct route_t *route = malloc(sizeof(struct route_t));
-	init_route(curr->node_id, destination_id, path, path_length, time_taken, route);
+	init_route(path[0], curr->node_id, path, path_length, time_taken, route);
 	struct route_payload_t *route_payload = malloc(sizeof(struct route_payload_t));
 	route_payload->route = route;
 	route_payload->step_from_destination = 0;
@@ -95,7 +95,7 @@ void find_all_routes_send(struct node_t *curr, char destination_ipv4[16], u16 to
 	    }
 
 	    struct routing_data_t *routing_data = malloc(sizeof(struct routing_data_t));
-	    init_routing_data(curr->node_id, destination_id, total_nodes, visited, path,
+	    init_routing_data(curr->node_id, total_nodes, visited, path,
 			      path_length, time_taken, routing_data);
 	    struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
 	    packet->type = PACKET_ROUTING;
@@ -110,7 +110,7 @@ void find_all_routes_send(struct node_t *curr, char destination_ipv4[16], u16 to
     }
 }
 
-void find_all_routes(struct node_t *start, char *destination_ipv4, u16 total_nodes)
+void find_all_routes(struct node_t *start, u16 total_nodes)
 {
     bool visited[total_nodes];
     memset(visited, false, total_nodes);
@@ -118,7 +118,7 @@ void find_all_routes(struct node_t *start, char *destination_ipv4, u16 total_nod
     u16 path_length = 0;
     u32 time_taken = 0;
 
-    find_all_routes_send(start, destination_ipv4, total_nodes, visited, path, path_length,
+    find_all_routes_send(start, total_nodes, visited, path, path_length,
 			 time_taken);
 }
 
@@ -149,8 +149,6 @@ u16 *reverse_route(u16 *route, u16 route_length)
     for (i = 0; i < route_length; i++) {
 	reversed_route[i] = route[route_length - i - 1];
     }
-    for (i = 0; i < route_length; i++) {
-	printf("%d ", reversed_route[i]);
-    }
+
     return reversed_route;
 }

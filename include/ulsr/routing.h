@@ -35,7 +35,6 @@ ARRAY_T(route_array_t, struct route_t *);
  */
 struct routing_data_t {
     u16 source_id;
-    char *destination_ipv4;
     u16 total_nodes;
     bool *visited;
     u16 *path;
@@ -48,7 +47,7 @@ struct routing_data_t {
  */
 struct route_t {
     u16 source_id;
-    char *destination_ipv4;
+    u16 destination_id;
     u16 *path;
     u16 path_length;
     u32 time_taken;
@@ -76,7 +75,7 @@ struct route_payload_t {
  * @param time_taken The time taken to reach the current node
  * @param routing_data The routing data struct to initialize
  */
-void init_routing_data(u16 source_id, u16 destination_id, u16 total_nodes, bool *visited, u16 *path,
+void init_routing_data(u16 source_id, u16 total_nodes, bool *visited, u16 *path,
 		       u16 path_length, u32 time_taken, struct routing_data_t *routing_data);
 
 /**
@@ -118,7 +117,7 @@ void free_route(struct route_t *route);
  * @param path_length The length of the path
  * @param time_taken The time taken to reach the current node
  */
-void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nodes, bool *visited,
+void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited,
 			  u16 *path, u16 path_length, u32 time_taken);
 
 /**
@@ -128,7 +127,7 @@ void find_all_routes_send(struct node_t *curr, u16 destination_id, u16 total_nod
  * @param destination_id The destination node ID
  * @param total_nodes The total number of nodes in the network
  */
-void find_all_routes(struct node_t *start, u16 destination_id, u16 total_nodes);
+void find_all_routes(struct node_t *start, u16 total_nodes);
 
 /**
  * Finds the longest time taken by any route
