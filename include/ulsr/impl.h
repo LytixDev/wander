@@ -33,9 +33,12 @@
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 
+/* starting node (device) count */
 #define MESH_NODE_COUNT 8
+/* how often each node polls every other known node to see if its in range to receive */
 #define HELLO_POLL_INTERVAL 3
 
+/* these values are in pixels */
 #define SIMULATION_NODE_RANGE 200
 #define SIMULATION_WIDTH 800
 #define SIMULATION_LENGTH 800
@@ -52,6 +55,7 @@ struct simulation_coord_t {
 };
 
 
+/* standard euclidian distance for a 2D system */
 u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b);
 
 void set_initial_node_ids(struct node_t *node);

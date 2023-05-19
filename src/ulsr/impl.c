@@ -31,9 +31,9 @@
 #include "ulsr/ulsr.h"
 
 
+/* global simulation running variable */
 static bool running;
 struct node_t nodes[MESH_NODE_COUNT];
-// struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
 struct queue_t packet_limbo[MESH_NODE_COUNT];
 struct await_t node_locks[MESH_NODE_COUNT];
 struct simulation_coord_t coords[MESH_NODE_COUNT];
@@ -47,7 +47,6 @@ static void init_packet_limbo_queue()
 	init_queue(&packet_limbo[i], 32);
     }
 }
-
 
 static void run_node_stub(void *arg)
 {
@@ -84,6 +83,7 @@ static void init_coords()
 
     } else {
 	/* random */
+	// TODO: implement random coordinates when mesh count is not 8
     }
 }
 
@@ -116,17 +116,14 @@ bool can_connect_func(struct node_t *node)
 
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
-    // the mock
-    if (packet->type == PACKET_DATA) {
-	LOG_INFO("Sending data packet from node %d to node %d", packet->prev_node_id, node_id);
-    }
-
+    /* how the simulation mocks whether a packet addressed for this node can't be received due too
+     * bad signal */
     if (distance(&coords[packet->prev_node_id - 1], &coords[node_id - 1]) > SIMULATION_NODE_RANGE)
 	return 0;
 
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
 
-    // packet_limbo[node_id - 1] = *packet;
+    /* critical section */
     struct ulsr_internal_packet *new_packet = malloc(sizeof(struct ulsr_internal_packet));
     *new_packet = *packet;
     queue_push(&packet_limbo[node_id - 1], new_packet);
@@ -142,45 +139,46 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
     u16 node_idx = node_id - 1;
     pthread_mutex_lock(&node_locks[node_idx].cond_lock);
 
+    /* critical section */
     while (queue_empty(&packet_limbo[node_idx]) && running)
 	pthread_cond_wait(&node_locks[node_idx].cond_variable, &node_locks[node_idx].cond_lock);
-    pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
 
+    struct ulsr_internal_packet *packet;
     if (queue_empty(&packet_limbo[node_idx]))
-	return NULL;
+	packet = NULL;
+    else
+	packet = queue_pop(&packet_limbo[node_idx]);
 
-    /* consume the packet */
-    struct ulsr_internal_packet *packet = queue_pop(&packet_limbo[node_idx]);
-    if (packet->type == PACKET_DATA) {
-	LOG_INFO("Receiving data packet from node %d to node %d", packet->prev_node_id, node_id);
-    }
-
+    pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
     return packet;
 }
 
 bool simulate(void)
 {
+    running = true;
+
+    /* init the logger mutex */
     logger_init();
 
     /* mock distance */
     init_coords();
 
-    /* send and recv implementations declared in ulsr/impl.h and defined in uslr/impl.c */
+    /* simulated queue of incoming packets */
+    init_packet_limbo_queue();
+
+    /* connect, send and recv implementations declared in ulsr/impl.h and defined in uslr/impl.c */
+    node_can_connect_func_t node_can_connect_func = can_connect_func;
     node_send_func_t node_send_func = send_func;
     node_recv_func_t node_recv_func = recv_func;
-
-    init_packet_limbo_queue();
 
     /* main threadpool */
     struct threadpool_t threadpool;
     init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
     start_threadpool(&threadpool);
 
-    running = true;
-
     /* init all nodes and make them run on the threadpool */
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, can_connect_func, node_send_func,
+	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, node_can_connect_func, node_send_func,
 			   node_recv_func, ULSR_DEVICE_PORT_START + i);
 	if (rc == -1)
 	    exit(1);
@@ -188,6 +186,7 @@ bool simulate(void)
 	submit_worker_task(&threadpool, run_node_stub, &nodes[i]);
     }
 
+    /* run simulation until 'q' is pressed */
     while (running)
 	running = (getc(stdin) != 'q');
     ;
@@ -200,6 +199,7 @@ bool simulate(void)
 
     LOG_INFO("Stopping MAIN threadpool (this may take some time)");
 
+    // TODO: parallelliser dette
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	close_node(&nodes[i]);
 	free_node(&nodes[i]);
@@ -209,5 +209,6 @@ bool simulate(void)
     free_threadpool(&threadpool);
 
     logger_destroy();
+
     return 0;
 }
