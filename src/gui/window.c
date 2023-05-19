@@ -236,3 +236,10 @@ void window_update(GLFWwindow *window)
 
     glfwPollEvents();
 }
+
+void window_destroy(GLFWwindow *window)
+{
+    clean_font();
+    glfwDestroyWindow(window);
+    glfwTerminate();
+}

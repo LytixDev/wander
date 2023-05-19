@@ -211,7 +211,7 @@ bool simulate(void)
 	window_update(window);
     }
 
-    glfwTerminate();
+    window_destroy(window);
 
     /* run simulation until 'q' is pressed */
     while (running) {

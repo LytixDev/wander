@@ -18,6 +18,8 @@ void init_free_type();
 
 void load_font();
 
+void clean_font();
+
 void render_text(const char *text, float x, float y, float scale);
 
 #endif /* FONT_H */

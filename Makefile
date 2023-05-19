@@ -29,6 +29,9 @@ $(TARGET): $(OBJS)
 debug: CFLAGS += -g -DDEBUG
 debug: $(TARGET)
 
+gui:
+	CFLAGS += -DGUI
+
 clean:
 	rm -rf $(OBJDIR) $(TARGET) $(TARGET_CLIENT)
 

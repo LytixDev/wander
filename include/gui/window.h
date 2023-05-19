@@ -27,7 +27,7 @@
 #include "ulsr/impl.h"
 
 #define STARTING_RING_RADIUS 50.0f
-#define RING_SPEED 50.0f
+#define RING_SPEED 100.0f
 #define TOOLBAR_HEIGHT 50.0f
 #define TOOLBAR_ITEM_COUNT 5
 
@@ -49,5 +49,11 @@ GLFWwindow *window_create();
  * @param window the window to update
  */
 void window_update(GLFWwindow *window);
+
+/**
+ * Method to destroy the window
+ * @param window the window to destroy
+ */
+void window_destroy(GLFWwindow *window);
 
 #endif
