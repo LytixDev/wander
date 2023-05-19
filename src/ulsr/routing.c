@@ -80,8 +80,8 @@ void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited, u
 	route_payload->step_from_destination = 0;
 	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
 	packet->type = PACKET_ROUTING_DONE;
-	packet->payload = route;
-	packet->payload_len = sizeof(struct route_t) + sizeof(u16) * path_length;
+	packet->payload = route_payload;
+	packet->payload_len = sizeof(struct route_t) + sizeof(u16) * path_length + sizeof(struct route_payload_t);
 	packet->prev_node_id = curr->node_id;
 	packet->dest_node_id = path[0];
 	packet->checksum = 0;

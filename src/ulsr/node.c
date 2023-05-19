@@ -228,6 +228,23 @@ static void handle_internal_hello_packet(struct node_t *node, struct ulsr_intern
     neighbor->last_seen = time(NULL);
 }
 
+static void handle_internal_routing_packet(struct node_t *node, struct ulsr_internal_packet *packet)
+{
+    struct routing_data_t *routing_data = packet->payload;
+    find_all_routes_send(node, routing_data->total_nodes, routing_data->visited, routing_data->path, routing_data->path_length, routing_data->time_taken);
+}
+
+static void handle_internal_routing_packet_done(struct node_t *node, struct ulsr_internal_packet *packet)
+{
+    struct route_payload_t *route = (struct route_payload_t *)packet->payload;
+    if (packet->dest_node_id == node->node_id) {
+        queue_push(node->route_queue, route->route);
+    } else {
+        packet->prev_node_id = node->node_id;
+        node->send_func(packet, route->route->path[route->route->path_length - ++route->step_from_destination - 1]);
+    }
+}
+
 static void handle_send_internal(void *arg)
 {
     struct node_t *node = (struct node_t *)arg;
@@ -253,11 +270,11 @@ static void handle_send_internal(void *arg)
 	    break;
 
 	case PACKET_ROUTING:
-	    LOG_NODE_INFO(node->node_id, "Received ROUTING packet");
+        handle_internal_routing_packet(node, packet);
 	    break;
 
 	case PACKET_ROUTING_DONE:
-	    LOG_NODE_INFO(node->node_id, "Received ROUTING_DONE packet");
+        handle_internal_routing_packet_done(node, packet);
 	    break;
 	default:
 	    break;
