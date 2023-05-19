@@ -108,7 +108,7 @@ static bool handle_send_external(struct node_t *node, struct ulsr_internal_packe
 	    strncpy(ret_packet.dest_ipv4, internal_payload->source_ipv4, 16);
 	    ret_packet.dest_port = ULSR_DEFAULT_PORT;
 	    ret_packet.payload_len = strlen((char *)response);
-	    strncpy(ret_packet.payload, (char *)response, ret_packet.payload_len);
+	    strncpy((char *)ret_packet.payload, (char *)response, ret_packet.payload_len);
 	    ret_packet.type = ULSR_HTTP;
 	    ret_packet.seq_nr = seq_nr;
 

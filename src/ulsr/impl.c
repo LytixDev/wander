@@ -19,7 +19,6 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/select.h>
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
@@ -37,14 +36,6 @@ struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
 struct await_t node_locks[MESH_NODE_COUNT];
 struct simulation_coord_t coords[MESH_NODE_COUNT];
 
-
-static void sleep_microseconds(unsigned int microseconds)
-{
-    struct timeval tv;
-    tv.tv_sec = microseconds / 1000000;
-    tv.tv_usec = microseconds % 1000000;
-    select(0, NULL, NULL, NULL, &tv);
-}
 
 static void run_node_stub(void *arg)
 {
