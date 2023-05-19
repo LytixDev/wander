@@ -22,7 +22,12 @@
 #include <stdbool.h>
 
 /* functions */
-void handle_send_internal(void *arg);
+
+/*
+ * main thread run by the node
+ * calls the nodes recv function until the nodes running condition is set to false
+ */
+void main_recv_thread(void *arg);
 
 void hello_poll_thread(void *arg);
 

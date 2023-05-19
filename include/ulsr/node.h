@@ -93,7 +93,7 @@ struct node_t {
     bool running;
     node_can_connect_func_t can_connect_func;
     node_send_func_t send_func;
-    node_recv_func_t rec_func;
+    node_recv_func_t recv_func;
     struct connections_t *connections;
     struct threadpool_t *threadpool;
     struct queue_t *route_queue;

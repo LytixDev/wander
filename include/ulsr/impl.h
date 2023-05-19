@@ -68,8 +68,10 @@ bool simulate(void);
 
 bool can_connect_func(struct node_t *node);
 
+/* after the packet is sent, a copy is made, and the caller can free the original */
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id);
 
+/* returns one heap allocated packet at a time */
 struct ulsr_internal_packet *recv_func(u16 node_id);
 
 #endif /* IMPL_H */

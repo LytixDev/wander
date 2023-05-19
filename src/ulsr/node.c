@@ -94,7 +94,7 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     /* set node options */
     node->can_connect_func = can_connect_func;
     node->send_func = send_func;
-    node->rec_func = rec_func;
+    node->recv_func = rec_func;
 
     /* init route datastructure */
     node->route_queue = (struct queue_t *)(malloc(sizeof(struct queue_t)));
@@ -121,7 +121,7 @@ int run_node(struct node_t *node)
     start_threadpool(node->threadpool);
     node->running = true;
 
-    submit_worker_task(node->threadpool, handle_send_internal, (void *)node);
+    submit_worker_task(node->threadpool, main_recv_thread, (void *)node);
     submit_worker_task(node->threadpool, hello_poll_thread, (void *)node);
 
     LOG_NODE_INFO(node->node_id, "Successfully started");
