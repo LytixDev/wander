@@ -18,7 +18,6 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-#include "lib/arraylist.h"
 #include "lib/common.h"
 #include "ulsr/route_table.h"
 #include "ulsr/routing.h"
