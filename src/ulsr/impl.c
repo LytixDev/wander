@@ -117,10 +117,6 @@ bool can_connect_func(struct node_t *node)
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
     // the mock
-    if (packet->type == PACKET_DATA) {
-	LOG_INFO("Sending data packet from node %d to node %d", packet->prev_node_id, node_id);
-    }
-
     if (distance(&coords[packet->prev_node_id - 1], &coords[node_id - 1]) > SIMULATION_NODE_RANGE)
 	return 0;
 

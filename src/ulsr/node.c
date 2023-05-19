@@ -27,17 +27,16 @@
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
+#include "ulsr/ext_comms.h"
 #include "ulsr/impl.h"
+#include "ulsr/int_comms.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/routing.h"
 #include "ulsr/ulsr.h"
 
 
-struct external_request_thread_data_t {
-    u16 connection;
-    struct node_t *node;
-};
+
 
 static void close_connections(struct connections_t *connections)
 {
@@ -399,7 +398,7 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
 	return false;
     }
 
-    LOG_NODE_INFO(node->node_id, "Succesfully created socket");
+    // LOG_NODE_INFO(node->node_id, "Succesfully created socket");
 
     struct sockaddr_in address = { 0 };
     address.sin_family = AF_INET;
@@ -416,7 +415,7 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
 	return false;
     }
 
-    LOG_NODE_INFO(node->node_id, "Succesfully bound socket");
+    // LOG_NODE_INFO(node->node_id, "Succesfully bound socket");
 
     node->connections = malloc(sizeof(struct connections_t));
     node->connections->connections = calloc(connections, sizeof(int));
@@ -432,7 +431,7 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     node->send_func = send_func;
     node->rec_func = rec_func;
 
-    /* init route table */
+    /* init route structure  */
     node->route_queue = (struct queue_t *)(malloc(sizeof(struct queue_t)));
     init_queue(node->route_queue, MESH_NODE_COUNT);
     LOG_NODE_INFO(node->node_id, "Succesfully initialized route queue");
