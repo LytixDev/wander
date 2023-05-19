@@ -35,6 +35,8 @@ struct node_t nodes[MESH_NODE_COUNT];
 struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
 struct await_t node_locks[MESH_NODE_COUNT];
 struct simulation_coord_t coords[MESH_NODE_COUNT];
+/* the coordinates of the destination for the client's request */
+struct simulation_coord_t target_coords = { .x = 500, .y = 500 };
 
 
 static void run_node_stub(void *arg)
@@ -82,6 +84,12 @@ u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b)
     double delta_y = b->y - a->y;
     double d = sqrt(delta_x * delta_x + delta_y * delta_y);
     return (u16)d;
+}
+
+bool can_reach_external_target(u16 node_id)
+{
+    struct simulation_coord_t node_coords = coords[node_id - 1];
+    return distance(&node_coords, &target_coords) < SIMULATION_NODE_RANGE;
 }
 
 void set_initial_node_ids(struct node_t *node)

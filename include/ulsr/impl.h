@@ -18,6 +18,14 @@
 #ifndef IMPL_H
 #define IMPL_H
 
+/*
+ * This is the simulation implementation.
+ * In order to implement a new simulation, or implement the protocol in a real world scenario,
+ * the functions send_func and recv_func defined in ulsr/node.h need to be implemented.
+ * In addition, for any simulation, the simulation() method must be implemented. The simulation
+ * method initializes all the simulated nodes and their starting state.
+ */
+
 #include <pthread.h>
 #include <stdbool.h>
 
@@ -47,6 +55,10 @@ struct simulation_coord_t {
 u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b);
 
 void set_initial_node_ids(struct node_t *node);
+
+bool can_reach_external_target(u16 node_id);
+
+/* must implement */
 
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id);
 
