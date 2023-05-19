@@ -22,7 +22,10 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 
-#include "gui/window_utils.h"
+#include "ulsr/impl.h"
+
+#define STARTING_RING_RADIUS 50.0f
+#define RING_SPEED 50.0f
 
 /**
  * Method to create a window

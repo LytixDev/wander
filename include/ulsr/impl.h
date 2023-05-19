@@ -36,10 +36,9 @@
 #define MESH_NODE_COUNT 8
 #define HELLO_POLL_INTERVAL 3
 
-#define SIMULATION_NODE_RANGE 200
-#define SIMULATION_WIDTH 800
-#define SIMULATION_LENGTH 800
-
+#define SIMULATION_NODE_RANGE 250
+#define SIMULATION_WIDTH 700
+#define SIMULATION_LENGTH 700
 
 struct await_t {
     pthread_mutex_t cond_lock;
@@ -51,7 +50,14 @@ struct simulation_coord_t {
     u16 y;
 };
 
+/* Global variables for the simulation */
+struct node_t nodes[MESH_NODE_COUNT];
+struct queue_t packet_limbo[MESH_NODE_COUNT];
+struct await_t node_locks[MESH_NODE_COUNT];
+struct simulation_coord_t coords[MESH_NODE_COUNT];
+struct simulation_coord_t target_coords;
 
+/* the coordinates of the destination for the client's request */
 u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b);
 
 void set_initial_node_ids(struct node_t *node);

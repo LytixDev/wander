@@ -10,7 +10,7 @@ OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 CFLAGS = -Iinclude -Wall -Wextra -Wshadow -std=c11
 CFLAGS += -DLOGGING
 LDFLAGS = -pthread
-LDLIBS = -lm
+LDLIBS = -lm -lglfw -lGLU -lGL -lXrandr -lXxf86vm -lXi -lXinerama -lX11 -lrt -ldl -lstb
 
 .PHONY: format clean tags bear $(OBJDIR)
 TARGET = ulsr

@@ -22,11 +22,26 @@
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
 #include <stb/stb_image.h>
+#include <math.h>
 
 #include "gui/window.h"
-#include "gui/window_utils.h"
+#include "lib/common.h"
+#include "ulsr/impl.h"
 
-GLFWwindow *window_create()
+void framebuffer_size_callback(GLFWwindow* window, int width, int height) 
+{
+    glViewport(0.0f, 0.0f, width, height);
+
+    glMatrixMode(GL_PROJECTION);
+
+    glLoadIdentity();
+
+    glOrtho(0, width, 0, height, -1, 1);
+
+    glMatrixMode(GL_MODELVIEW);
+}
+
+GLFWwindow *window_create() 
 {
     GLFWwindow *window;
 
@@ -35,63 +50,135 @@ GLFWwindow *window_create()
 	return NULL;
     }
 
-    window = glfwCreateWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Gogool Maps", NULL, NULL);
+    window = glfwCreateWindow(SIMULATION_WIDTH, SIMULATION_LENGTH, "ULSR Simulation", NULL, NULL);
 
-    GLFWimage images[1];
-    images[0].pixels = stbi_load("./resources/icon.png", &images[0].width, &images[0].height, 0, 4);
-    glfwSetWindowIcon(window, 1, images);
+    GLFWimage images[1]; 
+    images[0].pixels = stbi_load("./include/static/icon.png", &images[0].width, &images[0].height, 0, 4);
+    glfwSetWindowIcon(window, 1, images); 
     stbi_image_free(images[0].pixels);
 
     if (!window) {
-	glfwTerminate();
-	return NULL;
+        glfwTerminate();
+        return NULL;
     }
+
+    int width = 0; 
+    int height = 0;
+
+    glfwGetFramebufferSize(window, &width, &height);
 
     glfwMakeContextCurrent(window);
 
-    glViewport(0.0f, 0.0f, SCREEN_WIDTH, SCREEN_HEIGHT);
+    glViewport(0.0f, 0.0f, width, height);
 
     glMatrixMode(GL_PROJECTION);
 
     glLoadIdentity();
 
-    glOrtho(0, SCREEN_WIDTH, 0, SCREEN_HEIGHT, 0, 1);
-
+    glOrtho(0, width, 0, height, -1, 1);
+    
     glMatrixMode(GL_MODELVIEW);
 
-    glLoadIdentity();
-
-    // TODO: This pointer will be used as the window's user pointer. It will be used to pass data to
-    // the window's callbacks.
-    void *pointer = NULL;
-
-    glfwSetWindowUserPointer(window, (void *)pointer);
+    glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 
     return window;
+}
+
+static void draw_circle(float center_x, float center_y, float radius) {
+    glColor3f(0.5, 0.5, 0.5);
+    glBegin(GL_LINE_LOOP);
+    u16 i;
+    for (i = 0; i < 360; i++) {
+        float theta = i * (3.14159265358979323846 / 180.0);
+        float x = center_x + radius * cos(theta);
+        float y = center_y + radius * sin(theta);
+        glVertex2f(x, y);
+    }
+    glEnd();
+}
+
+static void draw_node_coords()
+{
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnable(GL_POINT);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glPointSize(10);
+
+    GLfloat colors[] = {
+        0, 0, 255,
+        0, 0, 255,
+        0, 0, 255
+    };
+
+    glColorPointer(3, GL_FLOAT, 0, colors);
+
+    // For loop here to iterate through all nodes
+    for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
+        GLfloat point_vertex[] = {
+                coords[i].x,
+                coords[i].y,
+                0
+            };
+        glVertexPointer(2, GL_FLOAT, 0, point_vertex);
+        glDrawArrays(GL_POINTS, 0, 1);
+    }
+
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisable(GL_POINT);
+    glDisableClientState(GL_VERTEX_ARRAY);
+}
+
+void draw_target_coords()
+{
+    glEnableClientState(GL_VERTEX_ARRAY);
+    glEnable(GL_POINT);
+    glEnableClientState(GL_COLOR_ARRAY);
+    glPointSize(20);
+
+    GLfloat point_vertex[] = {
+            target_coords.x,
+            target_coords.y,
+            0
+        };
+
+    GLfloat colors[] = {
+            255, 0, 0,
+            255, 0, 0,
+            255, 0, 0
+        };
+    
+    glColorPointer(3, GL_FLOAT, 0, colors);
+    glVertexPointer(2, GL_FLOAT, 0, point_vertex);
+    glDrawArrays(GL_POINTS, 0, 1);
+
+    glDisableClientState(GL_COLOR_ARRAY);
+    glDisable(GL_POINT);
+    glDisableClientState(GL_VERTEX_ARRAY);
+}
+
+void draw_ranges()
+{
+    float current_time = glfwGetTime();
+    float radius = STARTING_RING_RADIUS + (RING_SPEED * current_time);
+    
+    if (radius > SIMULATION_NODE_RANGE) {
+        glfwSetTime(0);
+    }
+
+    for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
+        draw_circle(coords[i].x, coords[i].y, radius);
+    }
 }
 
 void window_update(GLFWwindow *window)
 {
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glEnableClientState(GL_VERTEX_ARRAY);
-    glEnable(GL_POINT_SMOOTH);
-    glPointSize(1);
+    draw_node_coords();
 
-    // TODO: This pointer will be used as the window's user pointer. It will be used to pass data to
-    // the window's callbacks.
-    void *pointer = (void *)glfwGetWindowUserPointer(window);
+    draw_target_coords();
 
-    // For loop here to iterate through all nodes
-
-    GLfloat point_vertex[] = { longitude_to_x(/* Insert node here) */ 0),
-			       latitude_to_y(/* Insert node here */ 0), 0 };
-
-    glVertexPointer(2, GL_FLOAT, 0, point_vertex);
-    glDrawArrays(GL_POINTS, 0, 1);
-
-    glDisable(GL_POINT_SMOOTH);
-    glDisableClientState(GL_VERTEX_ARRAY);
+    draw_ranges();
 
     glfwSwapBuffers(window);
 

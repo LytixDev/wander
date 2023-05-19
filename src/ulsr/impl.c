@@ -29,17 +29,10 @@
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
+#include "gui/window.h"
 
 
 static bool running;
-struct node_t nodes[MESH_NODE_COUNT];
-// struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
-struct queue_t packet_limbo[MESH_NODE_COUNT];
-struct await_t node_locks[MESH_NODE_COUNT];
-struct simulation_coord_t coords[MESH_NODE_COUNT];
-/* the coordinates of the destination for the client's request */
-struct simulation_coord_t target_coords = { .x = 500, .y = 500 };
-
 
 static void init_packet_limbo_queue()
 {
@@ -85,6 +78,12 @@ static void init_coords()
     } else {
 	/* random */
     }
+}
+
+static void init_target_coords()
+{
+    target_coords.x = 500;
+    target_coords.y = 500;
 }
 
 u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b)
@@ -161,7 +160,9 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 bool simulate(void)
 {
     /* mock distance */
+    GLFWwindow *window;
     init_coords();
+    init_target_coords();
 
     /* send and recv implementations declared in ulsr/impl.h and defined in uslr/impl.c */
     node_send_func_t node_send_func = send_func;
@@ -186,9 +187,19 @@ bool simulate(void)
 	submit_worker_task(&threadpool, run_node_stub, &nodes[i]);
     }
 
-    while (running)
-	running = (getc(stdin) != 'q');
-    ;
+    /* init the window */
+    if (!(window = window_create())) {
+        goto end_simulation;
+    }
+
+    while (!glfwWindowShouldClose(window)) {
+        window_update(window);
+    }
+
+    glfwTerminate();
+
+end_simulation:
+    running = false;
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	pthread_mutex_lock(&node_locks[i].cond_lock);
