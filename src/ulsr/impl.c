@@ -35,6 +35,8 @@ struct node_t nodes[MESH_NODE_COUNT];
 struct ulsr_internal_packet packet_limbo[MESH_NODE_COUNT];
 struct await_t node_locks[MESH_NODE_COUNT];
 struct simulation_coord_t coords[MESH_NODE_COUNT];
+/* the coordinates of the destination for the client's request */
+struct simulation_coord_t target_coords = { .x = 500, .y = 500 };
 
 
 static void run_node_stub(void *arg)
@@ -84,11 +86,22 @@ u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b)
     return (u16)d;
 }
 
+bool can_reach_external_target(u16 node_id)
+{
+    struct simulation_coord_t node_coords = coords[node_id - 1];
+    return distance(&node_coords, &target_coords) < SIMULATION_NODE_RANGE;
+}
+
 void set_initial_node_ids(struct node_t *node)
 {
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	ARRAY_PUSH(node->known_ids, (u16)(i + 1));
     }
+}
+
+bool can_connect_func(struct node_t *node)
+{
+    return can_reach_external_target(node->node_id);
 }
 
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
@@ -150,8 +163,8 @@ bool simulate(void)
 
     /* init all nodes and make them run on the threadpool */
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, node_send_func, node_recv_func,
-			   ULSR_DEVICE_PORT_START + i);
+	int rc = init_node(&nodes[i], i + 1, 8, 8, 8, can_connect_func, node_send_func,
+			   node_recv_func, ULSR_DEVICE_PORT_START + i);
 	if (rc == -1)
 	    exit(1);
 

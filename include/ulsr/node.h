@@ -41,8 +41,12 @@ typedef u16 (*node_send_func_t)(struct ulsr_internal_packet *packet, u16 node_id
  */
 typedef struct ulsr_internal_packet *(*node_recv_func_t)(u16 node_id);
 
+/* opaque bro */
+struct node_t;
+
 /**
- * Function definition for a function that checks if a node can connect to a router.
+ * Function definition for a function that checks if a given mesh node is connected to the internet
+ * of the target
  */
 typedef bool (*node_can_connect_func_t)(struct node_t *node);
 
@@ -111,7 +115,8 @@ struct node_t {
  * @param queue_size The size of the queue.
  */
 bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
-	       node_send_func_t send_func, node_recv_func_t rec_func, u16 port);
+	       node_can_connect_func_t can_connect_func, node_send_func_t send_func,
+	       node_recv_func_t rec_func, u16 port);
 
 /**
  * Runs a node.
