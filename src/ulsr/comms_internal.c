@@ -195,6 +195,10 @@ void hello_poll_thread(void *arg)
 	    node->send_func(packet, to_id);
 	    free(packet);
 	}
+
+	/* check if any neighbors are "out of date" */
+	// TODO: is a new mutex needed, or can I reuse the node lock ?
+	remove_old_neighbors(node);
 	sleep(HELLO_POLL_INTERVAL);
     }
 }

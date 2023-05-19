@@ -33,10 +33,20 @@
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 
+
+/* NOTE: variables that need to be defined: */
+
 /* starting node (device) count */
-#define MESH_NODE_COUNT 8
+#define MESH_NODE_COUNT 8 // TODO: this should be initial starting node count
 /* how often each node polls every other known node to see if its in range to receive */
 #define HELLO_POLL_INTERVAL 3
+/* how long until a neighboring node is considered no longer a neighbor */
+#define REMOVE_NEIGHBOR_THRESHOLD HELLO_POLL_INTERVAL * 5
+
+
+/* NOTE: simulation specific variables */
+
+#define NODE_INACTIVE_ID 0
 
 /* these values are in pixels */
 #define SIMULATION_NODE_RANGE 200

@@ -48,6 +48,24 @@ static void insert_external_connection(struct connections_t *connections, int co
     connections->connections[connections->index] = connection;
 }
 
+void remove_old_neighbors(struct node_t *node)
+{
+    time_t now = time(NULL);
+
+    struct neighbor_t *neighbor = NULL;
+    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	neighbor = node->neighbors[i];
+	if (neighbor == NULL)
+	    continue;
+
+	if (now - neighbor->last_seen > REMOVE_NEIGHBOR_THRESHOLD) {
+	    LOG_NODE_INFO(node->node_id, "%d removed as neighbor", i + 1);
+	    node->neighbors[i] = NULL;
+	    free(neighbor);
+	}
+    }
+}
+
 /* node lifetime functions */
 
 bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
@@ -201,4 +219,11 @@ void free_node(struct node_t *node)
 	ARRAY_FREE(node->known_ids);
 	free(node->known_ids);
     }
+}
+
+void destroy_node(struct node_t *node)
+{
+    // u16 idx = node->node_id + 1;
+    close_node(node);
+    free_node(node);
 }

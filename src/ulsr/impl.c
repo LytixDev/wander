@@ -87,6 +87,11 @@ static void init_coords()
     }
 }
 
+void update_coord(u16 node_id, u16 new_x, u16 new_y)
+{
+    coords[node_id - 1] = (struct simulation_coord_t){ .x = new_x, .y = new_y };
+}
+
 u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b)
 {
     // some yolo type conversions here
@@ -116,9 +121,15 @@ bool can_connect_func(struct node_t *node)
 
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
-    /* how the simulation mocks whether a packet addressed for this node can't be received due too
-     * bad signal */
+    /*
+     * how the simulation mocks whether a packet addressed for this node can't be received due too
+     * bad signal
+     */
     if (distance(&coords[packet->prev_node_id - 1], &coords[node_id - 1]) > SIMULATION_NODE_RANGE)
+	return 0;
+
+    /* how the simulation mocks a packet can't be sent because a node is not active anymore */
+    if (nodes[node_id - 1].node_id == NODE_INACTIVE_ID)
 	return 0;
 
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
@@ -204,6 +215,8 @@ bool simulate(void)
 
     // TODO: parallelliser dette
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	if (nodes[i].node_id == NODE_INACTIVE_ID)
+	    continue;
 	close_node(&nodes[i]);
 	free_node(&nodes[i]);
     }
