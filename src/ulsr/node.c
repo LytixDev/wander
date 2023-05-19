@@ -124,6 +124,7 @@ static bool handle_send_external(struct node_t *node, struct ulsr_internal_packe
 			    internal_packet->route->path[internal_packet->route->step]);
 	    LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d to node %d", seq_nr,
 			  internal_packet->route->path[internal_packet->route->step]);
+	    free(internal_packet);
 	    memset(response, 0, UINT16_MAX);
 	    seq_nr++;
 	}
@@ -152,8 +153,6 @@ static void handle_internal_data_packet(struct node_t *node, struct ulsr_interna
 	packet->prev_node_id = node->node_id;
 	node->send_func(packet, packet->route->path[packet->route->step]);
     }
-
-    // free(packet);
 }
 
 static void handle_internal_hello_packet(struct node_t *node, struct ulsr_internal_packet *packet)
@@ -176,6 +175,7 @@ static void handle_send_internal(void *arg)
     struct ulsr_internal_packet *packet = NULL;
 
     while (node->running) {
+	/* allocates the packet for us */
 	packet = node->rec_func(node->node_id);
 	if (packet == NULL) {
 	    continue;
@@ -204,7 +204,9 @@ static void handle_send_internal(void *arg)
 	default:
 	    break;
 	}
+
 	free(packet);
+	packet = NULL;
     }
 }
 
@@ -237,19 +239,17 @@ static void handle_external(void *arg)
     internal_packet->prev_node_id = data->node->node_id;
 
     // TEMP HACK
-    internal_packet->dest_node_id = 8;
+    internal_packet->dest_node_id = 2;
 
     internal_packet->is_response = false;
 
     /* find path to destination */
     u16 *path = malloc(sizeof(u16) * 4);
     path[0] = 1;
-    path[1] = 3;
-    path[2] = 4;
-    path[3] = 8;
+    path[1] = 2;
     internal_packet->route = malloc(sizeof(struct packet_route_t));
     internal_packet->route->path = path;
-    internal_packet->route->len = 4;
+    internal_packet->route->len = 2;
     internal_packet->route->step = 0;
     // struct route_t *route = route_table_get(data->node->route_table,
     // internal_packet->dest_node_id); free(path);
@@ -318,7 +318,7 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
 	return false;
     }
 
-    LOG_NODE_INFO(node->node_id, "Succesfully created socket");
+    // LOG_NODE_INFO(node->node_id, "Succesfully created socket");
 
     struct sockaddr_in address = { 0 };
     address.sin_family = AF_INET;
@@ -335,7 +335,7 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
 	return false;
     }
 
-    LOG_NODE_INFO(node->node_id, "Succesfully bound socket");
+    // LOG_NODE_INFO(node->node_id, "Succesfully bound socket");
 
     node->connections = malloc(sizeof(struct connections_t));
     node->connections->connections = calloc(connections, sizeof(int));
@@ -352,7 +352,7 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
 
     /* init route table */
     route_table_init(&node->route_table);
-    LOG_NODE_INFO(node->node_id, "Succesfully initialized route table");
+    // LOG_NODE_INFO(node->node_id, "Succesfully initialized route table");
 
     /* init neighbor list */
     node->neighbors = malloc(sizeof(struct neighbor_t *) * MESH_NODE_COUNT);
