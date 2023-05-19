@@ -47,7 +47,7 @@ struct queue_t {
  * @param queue queue to initialize.
  * @param size size of the queue.
  */
-void init_queue(struct queue_t *queue, int size);
+void queue_init(struct queue_t *queue, int size);
 
 /**
  * Function used to check if a queue is empty.

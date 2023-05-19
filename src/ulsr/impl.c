@@ -44,7 +44,7 @@ struct simulation_coord_t target_coords = { .x = 500, .y = 500 };
 static void init_packet_limbo_queue()
 {
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	init_queue(&packet_limbo[i], 32);
+	queue_init(&packet_limbo[i], 32);
     }
 }
 

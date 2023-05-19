@@ -197,7 +197,7 @@ void hello_poll_thread(void *arg)
 	}
 
 	/* check if any neighbors are "out of date" */
-	// TODO: is a new mutex needed, or can I reuse the node lock ?
+	// TODO: is a mutex needed here (probably) ?
 	remove_old_neighbors(node);
 	sleep(HELLO_POLL_INTERVAL);
     }

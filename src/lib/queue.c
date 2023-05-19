@@ -20,9 +20,9 @@
 
 #include "lib/queue.h"
 
-void init_queue(struct queue_t *queue, int size)
+void queue_init(struct queue_t *queue, int size)
 {
-    queue->items = (void *)(malloc(size * sizeof(void *)));
+    queue->items = malloc(size * sizeof(void *));
     queue->max = size;
     queue->start = queue->end = queue->size = 0;
 }
