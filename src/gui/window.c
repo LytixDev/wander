@@ -21,30 +21,32 @@
 #define GLFW_INCLUDE_NONE
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
-#include <stb/stb_image.h>
 #include <math.h>
+#include <stb/stb_image.h>
 
 #include "gui/window.h"
 #include "lib/common.h"
 #include "ulsr/impl.h"
 
-void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
+{
     if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
-        double x_pos;
-        double y_pos;
-        glfwGetCursorPos(window, &x_pos, &y_pos);
-        struct window_data_t *window_data = (struct window_data_t *)glfwGetWindowUserPointer(window);
-        if (y_pos <= TOOLBAR_HEIGHT) {
-            int radio_button_width = SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT;
+	double x_pos;
+	double y_pos;
+	glfwGetCursorPos(window, &x_pos, &y_pos);
+	struct window_data_t *window_data =
+	    (struct window_data_t *)glfwGetWindowUserPointer(window);
+	if (y_pos <= TOOLBAR_HEIGHT) {
+	    int radio_button_width = SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT;
 
-            int clicked_idx = x_pos / radio_button_width;
+	    int clicked_idx = x_pos / radio_button_width;
 
-            window_data->selected_radio_button = clicked_idx;
-        }
+	    window_data->selected_radio_button = clicked_idx;
+	}
     }
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height) 
+void framebuffer_size_callback(GLFWwindow *window, int width, int height)
 {
     glViewport(0.0f, 0.0f, width, height);
 
@@ -57,7 +59,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
     glMatrixMode(GL_MODELVIEW);
 }
 
-GLFWwindow *window_create() 
+GLFWwindow *window_create()
 {
     GLFWwindow *window;
 
@@ -68,17 +70,18 @@ GLFWwindow *window_create()
 
     window = glfwCreateWindow(SIMULATION_WIDTH, SIMULATION_LENGTH, "ULSR Simulation", NULL, NULL);
 
-    GLFWimage images[1]; 
-    images[0].pixels = stbi_load("./include/static/icon.png", &images[0].width, &images[0].height, 0, 4);
-    glfwSetWindowIcon(window, 1, images); 
+    GLFWimage images[1];
+    images[0].pixels =
+	stbi_load("./include/static/icon.png", &images[0].width, &images[0].height, 0, 4);
+    glfwSetWindowIcon(window, 1, images);
     stbi_image_free(images[0].pixels);
 
     if (!window) {
-        glfwTerminate();
-        return NULL;
+	glfwTerminate();
+	return NULL;
     }
 
-    int width = 0; 
+    int width = 0;
     int height = 0;
 
     glfwGetFramebufferSize(window, &width, &height);
@@ -92,7 +95,7 @@ GLFWwindow *window_create()
     glLoadIdentity();
 
     glOrtho(0, width, 0, height, -1, 1);
-    
+
     glMatrixMode(GL_MODELVIEW);
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
@@ -105,15 +108,16 @@ GLFWwindow *window_create()
     return window;
 }
 
-static void draw_circle(float center_x, float center_y, float radius) {
+static void draw_circle(float center_x, float center_y, float radius)
+{
     glColor3f(0.5, 0.5, 0.5);
     glBegin(GL_LINE_LOOP);
     u16 i;
     for (i = 0; i < 360; i++) {
-        float theta = i * (3.14159265358979323846 / 180.0);
-        float x = center_x + radius * cos(theta);
-        float y = center_y + radius * sin(theta);
-        glVertex2f(x, y);
+	float theta = i * (3.14159265358979323846 / 180.0);
+	float x = center_x + radius * cos(theta);
+	float y = center_y + radius * sin(theta);
+	glVertex2f(x, y);
     }
     glEnd();
 }
@@ -125,23 +129,15 @@ static void draw_node_coords()
     glEnableClientState(GL_COLOR_ARRAY);
     glPointSize(10);
 
-    GLfloat colors[] = {
-        0, 0, 255,
-        0, 0, 255,
-        0, 0, 255
-    };
+    GLfloat colors[] = { 0, 0, 255, 0, 0, 255, 0, 0, 255 };
 
     glColorPointer(3, GL_FLOAT, 0, colors);
 
     // For loop here to iterate through all nodes
     for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
-        GLfloat point_vertex[] = {
-                coords[i].x,
-                coords[i].y,
-                0
-            };
-        glVertexPointer(2, GL_FLOAT, 0, point_vertex);
-        glDrawArrays(GL_POINTS, 0, 1);
+	GLfloat point_vertex[] = { coords[i].x, coords[i].y, 0 };
+	glVertexPointer(2, GL_FLOAT, 0, point_vertex);
+	glDrawArrays(GL_POINTS, 0, 1);
     }
 
     glDisableClientState(GL_COLOR_ARRAY);
@@ -156,18 +152,10 @@ void draw_target_coords()
     glEnableClientState(GL_COLOR_ARRAY);
     glPointSize(20);
 
-    GLfloat point_vertex[] = {
-            target_coords.x,
-            target_coords.y,
-            0
-        };
+    GLfloat point_vertex[] = { target_coords.x, target_coords.y, 0 };
 
-    GLfloat colors[] = {
-            255, 0, 0,
-            255, 0, 0,
-            255, 0, 0
-        };
-    
+    GLfloat colors[] = { 255, 0, 0, 255, 0, 0, 255, 0, 0 };
+
     glColorPointer(3, GL_FLOAT, 0, colors);
     glVertexPointer(2, GL_FLOAT, 0, point_vertex);
     glDrawArrays(GL_POINTS, 0, 1);
@@ -181,13 +169,13 @@ void draw_ranges()
 {
     float current_time = glfwGetTime();
     float radius = STARTING_RING_RADIUS + (RING_SPEED * current_time);
-    
+
     if (radius > SIMULATION_NODE_RANGE) {
-        glfwSetTime(0);
+	glfwSetTime(0);
     }
 
     for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
-        draw_circle(coords[i].x, coords[i].y, radius);
+	draw_circle(coords[i].x, coords[i].y, radius);
     }
 }
 
@@ -200,29 +188,29 @@ static void draw_toolbar(int selected_radio_button)
     glVertex2f(SIMULATION_WIDTH, SIMULATION_LENGTH);
     glVertex2f(0, SIMULATION_LENGTH);
     glEnd();
-    
+
     u16 radio_button_width = SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT;
     u8 i;
     for (i = 0; i < TOOLBAR_ITEM_COUNT; i++) {
-        // Calculate the position and size of each radio button
-        int x = i * radio_button_width;
-        int y = SIMULATION_LENGTH - TOOLBAR_HEIGHT;
-        int radio_button_height = TOOLBAR_HEIGHT;
+	// Calculate the position and size of each radio button
+	int x = i * radio_button_width;
+	int y = SIMULATION_LENGTH - TOOLBAR_HEIGHT;
+	int radio_button_height = TOOLBAR_HEIGHT;
 
-        // Determine the color of the radio button based on selection
-        if (i == selected_radio_button) {
-            glColor3f(0.5f, 0.5f, 1.0f);  // Selected color
-        } else {
-            glColor3f(0.5f, 0.5f, 0.5f);  // Unselected color
-        }
+	// Determine the color of the radio button based on selection
+	if (i == selected_radio_button) {
+	    glColor3f(0.5f, 0.5f, 1.0f); // Selected color
+	} else {
+	    glColor3f(0.5f, 0.5f, 0.5f); // Unselected color
+	}
 
-        // Draw the radio button
-        glBegin(GL_QUADS);
-        glVertex2f(x, y);
-        glVertex2f(x + radio_button_width, y);
-        glVertex2f(x + radio_button_width, y + radio_button_height);
-        glVertex2f(x, y + radio_button_height);
-        glEnd();
+	// Draw the radio button
+	glBegin(GL_QUADS);
+	glVertex2f(x, y);
+	glVertex2f(x + radio_button_width, y);
+	glVertex2f(x + radio_button_width, y + radio_button_height);
+	glVertex2f(x, y + radio_button_height);
+	glEnd();
     }
 }
 

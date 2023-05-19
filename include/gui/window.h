@@ -30,7 +30,7 @@
 #define TOOLBAR_ITEM_COUNT 5
 
 struct window_data_t {
-        int selected_radio_button;
+    int selected_radio_button;
 };
 
 /**

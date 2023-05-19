@@ -6,19 +6,21 @@
 #define RING_RADIUS 50.0f
 #define RING_SPEED 10.0f
 
-void drawRing(float radius) {
+void drawRing(float radius)
+{
     glBegin(GL_LINE_LOOP);
     int i;
     for (i = 0; i < 360; i++) {
-        float angle = i * (3.14159f / 180.0f);
-        float x = radius * cos(angle);
-        float y = radius * sin(angle);
-        glVertex2f(x, y);
+	float angle = i * (3.14159f / 180.0f);
+	float x = radius * cos(angle);
+	float y = radius * sin(angle);
+	glVertex2f(x, y);
     }
     glEnd();
 }
 
-void display(GLFWwindow* window) {
+void display(GLFWwindow *window)
+{
     // Clear the screen
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -50,21 +52,24 @@ void display(GLFWwindow* window) {
     glfwSwapBuffers(window);
 }
 
-void framebufferSizeCallback(GLFWwindow* window, int width, int height) {
+void framebufferSizeCallback(GLFWwindow *window, int width, int height)
+{
     glViewport(0, 0, width, height);
 }
 
-int main() {
+int main()
+{
     // Initialize GLFW
     if (!glfwInit()) {
-        return -1;
+	return -1;
     }
 
     // Create a windowed mode window and its OpenGL context
-    GLFWwindow* window = glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Time-Based Animation", NULL, NULL);
+    GLFWwindow *window =
+	glfwCreateWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Time-Based Animation", NULL, NULL);
     if (!window) {
-        glfwTerminate();
-        return -1;
+	glfwTerminate();
+	return -1;
     }
 
     // Make the window's context current
@@ -84,14 +89,14 @@ int main() {
 
     // Loop until the user closes the window
     while (!glfwWindowShouldClose(window)) {
-        // Clear the screen
-        glClear(GL_COLOR_BUFFER_BIT);
+	// Clear the screen
+	glClear(GL_COLOR_BUFFER_BIT);
 
-        // Render here
-        display(window);
+	// Render here
+	display(window);
 
-        // Poll for and process events
-        glfwPollEvents();
+	// Poll for and process events
+	glfwPollEvents();
     }
 
     // Clean up

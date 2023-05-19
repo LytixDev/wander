@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "gui/window.h"
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
@@ -29,7 +30,6 @@
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
-#include "gui/window.h"
 
 
 /* global simulation running variable */
@@ -193,11 +193,11 @@ bool simulate(void)
 
     /* init the window */
     if (!(window = window_create())) {
-        goto end_simulation;
+	goto end_simulation;
     }
 
     while (!glfwWindowShouldClose(window)) {
-        window_update(window);
+	window_update(window);
     }
 
     glfwTerminate();
