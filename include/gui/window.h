@@ -34,11 +34,6 @@
 static char *toolbar_items[] = { "Hello Packets", "Data Packets", "Purge Packets",
 				 "Routing Packets", "Routing Done Packets" };
 
-struct window_data_t {
-    int selected_radio_button;
-    i16 selected_node;
-};
-
 /**
  * Method to create a window
  * @return a pointer to the window

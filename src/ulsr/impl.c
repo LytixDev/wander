@@ -34,6 +34,7 @@
 
 /* global simulation running variable */
 static bool running;
+GLFWwindow *window;
 
 static void init_packet_limbo_queue()
 {
@@ -119,8 +120,79 @@ bool can_connect_func(struct node_t *node)
     return can_reach_external_target(node->node_id);
 }
 
+void pop_and_free(void *arg)
+{
+    struct queue_t *arrow_queue = (struct queue_t *)arg;
+    struct arrow_queue_data_t *data = queue_pop(arrow_queue);
+    free(data);
+}
+
+void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 from, u16 to, bool is_send)
+{
+    if (window != NULL) {
+        struct window_data_t *ptr = (struct window_data_t *)glfwGetWindowUserPointer(window);
+        if (ptr != NULL) {
+            switch (ptr->selected_radio_button) {
+                case 0:
+                    if (packet_type == PACKET_HELLO) {
+                        struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+                        data->to_node = to;
+                        data->from_node = from;
+                        data->is_send = is_send;
+                        queue_push(ptr->arrow_queue, data);
+                        submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+                    }
+                    break;
+                case 1:
+                    if (packet_type == PACKET_DATA) {
+                        struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+                        data->to_node = to;
+                        data->from_node = from;
+                        data->is_send = is_send;
+                        queue_push(ptr->arrow_queue, data);
+                        submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+                    }
+                    break;
+                case 2:
+                    if (packet_type == PACKET_PURGE) {
+                        struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+                        data->to_node = to;
+                        data->from_node = from;
+                        data->is_send = is_send;
+                        queue_push(ptr->arrow_queue, data);
+                        submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+                    }
+                    break;
+                case 3:
+                    if (packet_type == PACKET_ROUTING) {
+                        struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+                        data->to_node = to;
+                        data->from_node = from;
+                        data->is_send = is_send;
+                        queue_push(ptr->arrow_queue, data);
+                        submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+                    }
+                    break;
+                case 4:
+                    if (packet_type == PACKET_ROUTING_DONE) {
+                        struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+                        data->to_node = to;
+                        data->from_node = from;
+                        data->is_send = is_send;
+                        queue_push(ptr->arrow_queue, data);
+                        submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+                    }
+                    break;
+                default:
+                    break; 
+            }
+        }
+    }
+}
+
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
+    sleep_for_visualization(packet->type, packet->prev_node_id, node_id, true);
     /*
      * how the simulation mocks whether a packet addressed for this node can't be received due too
      * bad signal
@@ -163,6 +235,8 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
     else
 	packet = queue_pop(&packet_limbo[node_idx]);
 
+    sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false);
+
     pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
     return packet;
 }
@@ -175,7 +249,6 @@ bool simulate(void)
     logger_init();
 
     /* mock distance */
-    GLFWwindow *window;
     init_coords();
     init_target_coords();
 
@@ -188,8 +261,7 @@ bool simulate(void)
     node_recv_func_t node_recv_func = recv_func;
 
     /* main threadpool */
-    struct threadpool_t threadpool;
-    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
+    init_threadpool(&threadpool, 2 *MESH_NODE_COUNT + 1, 8);
     start_threadpool(&threadpool);
 
     /* init all nodes and make them run on the threadpool */

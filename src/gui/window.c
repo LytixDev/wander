@@ -30,7 +30,7 @@ static i16 node_find(int x, int y)
 {
     for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
         struct simulation_coord_t *coord = &coords[i];
-        if (coord->x < x + 5 && coord->x > x - 5 && coord->y < y + 5 && coord->y > y - 5) {
+        if (coord->x < x + 10 && coord->x > x - 10 && coord->y < y + 10 && coord->y > y - 10) {
             return i;
         }
     }
@@ -130,6 +130,8 @@ GLFWwindow *window_create()
     struct window_data_t *window_data = malloc(sizeof(struct window_data_t));
     window_data->selected_radio_button = 0;
     window_data->selected_node = -1;
+    window_data->arrow_queue = malloc(sizeof(struct queue_t));
+    queue_init(window_data->arrow_queue, 32);
 
     glfwSetWindowUserPointer(window, (void *)window_data);
 
@@ -150,14 +152,59 @@ static void draw_circle(float center_x, float center_y, float radius)
     glEnd();
 }
 
+void draw_arrow(float x1, float y1, float x2, float y2, int is_send) {
+    if (is_send) {
+        glColor3f(0, 255, 255);
+        x1 -= 5;
+        x2 -= 5;
+    } else {
+        glColor3f(255, 255, 0);
+        x1 += 5;
+        x2 += 5;
+    }
+
+    GLfloat line_vertices[] = { x1, y1, x2, y2 };
+    
+    GLfloat dx = x2 - x1;
+    GLfloat dy = y2 - y1;
+    GLfloat length = sqrt(dx * dx + dy * dy);
+    dx /= length;
+    dy /= length;
+
+    GLfloat arrowhead_length = 10;
+    GLfloat arrowhead_angle = 1;
+    GLfloat arrowhead_vertices[] = {
+        x2, y2,
+        x2 - arrowhead_length * (dx * cos(arrowhead_angle) + dy * sin(arrowhead_angle)),
+        y2 - arrowhead_length * (dy * cos(arrowhead_angle) - dx * sin(arrowhead_angle)),
+        x2 - arrowhead_length * (dx * cos(arrowhead_angle) - dy * sin(arrowhead_angle)),
+        y2 - arrowhead_length * (dy * cos(arrowhead_angle) + dx * sin(arrowhead_angle))
+    };
+
+    glEnable(GL_LINE_SMOOTH);
+    glLineWidth(10);
+    glEnableClientState(GL_VERTEX_ARRAY);
+        
+    glVertexPointer(2, GL_FLOAT, 0, line_vertices);
+    glDrawArrays(GL_LINES, 0, 2);
+
+    glVertexPointer(2, GL_FLOAT, 0, arrowhead_vertices);
+    glDrawArrays(GL_TRIANGLES, 0, 3);
+
+    glDisableClientState(GL_VERTEX_ARRAY);
+    glDisable(GL_LINE_SMOOTH);
+}
+
+
 static void draw_node_coords(u16 selected_node)
 {
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
-    glPointSize(10);
+    glPointSize(20);
     glEnable(GL_POINT);
 
     GLfloat colors[MESH_NODE_COUNT * 3];
+    GLfloat point_vertices[MESH_NODE_COUNT * 2];
 
     for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
         if (i == selected_node) {
@@ -166,14 +213,9 @@ static void draw_node_coords(u16 selected_node)
             colors[i * 3 + 2] = 255;
         } else {
             colors[i * 3] = 0;
-            colors[i * 3 + 1] = 0;
-            colors[i * 3 + 2] = 255;
+            colors[i * 3 + 1] = 255;
+            colors[i * 3 + 2] = 0;
         }
-    }
-
-    GLfloat point_vertices[MESH_NODE_COUNT * 2];
-
-    for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
         point_vertices[i * 2] = coords[i].x;
         point_vertices[i * 2 + 1] = coords[i].y;
     }
@@ -192,7 +234,7 @@ void draw_target_coords()
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnable(GL_POINT);
     glEnableClientState(GL_COLOR_ARRAY);
-    glPointSize(20);
+    glPointSize(50);
 
     GLfloat point_vertex[] = { target_coords.x, target_coords.y, 0 };
 
@@ -251,6 +293,18 @@ static void draw_toolbar(int selected_radio_button)
     }
 }
 
+static void draw_arrows(struct queue_t *arrows)
+{
+    for (int i = arrows->start; i != arrows->end; i = (i + 1) % arrows->max) {
+        struct arrow_queue_data_t *data = (struct arrow_queue_data_t *)arrows->items[i];
+        draw_arrow(coords[data->from_node - 1].x,
+            coords[data->from_node - 1].y,
+            coords[data->to_node - 1].x,
+            coords[data->to_node - 1].y,
+            data->is_send);
+    }
+}
+
 void window_update(GLFWwindow *window)
 {
     glfwSetMouseButtonCallback(window, mouse_button_callback);
@@ -266,6 +320,8 @@ void window_update(GLFWwindow *window)
     draw_ranges();
 
     draw_toolbar(window_data->selected_radio_button);
+
+    draw_arrows(window_data->arrow_queue);
 
     glfwSwapBuffers(window);
 

@@ -29,6 +29,7 @@
 #include <pthread.h>
 #include <stdbool.h>
 
+#include "lib/queue.h"
 #include "lib/common.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
@@ -63,12 +64,25 @@ struct simulation_coord_t {
     u16 y;
 };
 
+struct arrow_queue_data_t {
+    i16 from_node;
+    i16 to_node;
+    bool is_send;
+};
+
+struct window_data_t {
+    int selected_radio_button;
+    i16 selected_node;
+    struct queue_t *arrow_queue;
+};
+
 /* Global variables for the simulation */
 struct node_t nodes[MESH_NODE_COUNT];
 struct queue_t packet_limbo[MESH_NODE_COUNT];
 struct await_t node_locks[MESH_NODE_COUNT];
 struct simulation_coord_t coords[MESH_NODE_COUNT];
 struct simulation_coord_t target_coords;
+struct threadpool_t threadpool;
 
 /* standard euclidian distance for a 2D system */
 u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b);

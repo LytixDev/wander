@@ -77,7 +77,7 @@ static void *start_worker_thread(void *arg)
 	pthread_mutex_unlock(&data->cond_var->cond_lock);
 
 	if (item != NULL && data->cond_var->cond_predicate) {
-	    // usleep(item->sleep_time);
+	    sleep(item->sleep_time);
 	    item->func(item->arg);
 	    free(item);
 	} else {
