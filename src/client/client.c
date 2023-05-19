@@ -147,7 +147,7 @@ void listen_for_response()
 	    LOG_INFO("Done receiving");
 	    break;
 	}
-
+	printf("received %ld bytes\n", received);
 	packets[packets_received++] = packet;
 	if (packets_received == max_packets_recieved) {
 	    LOG_ERR("Can not receive more packets");

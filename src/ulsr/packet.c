@@ -33,6 +33,17 @@ struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *ext
     return packet;
 }
 
+struct ulsr_internal_packet *ulsr_internal_create_hello(u16 from, u16 to)
+{
+    struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
+    packet->type = PACKET_HELLO;
+    packet->payload_len = 0;
+    packet->payload = NULL;
+    packet->prev_node_id = from;
+    packet->dest_node_id = to;
+    return packet;
+}
+
 
 u32 ulsr_checksum(u8 *packet, unsigned long size)
 {

@@ -15,7 +15,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#ifndef ULSR_H
+#define ULSR_H
+
 /* ulsr default port */
 #define ULSR_DEFAULT_PORT 6969
 
 #define ULSR_DEVICE_PORT_START 8087
+
+#endif /* ULSR_H */

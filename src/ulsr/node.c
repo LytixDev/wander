@@ -27,8 +27,11 @@
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
+#include "ulsr/impl.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
+#include "ulsr/route_table.h"
+#include "ulsr/routing.h"
 #include "ulsr/ulsr.h"
 
 struct external_request_thread_data_t {
@@ -56,6 +59,7 @@ static void insert_connection(struct connections_t *connections, int connection)
     LOG_INFO("Inserted connection");
 }
 
+/* node communication functions */
 static bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *packet)
 {
     struct ulsr_packet *internal_payload = packet->payload;
@@ -93,81 +97,114 @@ static bool handle_send_external(struct node_t *node, struct ulsr_internal_packe
     LOG_NODE_INFO(node->node_id, "Sent packet to %s/%d", internal_payload->dest_ipv4,
 		  internal_payload->dest_port);
 
-    u8 response[1024] = { 0 };
-    // REMOVE THIS IN FUTURE, THIS IS NOT A GOOD WAY TO DO THIS AND DOES NOT WORK WITH MULTIPLE
-    // NODES
-    int recv_socket = socket(PF_INET, SOCK_STREAM, 0);
-    if (recv_socket < 0) {
-	LOG_NODE_ERR(node->node_id, "Failed to create return socket");
-	return false;
-    }
+    if (!packet->is_response) {
+	u8 response[UINT16_MAX] = { 0 };
 
-    struct sockaddr_in recv_server = { 0 };
-    recv_server.sin_family = AF_INET;
-    recv_server.sin_addr.s_addr = inet_addr(internal_payload->source_ipv4);
-    recv_server.sin_port = htons(ULSR_DEFAULT_PORT);
+	u32 seq_nr = 0;
+	u16 *reversed = reverse_route(packet->route->path, packet->route->len);
+	while (node->running && recv(ext_sockfd, response, UINT16_MAX - 1, 0) > 0) {
+	    struct ulsr_packet ret_packet = { 0 };
+	    strncpy(ret_packet.source_ipv4, internal_payload->dest_ipv4, 16);
+	    strncpy(ret_packet.dest_ipv4, internal_payload->source_ipv4, 16);
+	    ret_packet.dest_port = ULSR_DEFAULT_PORT;
+	    ret_packet.payload_len = strlen((char *)response);
+	    strncpy((char *)ret_packet.payload, (char *)response, ret_packet.payload_len);
+	    ret_packet.type = ULSR_HTTP;
+	    ret_packet.seq_nr = seq_nr;
 
-    if (connect(recv_socket, (struct sockaddr *)&recv_server, sizeof(recv_server)) < 0) {
-	LOG_NODE_ERR(node->node_id, "Failed to create connect to socket");
-	return false;
-    }
+	    struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&ret_packet);
+	    internal_packet->route = malloc(sizeof(struct packet_route_t));
+	    internal_packet->route->len = packet->route->len;
+	    internal_packet->route->step = 1;
+	    internal_packet->route->path = reversed;
+	    internal_packet->dest_node_id = packet->route->path[0];
+	    internal_packet->is_response = true;
 
-    LOG_NODE_INFO(node->node_id, "Connected to return socket");
-
-    u32 seq_nr = 0;
-    while (node->running && recv(ext_sockfd, response, 1024 - 1, 0) > 0) {
-	struct ulsr_packet ret_packet = { 0 };
-	strncpy(ret_packet.source_ipv4, internal_payload->dest_ipv4, 16);
-	strncpy(ret_packet.dest_ipv4, internal_payload->source_ipv4, 16);
-	ret_packet.dest_port = ULSR_DEFAULT_PORT;
-	ret_packet.payload_len = strlen((char *)response);
-	strncpy((char *)ret_packet.payload, (const char *)response, ret_packet.payload_len);
-	ret_packet.type = ULSR_HTTP;
-	ret_packet.seq_nr = seq_nr;
-
-	if (send(recv_socket, &ret_packet, sizeof(ret_packet), 0) < 0) {
-	    LOG_NODE_ERR(node->node_id, "Failed to send return packet");
-	    return false;
+	    node->send_func(internal_packet,
+			    internal_packet->route->path[internal_packet->route->step]);
+	    LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d to node %d", seq_nr,
+			  internal_packet->route->path[internal_packet->route->step]);
+	    memset(response, 0, UINT16_MAX);
+	    seq_nr++;
 	}
-	LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d", seq_nr);
-	memset(response, 0, 1024);
-	seq_nr++;
     }
 
-    close(recv_socket);
+    close(ext_sockfd);
+
     return true;
+}
+
+static void handle_internal_data_packet(struct node_t *node, struct ulsr_internal_packet *packet)
+{
+    struct ulsr_packet *payload = packet->payload;
+    LOG_NODE_INFO(node->node_id, "Received packet from rec_func");
+    LOG_NODE_INFO(node->node_id, "Received packet");
+    LOG_NODE_INFO(node->node_id, "Source: %s", payload->source_ipv4);
+    LOG_NODE_INFO(node->node_id, "Destination: %s", payload->dest_ipv4);
+    // LOG_NODE_INFO(node->node_id, "Payload: %s", payload->payload);
+
+    if (node->node_id == packet->dest_node_id) {
+	LOG_NODE_INFO(node->node_id, "Packet is for this node");
+	handle_send_external(node, packet);
+    } else {
+	LOG_NODE_INFO(node->node_id, "Packet is not for this node");
+	packet->route->step++;
+	packet->prev_node_id = node->node_id;
+	node->send_func(packet, packet->route->path[packet->route->step]);
+    }
+
+    // free(packet);
+}
+
+static void handle_internal_hello_packet(struct node_t *node, struct ulsr_internal_packet *packet)
+{
+    // LOG_NODE_INFO(node->node_id, "Received HELLO from %d", packet->prev_node_id);
+    u16 neighbor_id = packet->prev_node_id;
+    struct neighbor_t *neighbor = node->neighbors[neighbor_id - 1];
+    if (neighbor == NULL) {
+	LOG_NODE_INFO(node->node_id, "Found new neighbor %d", neighbor_id);
+	neighbor = malloc(sizeof(struct neighbor_t));
+	neighbor->node_id = neighbor_id;
+	node->neighbors[neighbor_id - 1] = neighbor;
+    }
+    neighbor->last_seen = time(NULL);
 }
 
 static void handle_send_internal(void *arg)
 {
     struct node_t *node = (struct node_t *)arg;
-
     struct ulsr_internal_packet *packet = NULL;
 
     while (node->running) {
 	packet = node->rec_func(node->node_id);
-	if (packet != NULL) {
-	    struct ulsr_packet *payload = packet->payload;
-	    LOG_NODE_INFO(node->node_id, "Received packet from rec_func");
-	    LOG_NODE_INFO(node->node_id, "Received packet");
-	    LOG_NODE_INFO(node->node_id, "Source: %s", payload->source_ipv4);
-	    LOG_NODE_INFO(node->node_id, "Destination: %s", payload->dest_ipv4);
-	    LOG_NODE_INFO(node->node_id, "Payload: %s", payload->payload);
-
-	    //     if (payload->dest_ipv4 == node->node_id) {
-	    if (node->node_id == 2) {
-		LOG_NODE_INFO(node->node_id, "Packet is for this node");
-		handle_send_external(node, packet);
-	    } else {
-		LOG_NODE_INFO(node->node_id, "Packet is not for this node");
-
-		// This is a hack, but it works for now as we only have 2 nodes
-		if (node->node_id < 2)
-		    node->send_func(packet, node->node_id + 1);
-	    }
-
-	    free(packet);
+	if (packet == NULL) {
+	    continue;
 	}
+
+	switch (packet->type) {
+	case PACKET_DATA:
+	    handle_internal_data_packet(node, packet);
+	    break;
+
+	case PACKET_HELLO:
+	    handle_internal_hello_packet(node, packet);
+	    break;
+
+	case PACKET_PURGE:
+	    LOG_NODE_INFO(node->node_id, "Received PURGE packet");
+	    break;
+
+	case PACKET_ROUTING:
+	    LOG_NODE_INFO(node->node_id, "Received ROUTING packet");
+	    break;
+
+	case PACKET_ROUTING_DONE:
+	    LOG_NODE_INFO(node->node_id, "Received ROUTING_DONE packet");
+	    break;
+	default:
+	    break;
+	}
+	free(packet);
     }
 }
 
@@ -198,9 +235,31 @@ static void handle_external(void *arg)
     /* pack external packet into internal packet for routing between nodes */
     struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&packet);
     internal_packet->prev_node_id = data->node->node_id;
+
     // TEMP HACK
-    internal_packet->dest_node_id = 2;
-    // internal_packet->dest_node_id = find_path(data->node_id, packet.dest_ipv4);
+    internal_packet->dest_node_id = 8;
+
+    internal_packet->is_response = false;
+
+    /* find path to destination */
+    u16 *path = malloc(sizeof(u16) * 4);
+    path[0] = 1;
+    path[1] = 3;
+    path[2] = 4;
+    path[3] = 8;
+    internal_packet->route = malloc(sizeof(struct packet_route_t));
+    internal_packet->route->path = path;
+    internal_packet->route->len = 4;
+    internal_packet->route->step = 0;
+    // struct route_t *route = route_table_get(data->node->route_table,
+    // internal_packet->dest_node_id); free(path);
+
+    // In the future, we will need to check if the route is NULL, and if it is, we will need to find
+    // a new route with a lock and condition variable etc.
+    //     if (route == NULL) {
+    //         find_all_routes(data->node, internal_packet->dest_node_id, 16);
+
+    //     }
 
     /* add path to send func */
     if (internal_packet->dest_node_id == data->node->node_id) {
@@ -209,7 +268,9 @@ static void handle_external(void *arg)
 	    goto cleanup;
 	}
     } else {
-	data->node->send_func(internal_packet, data->node->node_id);
+	internal_packet->route->step = 1;
+	internal_packet->route->path = path;
+	data->node->send_func(internal_packet, path[internal_packet->route->step]);
     }
 
     free(internal_packet);
@@ -221,6 +282,27 @@ cleanup:
     LOG_NODE_INFO(node->node_id, "Closed connection");
 }
 
+static void hello_poll_thread(void *arg)
+{
+    struct node_t *node = (struct node_t *)arg;
+    while (node->running) {
+	for (size_t i = 0; i < ARRAY_LEN(node->known_ids); i++) {
+	    u16 to_id = ARRAY_GET(node->known_ids, i);
+	    if (to_id == node->node_id)
+		continue;
+
+	    // LOG_NODE_INFO(node->node_id, "Sent HELLO to %d", to_id);
+
+	    struct ulsr_internal_packet *packet = ulsr_internal_create_hello(node->node_id, to_id);
+
+	    node->send_func(packet, to_id);
+	    free(packet);
+	}
+	sleep(HELLO_POLL_INTERVAL);
+    }
+}
+
+/* node lifetime functions */
 bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
 	       node_send_func_t send_func, node_recv_func_t rec_func, u16 port)
 {
@@ -268,6 +350,22 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
     node->send_func = send_func;
     node->rec_func = rec_func;
 
+    /* init route table */
+    route_table_init(&node->route_table);
+    LOG_NODE_INFO(node->node_id, "Succesfully initialized route table");
+
+    /* init neighbor list */
+    node->neighbors = malloc(sizeof(struct neighbor_t *) * MESH_NODE_COUNT);
+    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	node->neighbors[i] = NULL;
+    }
+
+    /* known id list */
+    node->known_ids = malloc(sizeof(struct u16_arraylist_t));
+    ARRAY_INIT(node->known_ids);
+    set_initial_node_ids(node);
+
+    /* set initial node ids */
     LOG_NODE_INFO(node->node_id, "Completed initialization");
     return true;
 }
@@ -279,6 +377,7 @@ int run_node(struct node_t *node)
     node->running = true;
 
     submit_worker_task(node->threadpool, handle_send_internal, (void *)node);
+    submit_worker_task(node->threadpool, hello_poll_thread, (void *)node);
 
     LOG_NODE_INFO(node->node_id, "Node properly initialized");
 
@@ -335,7 +434,21 @@ void free_node(struct node_t *node)
     if (node->threadpool != NULL) {
 	free_threadpool(node->threadpool);
     }
+
     if (node->neighbors != NULL) {
-	ARRAY_FREE(*(node->neighbors));
+	for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	    if (node->neighbors[i] != NULL)
+		free(node->neighbors[i]);
+	}
+	free(node->neighbors);
+    }
+
+    if (node->route_table != NULL) {
+	route_table_free(node->route_table);
+    }
+
+    if (node->known_ids != NULL) {
+	ARRAY_FREE(node->known_ids);
+	free(node->known_ids);
     }
 }

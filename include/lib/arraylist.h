@@ -39,47 +39,47 @@
  * Macro to initialise an array.
  * @param array The array to initialise.
  */
-#define ARRAY_INIT(array)                                          \
-    ({                                                             \
-	(array).items = malloc(sizeof(*(array).items) * STD_SIZE); \
-	(array).len = 0;                                           \
-	(array).cap = STD_SIZE;                                    \
+#define ARRAY_INIT(array)                                            \
+    ({                                                               \
+	(array)->items = malloc(sizeof(*(array)->items) * STD_SIZE); \
+	(array)->len = 0;                                            \
+	(array)->cap = STD_SIZE;                                     \
     })
 
 /**
  * Macro to free an array.
  * @param array The array to free.
  */
-#define ARRAY_FREE(array)     \
-    ({                        \
-	free((array).items);  \
-	(array).items = NULL; \
-	(array).len = 0;      \
-	(array).cap = 0;      \
+#define ARRAY_FREE(array)      \
+    ({                         \
+	free((array)->items);  \
+	(array)->items = NULL; \
+	(array)->len = 0;      \
+	(array)->cap = 0;      \
     })
 
 /**
  * Macro to resize an array if needed.
  * @param array The array to resize.
  */
-#define ARRAY_RESIZE_IF_NEEDED(array)                                                     \
-    ({                                                                                    \
-	if ((array).len == (array).cap) {                                                 \
-	    (array).cap <<= 1;                                                            \
-	    (array).items = realloc((array).items, sizeof(*(array).items) * (array).cap); \
-	}                                                                                 \
+#define ARRAY_RESIZE_IF_NEEDED(array)                                                         \
+    ({                                                                                        \
+	if ((array)->len == (array)->cap) {                                                   \
+	    (array)->cap <<= 1;                                                               \
+	    (array)->items = realloc((array)->items, sizeof(*(array)->items) * (array)->cap); \
+	}                                                                                     \
     })
 
 /**
  * Macro to resize an array down if needed.
  * @param array The array to resize.
  */
-#define ARRAY_RESIZE_DOWN_IF_NEEDED(array)                                                \
-    ({                                                                                    \
-	if ((array).len == (array).cap >> 2) {                                            \
-	    (array).cap >>= 1;                                                            \
-	    (array).items = realloc((array).items, sizeof(*(array).items) * (array).cap); \
-	}                                                                                 \
+#define ARRAY_RESIZE_DOWN_IF_NEEDED(array)                                                    \
+    ({                                                                                        \
+	if ((array)->len == (array)->cap >> 2) {                                              \
+	    (array)->cap >>= 1;                                                               \
+	    (array)->items = realloc((array)->items, sizeof(*(array)->items) * (array)->cap); \
+	}                                                                                     \
     })
 
 /**
@@ -87,10 +87,10 @@
  * @param array The array to push to.
  * @param value The value to push.
  */
-#define ARRAY_PUSH(array, value)                  \
-    ({                                            \
-	ARRAY_RESIZE_IF_NEEDED(array);            \
-	*((array).items + (array).len++) = value; \
+#define ARRAY_PUSH(array, value)                    \
+    ({                                              \
+	ARRAY_RESIZE_IF_NEEDED(array);              \
+	*((array)->items + (array)->len++) = value; \
     })
 
 /**
@@ -100,7 +100,7 @@
 #define ARRAY_POP(array)                    \
     ({                                      \
 	ARRAY_RESIZE_DOWN_IF_NEEDED(array); \
-	*((array).items + --(array).len);   \
+	*((array)->items + --(array)->len); \
     })
 
 /**
@@ -109,7 +109,7 @@
  * @param index The index to insert at.
  * @param value The value to insert.
  */
-#define ARRAY_GET(array, index) ({ *((array).items + index); })
+#define ARRAY_GET(array, index) ({ *((array)->items + index); })
 
 /**
  * Macro to get a value from an array.
@@ -117,7 +117,7 @@
  * @param index The index to get from.
  * @param value The value to set.
  */
-#define ARRAY_SET(array, index, value) ({ *((array).items + index) = value; })
+#define ARRAY_SET(array, index, value) ({ *((array)->items + index) = value; })
 
 /**
  * Macro to insert a value into an array.
@@ -125,29 +125,39 @@
  * @param index The index to insert at.
  * @param value The value to insert.
  */
-#define ARRAY_LEN(array) ({ (array).len; })
+#define ARRAY_LEN(array) ({ (array)->len; })
 
 /**
  * Macro to get the capacity of an array.
  * @param array The array to get the capacity of.
  */
-#define ARRAY_CAP(array) ({ (array).cap; })
+#define ARRAY_CAP(array) ({ (array)->cap; })
 
 /**
  * Macro to clear an array.
  * @param array The array to clear.
  */
-#define ARRAY_CLEAR(array)                                                            \
-    ({                                                                                \
-	(array).len = 0;                                                              \
-	(array).cap = STD_SIZE;                                                       \
-	(array).items = realloc((array).items, sizeof(*(array).items) * (array).cap); \
+#define ARRAY_CLEAR(array)                                                                \
+    ({                                                                                    \
+	(array)->len = 0;                                                                 \
+	(array)->cap = STD_SIZE;                                                          \
+	(array)->items = realloc((array)->items, sizeof(*(array)->items) * (array)->cap); \
     })
 
 /**
  * Macro to create a for loop for an array.
  * @param array The array to create the for loop for.
+ * @param i The index variable to use.
  */
-#define ARRAY_FOR(array, i) for ((i) = 0; (i) < (array).len; (i)++)
+#define ARRAY_FOR(array, i) for ((i) = 0; (i) < (array)->len; (i)++)
+
+/**
+ * Macro to create a for loop for an array.
+ * @param array The array to create the for loop for.
+ * @param i The index variable to use.
+ * @param item The item variable to use.
+ */
+#define ARRAY_FOR_EACH(array, i, item) \
+    for ((i) = 0, item = *(array)->items; (i) < (array)->len; item = *((array)->items + ++(i)))
 
 #endif
