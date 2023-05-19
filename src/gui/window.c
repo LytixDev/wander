@@ -28,6 +28,22 @@
 #include "lib/common.h"
 #include "ulsr/impl.h"
 
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods) {
+    if (button == GLFW_MOUSE_BUTTON_LEFT && action == GLFW_PRESS) {
+        double x_pos;
+        double y_pos;
+        glfwGetCursorPos(window, &x_pos, &y_pos);
+        struct window_data_t *window_data = (struct window_data_t *)glfwGetWindowUserPointer(window);
+        if (y_pos <= TOOLBAR_HEIGHT) {
+            int radio_button_width = SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT;
+
+            int clicked_idx = x_pos / radio_button_width;
+
+            window_data->selected_radio_button = clicked_idx;
+        }
+    }
+}
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height) 
 {
     glViewport(0.0f, 0.0f, width, height);
@@ -36,7 +52,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
     glLoadIdentity();
 
-    glOrtho(0, width, 0, height, -1, 1);
+    glOrtho(0, width, 0, height, 0, 1);
 
     glMatrixMode(GL_MODELVIEW);
 }
@@ -80,6 +96,11 @@ GLFWwindow *window_create()
     glMatrixMode(GL_MODELVIEW);
 
     glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
+
+    struct window_data_t *window_data = malloc(sizeof(struct window_data_t));
+    window_data->selected_radio_button = 0;
+
+    glfwSetWindowUserPointer(window, (void *)window_data);
 
     return window;
 }
@@ -170,8 +191,47 @@ void draw_ranges()
     }
 }
 
+static void draw_toolbar(int selected_radio_button)
+{
+    glColor3f(0.5f, 0.5f, 0.5f);
+    glBegin(GL_QUADS);
+    glVertex2f(0, SIMULATION_LENGTH - TOOLBAR_HEIGHT);
+    glVertex2f(SIMULATION_WIDTH, SIMULATION_LENGTH - TOOLBAR_HEIGHT);
+    glVertex2f(SIMULATION_WIDTH, SIMULATION_LENGTH);
+    glVertex2f(0, SIMULATION_LENGTH);
+    glEnd();
+    
+    u16 radio_button_width = SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT;
+    u8 i;
+    for (i = 0; i < TOOLBAR_ITEM_COUNT; i++) {
+        // Calculate the position and size of each radio button
+        int x = i * radio_button_width;
+        int y = SIMULATION_LENGTH - TOOLBAR_HEIGHT;
+        int radio_button_height = TOOLBAR_HEIGHT;
+
+        // Determine the color of the radio button based on selection
+        if (i == selected_radio_button) {
+            glColor3f(0.5f, 0.5f, 1.0f);  // Selected color
+        } else {
+            glColor3f(0.5f, 0.5f, 0.5f);  // Unselected color
+        }
+
+        // Draw the radio button
+        glBegin(GL_QUADS);
+        glVertex2f(x, y);
+        glVertex2f(x + radio_button_width, y);
+        glVertex2f(x + radio_button_width, y + radio_button_height);
+        glVertex2f(x, y + radio_button_height);
+        glEnd();
+    }
+}
+
 void window_update(GLFWwindow *window)
 {
+    glfwSetMouseButtonCallback(window, mouse_button_callback);
+
+    struct window_data_t *window_data = (struct window_data_t *)glfwGetWindowUserPointer(window);
+
     glClear(GL_COLOR_BUFFER_BIT);
 
     draw_node_coords();
@@ -179,6 +239,8 @@ void window_update(GLFWwindow *window)
     draw_target_coords();
 
     draw_ranges();
+
+    draw_toolbar(window_data->selected_radio_button);
 
     glfwSwapBuffers(window);
 

@@ -26,6 +26,12 @@
 
 #define STARTING_RING_RADIUS 50.0f
 #define RING_SPEED 50.0f
+#define TOOLBAR_HEIGHT 50.0f
+#define TOOLBAR_ITEM_COUNT 5
+
+struct window_data_t {
+        int selected_radio_button;
+};
 
 /**
  * Method to create a window
