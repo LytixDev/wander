@@ -201,9 +201,18 @@ bool simulate(void)
     }
 
     /* run simulation until 'q' is pressed */
-    while (running)
-	running = (getc(stdin) != 'q');
-    ;
+    while (running) {
+	char c = getc(stdin);
+	if (c == 'q')
+	    running = false;
+	else if (c == 'm') {
+	    LOG_INFO("MOVE: node 5");
+	    update_coord(5, 500, 500);
+	} else if (c == 'd') {
+	    LOG_INFO("DESTROY: node 5");
+	    destroy_node(&nodes[4]);
+	}
+    }
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	pthread_mutex_lock(&node_locks[i].cond_lock);
