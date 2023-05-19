@@ -127,66 +127,67 @@ void pop_and_free(void *arg)
     free(data);
 }
 
-void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 from, u16 to, bool is_send)
+void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 from, u16 to,
+			     bool is_send)
 {
     if (window != NULL) {
-        struct window_data_t *ptr = (struct window_data_t *)glfwGetWindowUserPointer(window);
-        if (ptr != NULL) {
-            switch (ptr->selected_radio_button) {
-                case 0:
-                    if (packet_type == PACKET_HELLO) {
-                        struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
-                        data->to_node = to;
-                        data->from_node = from;
-                        data->is_send = is_send;
-                        queue_push(ptr->arrow_queue, data);
-                        submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
-                    }
-                    break;
-                case 1:
-                    if (packet_type == PACKET_DATA) {
-                        struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
-                        data->to_node = to;
-                        data->from_node = from;
-                        data->is_send = is_send;
-                        queue_push(ptr->arrow_queue, data);
-                        submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
-                    }
-                    break;
-                case 2:
-                    if (packet_type == PACKET_PURGE) {
-                        struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
-                        data->to_node = to;
-                        data->from_node = from;
-                        data->is_send = is_send;
-                        queue_push(ptr->arrow_queue, data);
-                        submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
-                    }
-                    break;
-                case 3:
-                    if (packet_type == PACKET_ROUTING) {
-                        struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
-                        data->to_node = to;
-                        data->from_node = from;
-                        data->is_send = is_send;
-                        queue_push(ptr->arrow_queue, data);
-                        submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
-                    }
-                    break;
-                case 4:
-                    if (packet_type == PACKET_ROUTING_DONE) {
-                        struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
-                        data->to_node = to;
-                        data->from_node = from;
-                        data->is_send = is_send;
-                        queue_push(ptr->arrow_queue, data);
-                        submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
-                    }
-                    break;
-                default:
-                    break; 
-            }
-        }
+	struct window_data_t *ptr = (struct window_data_t *)glfwGetWindowUserPointer(window);
+	if (ptr != NULL) {
+	    switch (ptr->selected_radio_button) {
+	    case 0:
+		if (packet_type == PACKET_HELLO) {
+		    struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+		    data->to_node = to;
+		    data->from_node = from;
+		    data->is_send = is_send;
+		    queue_push(ptr->arrow_queue, data);
+		    submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+		}
+		break;
+	    case 1:
+		if (packet_type == PACKET_DATA) {
+		    struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+		    data->to_node = to;
+		    data->from_node = from;
+		    data->is_send = is_send;
+		    queue_push(ptr->arrow_queue, data);
+		    submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+		}
+		break;
+	    case 2:
+		if (packet_type == PACKET_PURGE) {
+		    struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+		    data->to_node = to;
+		    data->from_node = from;
+		    data->is_send = is_send;
+		    queue_push(ptr->arrow_queue, data);
+		    submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+		}
+		break;
+	    case 3:
+		if (packet_type == PACKET_ROUTING) {
+		    struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+		    data->to_node = to;
+		    data->from_node = from;
+		    data->is_send = is_send;
+		    queue_push(ptr->arrow_queue, data);
+		    submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+		}
+		break;
+	    case 4:
+		if (packet_type == PACKET_ROUTING_DONE) {
+		    struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+		    data->to_node = to;
+		    data->from_node = from;
+		    data->is_send = is_send;
+		    queue_push(ptr->arrow_queue, data);
+		    submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+		}
+		break;
+	    default:
+		break;
+	    }
+	}
     }
 }
 
@@ -261,7 +262,7 @@ bool simulate(void)
     node_recv_func_t node_recv_func = recv_func;
 
     /* main threadpool */
-    init_threadpool(&threadpool, 2 *MESH_NODE_COUNT + 1, 8);
+    init_threadpool(&threadpool, 2 * MESH_NODE_COUNT + 1, 8);
     start_threadpool(&threadpool);
 
     /* init all nodes and make them run on the threadpool */

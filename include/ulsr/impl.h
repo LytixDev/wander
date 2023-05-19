@@ -29,8 +29,8 @@
 #include <pthread.h>
 #include <stdbool.h>
 
-#include "lib/queue.h"
 #include "lib/common.h"
+#include "lib/queue.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 
