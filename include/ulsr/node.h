@@ -27,6 +27,7 @@
 #include "lib/common.h"
 #include "lib/threadpool.h"
 #include "ulsr/packet.h"
+#include "lib/queue.h"
 
 /* Function definitions. */
 
@@ -93,7 +94,7 @@ struct node_t {
     node_recv_func_t rec_func;
     struct connections_t *connections;
     struct threadpool_t *threadpool;
-    struct route_table_t *route_table;
+    struct queue_t *route_queue;
     struct neighbor_t **neighbors;
     struct u16_arraylist_t *known_ids;
 };
