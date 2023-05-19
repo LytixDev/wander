@@ -242,7 +242,7 @@ static void handle_external(void *arg)
     internal_packet->is_response = false;
 
     /* find path to destination */
-    
+
     u16 *path = malloc(sizeof(u16) * 4);
     path[0] = 1;
     path[1] = 3;
