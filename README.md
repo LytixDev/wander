@@ -3,6 +3,19 @@
 
 Copyright © 2023 Nicolai Brand and Callum Grand under GPL v3 (see LICENSE.txt). .clang-format is licensed under GPL v2.
 
+## Functionality
+
+### Protocol
+This project is a work in progress as far as the routing protocol is concerned. The current functionality is as follows:
+- The ability to send and receive messages between nodes in the mesh network.
+- The ability to send and receive HTTP requests to external servers through the mesh network.
+
+### Simulation
+The simulation environment in the project is quite advanced. It is possible to simulate a large number of nodes in a mesh network, and to simulate the movement of these nodes. The simulation environment is also capable of simulating the transmission of messages between nodes in the mesh network. The simulation environment is also capable of simulating the transmission of HTTP requests to external servers through the mesh network. In the simulation, the nodes are agnostic to the fact that they are simulated, and they behave as if they were real nodes in a real mesh network. The simulation environment is also capable of visualizing the mesh network in real time and allows the user to interact with the mesh network through a graphical user interface.
+
+### Implementation
+For the ease of use for testers and future developers, the project only uses the C-standard library and the POSIX library, except for the GUI. The project is written in C11 and compiles with gcc and clang. The project is developed on Linux, but it should be possible to compile and run the project on other operating systems as well. The GUI requires OpenGL and GLFW, and is developed for Linux and Mac-OS.
+
 ## Compile and run
 
 The project is built using a `Make`. The project has three targets: `make`, `make gui` and `make client`.
@@ -97,3 +110,8 @@ $ ./client
 - `make bear` - generates a file of the compiler options.
 - `make format` - makes the code objectively pretty.
 
+### Further development
+In the future, packets in and out of the network should not be bound to TCP, but rather be raw IP-packets. There are also many bugs in the code that need to be fixed, some known and others unknown. We have written up a list of all bugs we have come across, expect this list to grow.
+
+### Known bugs
+- The whole GUI is buggy and largely needs to be rewritten as there are multiple causes for segfaults and memory leaks.
