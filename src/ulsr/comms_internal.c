@@ -144,7 +144,8 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	LOG_NODE_INFO(node->node_id, "Last hop, but could not connect to external");
 	/* 1 */
 	if (!queue_empty(node->route_queue)) {
-	    struct packet_route_t *append = queue_pop(node->route_queue);
+            LOG_NODE_INFO(node->node_id, "queue not empty");
+            struct packet_route_t *append = route_to_packet_route(queue_pop(node->route_queue));
 	    struct packet_route_t *pt = packet_route_combine(packet->pt, append);
 	    packet->pt = pt;
 	    bool came_through = use_packet_route(packet, node);
@@ -158,6 +159,7 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 
 	    /* 2 */
 	} else {
+            LOG_NODE_INFO(node->node_id, "queue empty");
 	    /* send packet to random neighbor */
 	    bool came_through = send_bogo(packet, node);
 	    if (!came_through)

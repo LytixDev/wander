@@ -159,12 +159,27 @@ u16 packet_route_final_hop(struct packet_route_t *pt)
 struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct packet_route_t *b)
 {
     struct packet_route_t *combined = malloc(sizeof(struct packet_route_t));
-    combined->len = a->len + b->len;
+    combined->len = a->step + b->len;
     combined->step = a->step;
     combined->path = malloc(sizeof(u16) * combined->len);
-    memcpy(combined->path, a->path, a->len);
-    memcpy(combined->path + a->len, b->path, b->len);
-    // free(a);
-    // free(b)
+
+    for (u16 i = 0; i < a->step; i++) {
+        combined->path[i] = a->path[i];
+    }
+
+    for (u16 i = a->step; i < b->len + 1; i++) {
+        combined->path[i] = b->path[i - a->step];
+    }
+
     return combined;
+}
+
+struct packet_route_t *route_to_packet_route(struct route_t *route)
+{
+    struct packet_route_t *pr = malloc(sizeof(struct packet_route_t));
+    pr->path = route->path;
+    pr->len = route->path_length;
+    pr->step = 0;
+
+    return pr;
 }

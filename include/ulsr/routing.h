@@ -154,4 +154,6 @@ u16 packet_route_final_hop(struct packet_route_t *pt);
 
 struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct packet_route_t *b);
 
+struct packet_route_t *route_to_packet_route(struct route_t *route);
+
 #endif /* ROUTING_H */
