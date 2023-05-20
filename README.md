@@ -20,7 +20,6 @@ The simulation environment in the project is quite advanced. It is possible to s
 
 ### GUI
 The GUI is made completely from scratch without any component library, including the text that is rendered using OpenGL. The GUI is also capable of visualizing the mesh network in real time and allows the user to interact with the mesh network through a graphical user interface.
-Options for packet types to observe, request types between nodes to observe and the ability to filter out failed requests.
 
 Filtering options for the GUI:
 - Internal packets
