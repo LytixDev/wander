@@ -39,6 +39,10 @@ For arch-based systems, the added dependencies required to make the gui are:
 - libxi
 - libxinerama
 
+For Mac-OS, the added dependencies required to make the gui are:
+- glew
+- glfw
+
 #### Optional dependencies for further development
 - `python`, `clang-format` - for formatting the source code.
 - `bear` - a tool for generating compiler commands for C compilers. 
