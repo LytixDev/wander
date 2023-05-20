@@ -52,9 +52,28 @@ static void packet_bogo_and_find_route(struct ulsr_internal_packet *packet, stru
     packet->route->len++;
     packet->route->step++;
     packet->route->path = realloc(packet->route->path, packet->route->len * sizeof(u16));
-    // TODO: handle edge cases where find random "fails"
-    packet->route->path[packet->route->step] = find_random_neighbor(node);
-    node->send_func(packet, packet->route->path[packet->route->step]);
+
+    u16 next_hop_id = find_random_neighbor(node);
+    if (next_hop_id != 0) {
+	packet->route->path[packet->route->step] = next_hop_id;
+	node->send_func(packet, packet->route->path[packet->route->step]);
+    } else if (packet->type == PACKET_DATA) {
+	/*
+	 * edge case where no neighbor was found:
+	 * in this case we just send propagate a packet failure down the reversed path to the
+	 * client, if any client is present that is.
+	 * ideally a better solution should be implemented here where a new path is chosen, or
+	 * something like that.
+	 */
+	// TODO: fix
+	LOG_NODE_ERR(node->node_id, "DATA packet got stuck, sending packet failure to client");
+	// struct ulsr_internal_packet *failure_packet =
+	// ulsr_internal_from_external(ulsr_create_failure(packet->payload));
+	///* set route for failure packet */
+	// failure_packet->route = reverse_packet_route(packet->route);
+	// failure_packet->route->step++;
+	// node->send_func(failure_packet, failure_packet->route->path[0]);
+    }
 
     /* This is called because this node doesn't have any routes to the destination */
     find_all_routes(node, MESH_NODE_COUNT);

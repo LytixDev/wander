@@ -26,6 +26,7 @@
 #include "ulsr/packet.h"
 #include "ulsr/routing.h"
 
+// TODO: so many memory leaks....
 void init_routing_data(u16 source_id, u16 total_nodes, bool *visited, u16 *path, u16 path_length,
 		       u32 time_taken, struct routing_data_t *routing_data)
 {
@@ -124,13 +125,23 @@ void find_all_routes(struct node_t *start, u16 total_nodes)
     find_all_routes_send(start, total_nodes, visited, path, path_length, time_taken);
 }
 
-u16 *reverse_route(u16 *route, u16 route_length)
+u16 *reverse_route(u16 *path, u16 route_length)
 {
     u16 *reversed_route = malloc(sizeof(u16) * route_length);
     u16 i = 0;
     for (i = 0; i < route_length; i++) {
-	reversed_route[i] = route[route_length - i - 1];
+	reversed_route[i] = path[route_length - i - 1];
     }
 
     return reversed_route;
+}
+
+struct packet_route_t *reverse_packet_route(struct packet_route_t *pt)
+{
+    struct packet_route_t *reversed = malloc(sizeof(struct route_t));
+    u16 *path = reverse_route(pt->path, pt->step); // TODO: step correct?
+    reversed->path = path;
+    reversed->len = pt->step;
+    reversed->step = 0;
+    return reversed;
 }

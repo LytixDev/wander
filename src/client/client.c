@@ -148,6 +148,12 @@ void listen_for_response()
 	    break;
 	}
 	printf("received %ld bytes\n", received);
+
+	if (packet.type == ULSR_INTERNAL_FAILURE) {
+	    LOG_ERR("Packet got stuck in mesh, try again :-(");
+	    return;
+	}
+
 	packets[packets_received++] = packet;
 	if (packets_received == max_packets_recieved) {
 	    LOG_ERR("Can not receive more packets");

@@ -142,14 +142,48 @@ void handle_external(void *arg)
     } else {
 	internal_packet->route->path = malloc(sizeof(u16) * 2);
 	internal_packet->route->path[0] = node->node_id;
-	// Uses first neighbor as next hop
-	internal_packet->route->path[1] = find_random_neighbor(node);
-	internal_packet->route->len = 2;
-	internal_packet->route->step = 1;
-	node->send_func(internal_packet,
-			internal_packet->route->path[internal_packet->route->step]);
+
+	u16 neighbor_id = find_random_neighbor(node);
+	if (neighbor_id != 0) {
+	    internal_packet->route->path[1] = neighbor_id;
+	    internal_packet->route->len = 2;
+	    internal_packet->route->step = 1;
+	    node->send_func(internal_packet,
+			    internal_packet->route->path[internal_packet->route->step]);
+	} else {
+	    // TODO: FIX
+	    /*
+	     * edge case where no neighbor was found:
+	     * in this case we just send propagate a packet failure down the reversed path to the
+	     * client, if any client is present that is.
+	     * ideally a better solution should be implemented here where a new path is chosen, or
+	     * something like that.
+	     */
+	    // LOG_NODE_ERR(node->node_id, "DATA packet got stuck, sending packet failure to
+	    // client"); struct ulsr_internal_packet *failure_packet =
+	    // ulsr_internal_from_external(ulsr_create_failure(packet->payload));
+	    /* set route for failure packet */
+	    // failure_packet->route = reverse_packet_route(packet->route);
+	    // failure_packet->route->step++;
+	    // node->send_func(failure_packet, failure_packet->route->path[0]);
+	}
 	find_all_routes(data->node, MESH_NODE_COUNT);
     }
+
+    ///*
+    // * edge case where no neighbor was found:
+    // * in this case we just send propagate a packet failure down the reversed path to the
+    // * client, if any client is present that is.
+    // * ideally a better solution should be implemented here where a new path is chosen, or
+    // * something like that.
+    // */
+    // LOG_NODE_ERR(node->node_id, "DATA packet got stuck, sending packet failure to client");
+    // struct ulsr_internal_packet *failure_packet =
+    // ulsr_internal_from_external(ulsr_create_failure(packet->payload));
+    ///* set route for failure packet */
+    // failure_packet->route = reverse_packet_route(packet->route);
+    // failure_packet->route->step++;
+    // node->send_func(failure_packet, failure_packet->route->path[0]);
 
 cleanup:
     shutdown(data->connection, SHUT_RDWR);
