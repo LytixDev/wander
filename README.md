@@ -20,7 +20,7 @@ IMPORTANT: if you have already built the simulated mobile mesh using `make`, you
 
 #### Optional dependencies for the visualization (make gui)
 - `OpenGL` - Graphics rendering library.
-- `X11` - The X11 window system. Wayland users can use the Xwayland compatability layer. For Winodws and Mac OS users you need a forwarding layer.
+- `X11` - The X11 window system. Wayland users can use the Xwayland compatability layer. For Winodws users you need a window server like VcXsrv.
 - `glfw-x11` An OpenGL "wrapper" for X11
 
 For debian-based systems, the added dependencies required to make the gui are:
@@ -38,6 +38,8 @@ For arch-based systems, the added dependencies required to make the gui are:
 - libxxf86vm
 - libxi
 - libxinerama
+
+#### Optional dependencies for the visualization on Mac-OS (make gui_macos)
 
 For Mac-OS, the added dependencies required to make the gui are:
 - glew
@@ -58,6 +60,10 @@ $ make
 With graphical visualization:
 ```sh
 $ make gui
+```
+On Mac-OS:
+```sh
+$ make gui_macos
 ```
 
 The client works irrespective of the whether the simulation is graphically visualized or not, altough it will be slower during the graphical visualization.
