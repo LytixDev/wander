@@ -167,7 +167,7 @@ struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct pac
 	combined->path[i] = a->path[i];
     }
 
-    for (u16 i = a->step; i < b->len + 1; i++) {
+    for (u16 i = a->step; i < combined->len; i++) {
 	combined->path[i] = b->path[i - a->step];
     }
 

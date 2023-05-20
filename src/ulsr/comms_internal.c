@@ -46,7 +46,8 @@ static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *p
 bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 {
     LOG_NODE_INFO(node->node_id, "use bogo, step %d", packet->pt->step);
-    packet->prev_node_id = node->node_id;
+//     packet->prev_node_id = node->node_id;
+
     packet->pt->path = realloc(packet->pt->path, (packet->pt->len + 1) * sizeof(u16));
 
 
@@ -59,8 +60,8 @@ bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 	came_through = node->send_func(packet, next_hop_id) != -1;
 	if (came_through) {
 	    /* This is called because this node doesn't have any routes to the destination */
-	    packet->pt->step++;
 	    packet->pt->len++;
+	    use_packet_route(packet, node);
 	    find_all_routes(node, node->known_nodes_count);
 	    return true;
 	}
@@ -148,6 +149,11 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	    LOG_NODE_INFO(node->node_id, "queue not empty");
 	    struct packet_route_t *append = route_to_packet_route(queue_pop(node->route_queue));
 	    struct packet_route_t *pt = packet_route_combine(packet->pt, append);
+	
+	//     Check if we can free the path here
+	//     free(packet->pt->path);
+	//     free(packet->pt);
+
 	    packet->pt = pt;
 	    bool came_through = use_packet_route(packet, node);
 	    if (came_through)
