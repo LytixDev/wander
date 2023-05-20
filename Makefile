@@ -4,7 +4,7 @@
 OBJDIR = .obj
 SRC = src
 DIRS := $(shell find $(SRC) -type d -not -wholename "src/client" -not -wholename "src/gui")
-SRCS := $(shell find $(SRC) -type f -name "*.c" -not -wholename "src/client/*")
+SRCS := $(shell find $(SRC) -type f -name "*.c" -not -wholename "src/client/*" -not -wholename "src/gui/*")
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
 CFLAGS = -Iinclude -Wall -Wextra -Wshadow -std=c11
@@ -50,15 +50,17 @@ $(OBJDIR):
 
 gui: CFLAGS += -DGUI -I/usr/include/freetype2 -I/usr/include/libpng16
 gui: LDLIBS += -lglfw -lGLU -lGL -lXrandr -lXxf86vm -lXi -lXinerama -lX11 -lrt -ldl -lfreetype -lGLEW
-gui: $(TARGET_GUI)
 
-$(TARGET_GUI): $(OBJS)
+GUI_SRCS := $(shell find $(SRC)/gui -type f -name "*.c")
+GUI_OBJS := $(GUI_SRCS:$(SRC)/gui/%.c=$(OBJDIR)/$(SRC)/gui/%.o)
+
+$(TARGET_GUI): $(GUI_OBJS) $(OBJS)
 	@echo [LD] $@
 	@$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-$(OBJDIR)/src/gui/%.o: src/gui/%.c Makefile | $(OBJDIR)/src/gui
+$(OBJDIR)/$(SRC)/gui/%.o: $(SRC)/gui/%.c Makefile | $(OBJDIR)/$(SRC)/gui
 	@echo [CC] $@
 	@$(CC) -c $(CFLAGS) $< -o $@
 
-$(OBJDIR)/src/gui:
+$(OBJDIR)/$(SRC)/gui:
 	@mkdir -p $@
