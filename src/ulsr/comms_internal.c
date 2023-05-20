@@ -29,75 +29,18 @@
 #include "ulsr/routing.h"
 
 
-// static void use_route_or_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
-//{
-//     //packet->route->step++;
-//     //packet->prev_node_id = node->node_id;
-//     ///* some data was sent */
-//     //if (node->send_func(packet, to_id) != -1)
-//     //    return;
-//
-//     LOG_NODE_ERR(node->node_id, "BOGO");
-//
-//     struct packet_route_t *pt = malloc(sizeof(struct packet_route_t));
-//     /* advance the step (we will find the next hop shortly) */
-//     pt->step = packet->pt->step + 1;
-//     pt->len = pt->step;
-//     pt->path = malloc(sizeof(u16) * pt->len);
-//
-//     /* copy the path until this point */
-//     for (u16 i = 0; i < packet->pt->step; i++) {
-//         pt->path[i] = packet->pt->path[i];
-//     }
-//
-//     /*
-//      * Packet was not received. This means that we can't trust that to_id is a neighbor any
-//      longer
-//      */
-//     //struct neighbor_t *neighbor = node->neighbors[to_id - 1];
-//     //if (neighbor != NULL) {
-//     //    node->neighbors[to_id - 1] = NULL;
-//     //    free(neighbor);
-//     //    // invalidate all routes that use this neighbor
-//     //    remove_route_with_old_neighbor(node, to_id);
-//     //}
-//
-//
-//     /*
-//      * find random neighbor to set as next hop
-//      */
-//     u16 next_hop_id = find_random_neighbor(node, pt->path, pt->len - 1);
-//     if (next_hop_id == 0) {
-//         LOG_NODE_ERR(node->node_id, "FAIL");
-//         return;
-//     }
-//
-//     pt->path[pt->len] = next_hop_id;
-//     packet->pt = pt;
-//     node->send_func(packet, next_hop_id);
-// }
-
-// static void use_any_route(struct ulsr_internal_packet *packet, struct node_t *node)
-//{
-//     struct route_t *route_to_use = (struct route_t *)queue_pop(node->route_queue);
-//     u16 new_len = route_to_use->path_length + packet->pt->step;
-//     packet->pt->path = realloc(packet->pt->path, new_len * sizeof(u16));
-//
-//     for (int i = packet->pt->step; i < packet->pt->step + route_to_use->path_length; i++) {
-//	packet->pt->path[i] = route_to_use->path[i - packet->pt->step];
-//     }
-//
-//     /* has been copied over and served its cause */
-//     free(route_to_use);
-//
-//     packet->pt->len = new_len;
-//     packet->pt->step++;
-//     node->send_func(packet, packet->pt->path[packet->pt->step]);
-// }
-
 static void propogate_failure()
 {
     LOG_ERR("PACKET COULD NOT BE ROUTED :-(");
+}
+
+static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *pt, u16 *ignore_list,
+				   u16 ignore_len)
+{
+    u16 next_hop_id = find_random_neighbor(node, pt->path, pt->step, ignore_list, ignore_len);
+    ignore_list[ignore_len++] = next_hop_id;
+    pt->path[pt->step] = next_hop_id;
+    return next_hop_id;
 }
 
 static bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
@@ -108,28 +51,26 @@ static bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
     packet->pt->step++;
     packet->pt->path = realloc(packet->pt->path, packet->pt->len * sizeof(u16));
 
-    u16 next_hop_id = find_random_neighbor(node, packet->pt->path, packet->pt->step);
-    if (next_hop_id != 0) {
-	packet->pt->path[packet->pt->step] = next_hop_id;
-	bool came_through = node->send_func(packet, next_hop_id) != -1;
-	if (!came_through)
-	    propogate_failure();
-    } else {
-	/*
-	 * edge case where no neighbor was found:
-	 * in this case we just send propagate a packet failure down the reversed path to the
-	 * client, if any client is present that is.
-	 * ideally a better solution should be implemented here where a new path is chosen, or
-	 * something like that.
-	 */
-	// TODO: fix
-	LOG_NODE_ERR(node->node_id, "DATA packet got stuck, sending packet failure to client");
-	return false;
+
+    /* find random neighbor until packet sent or no more neighbors */
+    u16 ignore_list[node->known_nodes_count];
+    u16 ignore_len = 0;
+    bool came_through;
+    u16 next_hop_id = bogo_find_neighbor_stub(node, packet->pt, ignore_list, ignore_len);
+    while (next_hop_id != 0) {
+	came_through = node->send_func(packet, next_hop_id) != -1;
+	if (came_through) {
+	    /* This is called because this node doesn't have any routes to the destination */
+	    find_all_routes(node, node->known_nodes_count);
+	    return true;
+	}
     }
 
+    /* packet got stuck in bogo :-( */
+    propogate_failure();
     /* This is called because this node doesn't have any routes to the destination */
     find_all_routes(node, node->known_nodes_count);
-    return true;
+    return false;
 }
 
 static bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node)
@@ -140,11 +81,20 @@ static bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t 
     return node->send_func(packet, packet->pt->path[packet->pt->step]) != -1;
 }
 
-u16 find_random_neighbor(struct node_t *node, u16 *path, u16 path_len)
+u16 find_random_neighbor(struct node_t *node, u16 *path, u16 path_len, u16 *ignore_list,
+			 u16 ignore_len)
 {
     struct neighbor_t *neighbors[node->known_nodes_count];
     u16 counter = 0;
     for (u16 i = 0; i < node->known_nodes_count; i++) {
+	/* if node is in ignore list, ignore */
+	if (ignore_list != NULL) {
+	    for (u16 j = 0; j < ignore_len; j++) {
+		if (ignore_list[j] == i + 1)
+		    goto ignore;
+	    }
+	}
+
 	/* if neighbor */
 	if (node->neighbors[i] != NULL) {
 	    /* if already used in path, ignore */

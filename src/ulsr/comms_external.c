@@ -141,7 +141,7 @@ void handle_external(void *arg)
 	internal_packet->pt->path[0] = node->node_id;
 
 	/* find random neighbor to forward the packet to */
-	u16 next_hop_id = find_random_neighbor(node, NULL, 0);
+	u16 next_hop_id = find_random_neighbor(node, NULL, 0, NULL, 0);
 	if (next_hop_id != 0) {
 	    internal_packet->pt->path[1] = next_hop_id;
 	    internal_packet->pt->len = 2;
