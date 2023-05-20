@@ -247,9 +247,9 @@ static void draw_node_coords(u16 selected_node)
     glDrawArrays(GL_POINTS, 0, MESH_NODE_COUNT);
 
     for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
-        sprintf(str, "%d", (i + 1));
-        render_text(str, point_vertices[i * 2] + 10, point_vertices[i * 2 + 1] + 10, 2.0f);
-        memset(str, 0, 5);
+	sprintf(str, "%d", (i + 1));
+	render_text(str, point_vertices[i * 2] + 10, point_vertices[i * 2 + 1] + 10, 2.0f);
+	memset(str, 0, 5);
     }
 
     glDisable(GL_POINT);
