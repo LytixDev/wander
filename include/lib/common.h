@@ -49,4 +49,47 @@
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 #define CLAMP(a, x, b) (((x) < (a)) ? (a) : ((b) < (x)) ? (b) : (x))
 
+#define BYTES_EQUAL(a, b, size, pred)            \
+    do {                                         \
+	size_t __size = (size);                  \
+	register const unsigned char *__a = (a); \
+	register const unsigned char *__b = (b); \
+	do {                                     \
+	    pred = (*__a++ == *__b++);           \
+	} while (pred && --__size != 0);         \
+    } while (0)
+
+#ifdef DYNAMIC_MACROS
+/* Dynamic Methods */
+
+/*
+    Macro that ensures that the size of a dynamic object is not exceeded.
+    @param size size_t: current size of the object.
+    @param cap size_t: current capacity of the object.
+    @param vals void**: pointer to the object.
+*/
+#define ENSURE_CAP(size, cap, vals)                                \
+    do {                                                           \
+	if (size == cap) {                                         \
+	    cap <<= 1;                                             \
+	    vals = (void **)(realloc(vals, cap * sizeof(void *))); \
+	}                                                          \
+    } while (0)
+
+/*
+    Macro that reduces the size of a dynamic object.
+    @param size size_t: current size of the object.
+    @param cap size_t: current capacity of the object.
+    @param vals void**: pointer to the object.
+*/
+#define REDUCE_CAP(size, cap, vals)                                \
+    do {                                                           \
+	if (size == (cap >> 1)) {                                  \
+	    cap >>= 1;                                             \
+	    vals = (void **)(realloc(vals, cap * sizeof(void *))); \
+	}                                                          \
+    } while (0)
+
+#endif
+
 #endif /* COMMON_H */
