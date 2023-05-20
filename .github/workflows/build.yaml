@@ -29,3 +29,9 @@ jobs:
         run: |
           make clean
           make gui CC="${{matrix.cc}}"
+
+      - name: Build gui mac
+        if: startswith(matrix.os, 'macos-')
+        run: |
+          make clean
+          make gui_macos CC="${{matrix.cc}}"
