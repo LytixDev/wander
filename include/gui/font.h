@@ -1,3 +1,4 @@
+#ifdef GUI
 #ifndef FONT_H
 #define FONT_H
 
@@ -23,3 +24,4 @@ void clean_font();
 void render_text(const char *text, float x, float y, float scale);
 
 #endif /* FONT_H */
+#endif /* GUI */

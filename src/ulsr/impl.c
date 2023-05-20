@@ -20,7 +20,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef GUI
 #include "gui/window.h"
+#endif
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
@@ -34,7 +36,10 @@
 
 /* global simulation running variable */
 static bool running;
+
+#ifdef GUI
 GLFWwindow *window;
+#endif
 
 static void init_packet_limbo_queue()
 {
@@ -120,10 +125,14 @@ bool can_connect_func(struct node_t *node)
     return can_reach_external_target(node->node_id);
 }
 
+#ifdef GUI
 void pop_and_free(void *arg)
 {
     struct queue_t *arrow_queue = (struct queue_t *)arg;
+    pthread_mutex_lock(&window_threadpool.cond_var->cond_lock);
     struct arrow_queue_data_t *data = queue_pop(arrow_queue);
+    pthread_mutex_unlock(&window_threadpool.cond_var->cond_lock);
+    pthread_cond_signal(&window_threadpool.cond_var->cond_variable);
     free(data);
 }
 
@@ -133,6 +142,10 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
     if (window != NULL) {
 	struct window_data_t *ptr = (struct window_data_t *)glfwGetWindowUserPointer(window);
 	if (ptr != NULL) {
+	    if ((ptr->selected_request_filter == 0 && is_send) ||
+		(ptr->selected_request_filter == 1 && !is_send)) {
+		return;
+	    }
 	    switch (ptr->selected_radio_button) {
 	    case 0:
 		if (packet_type == PACKET_HELLO) {
@@ -141,7 +154,8 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->from_node = from;
 		    data->is_send = is_send;
 		    queue_push(ptr->arrow_queue, data);
-		    submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
+					       1);
 		}
 		break;
 	    case 1:
@@ -151,7 +165,8 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->from_node = from;
 		    data->is_send = is_send;
 		    queue_push(ptr->arrow_queue, data);
-		    submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
+					       1);
 		}
 		break;
 	    case 2:
@@ -161,7 +176,8 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->from_node = from;
 		    data->is_send = is_send;
 		    queue_push(ptr->arrow_queue, data);
-		    submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
+					       1);
 		}
 		break;
 	    case 3:
@@ -171,7 +187,8 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->from_node = from;
 		    data->is_send = is_send;
 		    queue_push(ptr->arrow_queue, data);
-		    submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
+					       1);
 		}
 		break;
 	    case 4:
@@ -181,7 +198,8 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->from_node = from;
 		    data->is_send = is_send;
 		    queue_push(ptr->arrow_queue, data);
-		    submit_worker_task_timeout(&threadpool, pop_and_free, ptr->arrow_queue, 1);
+		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
+					       1);
 		}
 		break;
 	    default:
@@ -190,10 +208,13 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 	}
     }
 }
+#endif
 
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
+#ifdef GUI
     sleep_for_visualization(packet->type, packet->prev_node_id, node_id, true);
+#endif
     /*
      * how the simulation mocks whether a packet addressed for this node can't be received due too
      * bad signal
@@ -233,10 +254,15 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
     struct ulsr_internal_packet *packet;
     if (queue_empty(&packet_limbo[node_idx]))
 	packet = NULL;
+#ifdef GUI
+    else {
+	packet = queue_pop(&packet_limbo[node_idx]);
+	sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false);
+    }
+#else
     else
 	packet = queue_pop(&packet_limbo[node_idx]);
-
-    sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false);
+#endif
 
     pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
     return packet;
@@ -262,7 +288,12 @@ bool simulate(void)
     node_recv_func_t node_recv_func = recv_func;
 
     /* main threadpool */
-    init_threadpool(&threadpool, 2 * MESH_NODE_COUNT + 1, 8);
+#ifdef GUI
+    /* init the window threadpool */
+    init_threadpool(&window_threadpool, MESH_NODE_COUNT + 1, 8);
+    start_threadpool(&window_threadpool);
+#endif
+    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
     start_threadpool(&threadpool);
 
     /* init all nodes and make them run on the threadpool */
@@ -275,6 +306,7 @@ bool simulate(void)
 	submit_worker_task(&threadpool, run_node_stub, &nodes[i]);
     }
 
+#ifdef GUI
     /* init the window */
     if (!(window = window_create())) {
 	goto end_simulation;
@@ -285,7 +317,7 @@ bool simulate(void)
     }
 
     window_destroy(window);
-
+#else
     /* run simulation until 'q' is pressed */
     while (running) {
 	char c = getc(stdin);
@@ -299,6 +331,7 @@ bool simulate(void)
 	    destroy_node(&nodes[4]);
 	}
     }
+#endif
 
 end_simulation:
     running = false;
@@ -321,6 +354,10 @@ end_simulation:
 
     threadpool_stop(&threadpool);
     free_threadpool(&threadpool);
+#ifdef GUI
+    threadpool_stop(&window_threadpool);
+    free_threadpool(&window_threadpool);
+#endif
 
     logger_destroy();
 

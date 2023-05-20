@@ -1,3 +1,4 @@
+#ifdef GUI
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -74,3 +75,4 @@ void render_text(const char *text, float x, float y, float size)
 	glDisable(GL_BLEND);
     }
 }
+#endif /* GUI */

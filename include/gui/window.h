@@ -14,8 +14,10 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#ifdef GUI
 #ifndef WINDOW_H
 #define WINDOW_H
+
 #define GLFW_INCLUDE_NONE
 #include <GL/glew.h>
 #include <GLFW/glfw3.h>
@@ -33,6 +35,8 @@
 
 static char *toolbar_items[] = { "Hello Packets", "Data Packets", "Purge Packets",
 				 "Routing Packets", "Routing Done Packets" };
+
+static char *request_filter[] = { "Recv", "Send", "All" };
 
 /**
  * Method to create a window
@@ -52,4 +56,5 @@ void window_update(GLFWwindow *window);
  */
 void window_destroy(GLFWwindow *window);
 
+#endif
 #endif

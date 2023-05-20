@@ -39,7 +39,6 @@ struct queue_t {
     int max;
 };
 
-
 /* Methods */
 
 /**

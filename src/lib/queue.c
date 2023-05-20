@@ -59,6 +59,11 @@ void *queue_pop(struct queue_t *queue)
     return element;
 }
 
+void queue_clear(struct queue_t *queue)
+{
+    queue->start = queue->end = queue->size = 0;
+}
+
 void free_queue(struct queue_t *queue)
 {
     free(queue->items);

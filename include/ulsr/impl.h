@@ -50,7 +50,7 @@
 #define NODE_INACTIVE_ID 0
 
 /* these values are in pixels */
-#define SIMULATION_NODE_RANGE 250
+#define SIMULATION_NODE_RANGE 150
 #define SIMULATION_WIDTH 700
 #define SIMULATION_LENGTH 700
 
@@ -64,6 +64,7 @@ struct simulation_coord_t {
     u16 y;
 };
 
+#ifdef GUI
 struct arrow_queue_data_t {
     i16 from_node;
     i16 to_node;
@@ -72,9 +73,13 @@ struct arrow_queue_data_t {
 
 struct window_data_t {
     int selected_radio_button;
+    int selected_request_filter;
     i16 selected_node;
     struct queue_t *arrow_queue;
 };
+
+struct threadpool_t window_threadpool;
+#endif
 
 /* Global variables for the simulation */
 struct node_t nodes[MESH_NODE_COUNT];

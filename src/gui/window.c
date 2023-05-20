@@ -14,7 +14,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
+#ifdef GUI
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -51,7 +51,22 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
 
 	    int clicked_idx = x_pos / radio_button_width;
 
+	    if (clicked_idx != window_data->selected_radio_button) {
+		queue_clear(window_data->arrow_queue);
+	    }
+
 	    window_data->selected_radio_button = clicked_idx;
+	} else if (y_pos >= TOOLBAR_HEIGHT + 10 && y_pos <= TOOLBAR_HEIGHT + 35 &&
+		   x_pos <= SIMULATION_WIDTH / 5) {
+	    int radio_button_width = SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT / 3;
+
+	    int clicked_idx = x_pos / radio_button_width;
+
+	    if (clicked_idx != window_data->selected_request_filter) {
+		queue_clear(window_data->arrow_queue);
+	    }
+
+	    window_data->selected_request_filter = clicked_idx;
 	} else if ((node_idx = node_find(x_pos, SIMULATION_LENGTH - y_pos)) != -1) {
 	    if (window_data->selected_node == node_idx) {
 		window_data->selected_node = -1;
@@ -266,6 +281,35 @@ void draw_ranges()
     }
 }
 
+static void draw_toolbar_2(int selected_request_filter)
+{
+    init_free_type();
+    load_font();
+    u16 radio_button_width = (SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT) / 3;
+    u8 i;
+    for (i = 0; i < 3; i++) {
+	int x = i * radio_button_width;
+	int y = SIMULATION_LENGTH - TOOLBAR_HEIGHT - TOOLBAR_HEIGHT / 2 - 10;
+	int radio_button_height = TOOLBAR_HEIGHT / 2;
+
+	if (i == selected_request_filter) {
+	    glColor3f(1.0f, 0.0f, 1.0f);
+	} else {
+	    glColor3f(0.5f, 0.5f, 0.5f);
+	}
+
+	glBegin(GL_QUADS);
+	glVertex2f(x, y);
+	glVertex2f(x + radio_button_width, y);
+	glVertex2f(x + radio_button_width, y + radio_button_height);
+	glVertex2f(x, y + radio_button_height);
+	glEnd();
+	render_text(request_filter[i],
+		    x + ((radio_button_width - (strlen(request_filter[i]) * 2)) / 3),
+		    y + (TOOLBAR_HEIGHT / 2 - 5) / 2, 0.8f);
+    }
+}
+
 static void draw_toolbar(int selected_radio_button)
 {
     init_free_type();
@@ -295,12 +339,14 @@ static void draw_toolbar(int selected_radio_button)
     }
 }
 
+
 static void draw_arrows(struct queue_t *arrows)
 {
     for (int i = arrows->start; i != arrows->end; i = (i + 1) % arrows->max) {
 	struct arrow_queue_data_t *data = (struct arrow_queue_data_t *)arrows->items[i];
-	draw_arrow(coords[data->from_node - 1].x, coords[data->from_node - 1].y,
-		   coords[data->to_node - 1].x, coords[data->to_node - 1].y, data->is_send);
+	if (data != NULL)
+	    draw_arrow(coords[data->from_node - 1].x, coords[data->from_node - 1].y,
+		       coords[data->to_node - 1].x, coords[data->to_node - 1].y, data->is_send);
     }
 }
 
@@ -320,6 +366,8 @@ void window_update(GLFWwindow *window)
 
     draw_toolbar(window_data->selected_radio_button);
 
+    draw_toolbar_2(window_data->selected_request_filter);
+
     draw_arrows(window_data->arrow_queue);
 
     glfwSwapBuffers(window);
@@ -333,3 +381,4 @@ void window_destroy(GLFWwindow *window)
     glfwDestroyWindow(window);
     glfwTerminate();
 }
+#endif
