@@ -64,7 +64,7 @@ static void run_node_stub(void *arg)
 static void init_coords()
 {
     /* defaults */
-    if (MESH_NODE_COUNT == 8) {
+    if (MESH_NODE_COUNT == 12) {
 	coords[0].x = 100;
 	coords[0].y = 100;
 
@@ -83,11 +83,23 @@ static void init_coords()
 	coords[5].x = 400;
 	coords[5].y = 400;
 
-	coords[6].x = 550;
-	coords[6].y = 450;
+	coords[6].x = 175;
+	coords[6].y = 325;
 
-	coords[7].x = 600;
-	coords[7].y = 50;
+	coords[7].x = 325;
+	coords[7].y = 200;
+
+	coords[8].x = 400;
+	coords[8].y = 500;
+
+	coords[9].x = 500;
+	coords[9].y = 400;
+
+	coords[10].x = 350;
+	coords[10].y = 125;
+
+	coords[11].x = 375;
+	coords[11].y = 250;
 
     } else {
 	/* random */

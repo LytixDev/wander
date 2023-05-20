@@ -115,7 +115,7 @@ void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited, u
 
 void find_all_routes(struct node_t *start, u16 total_nodes)
 {
-    LOG_INFO("Finding all routes from node %d", start->node_id);
+    // LOG_INFO("Finding all routes from node %d", start->node_id);
     bool visited[total_nodes];
     memset(visited, false, total_nodes);
     u16 path[total_nodes];
