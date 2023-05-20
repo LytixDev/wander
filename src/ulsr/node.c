@@ -134,7 +134,7 @@ bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_nei
 	return false;
     }
 
-    if (listen(node->sockfd, max_threads) != 0) {
+    if (listen(node->sockfd, max_connections) != 0) {
 	LOG_NODE_ERR(node->node_id, "ABORT!: Failed listen on socket");
 	return false;
     }

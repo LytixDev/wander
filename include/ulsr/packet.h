@@ -60,7 +60,7 @@ struct ulsr_internal_packet {
     u16 dest_node_id;
     u32 payload_len;
     void *payload;
-    struct packet_route_t *pt;
+    struct packet_route_t *pr;
     bool is_response;
 };
 

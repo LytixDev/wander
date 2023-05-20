@@ -45,25 +45,35 @@ static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *p
 
 bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 {
-    LOG_NODE_INFO(node->node_id, "use bogo, step %d", packet->pt->step);
-    packet->pt->path = realloc(packet->pt->path, (packet->pt->len + 1) * sizeof(u16));
+    LOG_NODE_INFO(node->node_id, "use bogo, step %d", packet->pr->step);
+
+    printf("bogo route so far: ");
+    for (u16 i = 0; i < packet->pr->len; i++) {
+	printf("%d ", packet->pr->path[i]);
+    }
+
+    printf("\n");
+
+    packet->pr->path = realloc(packet->pr->path, (packet->pr->step + 2) * sizeof(u16));
+    packet->pr->len = packet->pr->step + 1;
 
     /* find random neighbor until packet sent or no more neighbors */
     u16 ignore_list[node->known_nodes_count];
     u16 ignore_len = 0;
     bool came_through;
-    u16 next_hop_id = bogo_find_neighbor_stub(node, packet->pt, ignore_list, &ignore_len);
+    u16 next_hop_id = bogo_find_neighbor_stub(node, packet->pr, ignore_list, &ignore_len);
+
     while (next_hop_id != 0) {
-        packet->pt->len++;
+	packet->pr->len++;
 	came_through = use_packet_route(packet, node);
 	if (came_through) {
 	    /* This is called because this node doesn't have any routes to the destination */
 	    find_all_routes(node, node->known_nodes_count);
 	    return true;
 	}
-        /* was not routed, so len needs to be decremented before call to find neighbor */
-        packet->pt->len--;
-	next_hop_id = bogo_find_neighbor_stub(node, packet->pt, ignore_list, &ignore_len);
+	/* was not routed, so len needs to be decremented before call to find neighbor */
+	packet->pr->len--;
+	next_hop_id = bogo_find_neighbor_stub(node, packet->pr, ignore_list, &ignore_len);
     }
 
     /* packet got stuck in bogo :-( */
@@ -76,11 +86,11 @@ bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node)
 {
     LOG_NODE_INFO(node->node_id, "Use packet route");
-    packet->pt->step++;
+    packet->pr->step++;
     packet->prev_node_id = node->node_id;
-    bool came_through = node->send_func(packet, packet->pt->path[packet->pt->step]) != -1;
+    bool came_through = node->send_func(packet, packet->pr->path[packet->pr->step]) != -1;
     if (!came_through)
-        packet->pt->step--;
+	packet->pr->step--;
     return came_through;
 }
 
@@ -95,7 +105,7 @@ u16 find_random_neighbor(struct node_t *node, u16 *path, u16 path_len, u16 *igno
 	    for (u16 j = 0; j < ignore_len; j++) {
 		if (ignore_list[j] == i + 1) {
 		    goto ignore;
-                }
+		}
 	    }
 	}
 
@@ -122,7 +132,8 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 {
     LOG_NODE_INFO(node->node_id, "Received data packet from %d", packet->prev_node_id);
     /* check last node in route is this node */
-    if (node->node_id == packet_route_final_hop(packet->pt)) {
+    if (node->node_id == packet_route_final_hop(packet->pr)) {
+	LOG_NODE_INFO(node->node_id, "final hop");
 	// TODO: here we assume that the final hop of a route that is a response can connect to the
 	// client
 	/* check if data is for client */
@@ -148,15 +159,19 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	LOG_NODE_INFO(node->node_id, "Last hop, but could not connect to external");
 	/* 1 */
 	if (!queue_empty(node->route_queue)) {
-	    LOG_NODE_INFO(node->node_id, "queue not empty");
-	    struct packet_route_t *append = route_to_packet_route(queue_pop(node->route_queue));
-	    struct packet_route_t *pt = packet_route_combine(packet->pt, append);
-	
-	//     Check if we can free the path here
-	//     free(packet->pt->path);
-	//     free(packet->pt);
+	    // LOG_ERR("expect failure");
+	    // propogate_failure();
+	    // return;
 
-	    packet->pt = pt;
+	    LOG_NODE_ERR(node->node_id, "use combine route");
+	    struct packet_route_t *append = route_to_packet_route(queue_pop(node->route_queue));
+	    struct packet_route_t *pt = packet_route_combine(packet->pr, append);
+
+	    //     Check if we can free the path here
+	    //     free(packet->pt->path);
+	    //     free(packet->pt);
+
+	    packet->pr = pt;
 	    bool came_through = use_packet_route(packet, node);
 	    if (came_through)
 		return;
@@ -234,11 +249,11 @@ void main_recv_thread(void *arg)
 	    continue;
 	}
 
-        #define LOG_ALL_INTERNAL_INCOMING
+#define LOG_ALL_INTERNAL_INCOMING
 #ifdef LOG_ALL_INTERNAL_INCOMING
-        if (packet->type == PACKET_DATA)
-            LOG_NODE_INFO(node->node_id, "Received packet type %s from %d",
-                          uslr_internal_type_to_str[packet->type], packet->prev_node_id);
+	if (packet->type == PACKET_DATA)
+	    LOG_NODE_INFO(node->node_id, "Received packet type %s from %d",
+			  uslr_internal_type_to_str[packet->type], packet->prev_node_id);
 #endif
 
 	switch (packet->type) {

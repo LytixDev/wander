@@ -21,6 +21,7 @@
 
 #include "lib/common.h"
 #include "ulsr/packet.h"
+#include "ulsr/routing.h"
 #include "ulsr/ulsr.h"
 
 char *uslr_internal_type_to_str[PACKET_TYPE_COUNT] = {
@@ -60,6 +61,7 @@ struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *ext
     packet->prev_node_id = 0;
     packet->dest_node_id = 0;
     packet->type = PACKET_DATA;
+    packet->is_response = false;
     return packet;
 }
 

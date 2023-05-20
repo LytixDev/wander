@@ -303,7 +303,7 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
     pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
 
     if (packet->type == PACKET_DATA)
-        LOG_INFO("receiving packet");
+	LOG_INFO("receiving packet");
     return packet;
 }
 
@@ -333,7 +333,7 @@ bool simulate(void)
     init_threadpool(&window_threadpool, 2 * MESH_NODE_COUNT + 1, 32);
     start_threadpool(&window_threadpool);
 #endif
-    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 32);
+    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 16);
     start_threadpool(&threadpool);
 
     /* init all nodes and make them run on the threadpool */
