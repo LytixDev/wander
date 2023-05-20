@@ -172,11 +172,11 @@ static void draw_circle(float center_x, float center_y, float radius)
 void draw_arrow(float x1, float y1, float x2, float y2, int is_send)
 {
     if (is_send) {
-	glColor3f(0, 255, 255);
+	glColor3f(0, 1, 1);
 	x1 -= 5;
 	x2 -= 5;
     } else {
-	glColor3f(255, 255, 0);
+	glColor3f(1, 1, 0);
 	x1 += 5;
 	x2 += 5;
     }
@@ -189,8 +189,8 @@ void draw_arrow(float x1, float y1, float x2, float y2, int is_send)
     dx /= length;
     dy /= length;
 
-    GLfloat arrowhead_length = 10;
-    GLfloat arrowhead_angle = 1;
+    GLfloat arrowhead_length = 20;
+    GLfloat arrowhead_angle = 0.5;
     GLfloat arrowhead_vertices[] = {
 	x2,
 	y2,
@@ -208,11 +208,11 @@ void draw_arrow(float x1, float y1, float x2, float y2, int is_send)
     glDrawArrays(GL_LINES, 0, 2);
 
     if (is_send) {
-	glColor3f(100, 255, 255);
+	glColor3f(0, 0.5, 0.5);
 	x1 -= 5;
 	x2 -= 5;
     } else {
-	glColor3f(255, 255, 100);
+	glColor3f(0.5, 0.5, 0);
 	x1 += 5;
 	x2 += 5;
     }
