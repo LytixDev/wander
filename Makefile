@@ -67,7 +67,7 @@ $(OBJDIR)/$(SRC)/gui:
 	@mkdir -p $@
 
 $(TARGET_GUI_MACOS): CFLAGS += -DGUI -I/usr/local/include -I/usr/local/include/freetype2
-$(TARGET_GUI_MACOS): LDLIBS += -L/usr/local/lib -lglfw -framework OpenGL -lfreetype
+$(TARGET_GUI_MACOS): LDLIBS += -L/usr/local/lib -lglfw -framework OpenGL -lfreetype -lGLEW
 
 GUI_MACOS_SRCS := $(shell find $(SRC)/gui -type f -name "*.c")
 GUI_MACOS_OBJS := $(GUI_MACOS_SRCS:$(SRC)/gui/%.c=$(OBJDIR)/$(SRC)/gui_macos/%.o)
