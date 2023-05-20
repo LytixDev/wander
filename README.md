@@ -9,9 +9,26 @@ Copyright © 2023 Nicolai Brand and Callum Grand under GPL v3 (see LICENSE.txt).
 This project is a work in progress as far as the routing protocol is concerned. The current functionality is as follows:
 - The ability to send and receive messages between nodes in the mesh network.
 - The ability to send and receive HTTP requests to external servers through the mesh network.
+- Routing of messages between nodes in the mesh network without initial knowledge of the network topology.
+- Routing protocol that always finds a path to the destination node if one exists.
+- Triangulation evasion by using random paths between nodes in the mesh network.
+- Routing tables built by using flooding.
+- Routing protocol that uses a combination of the routing table and random paths to obfuscate triangulation.
 
 ### Simulation
-The simulation environment in the project is quite advanced. It is possible to simulate a large number of nodes in a mesh network, and to simulate the movement of these nodes. The simulation environment is also capable of simulating the transmission of messages between nodes in the mesh network. The simulation environment is also capable of simulating the transmission of HTTP requests to external servers through the mesh network. In the simulation, the nodes are agnostic to the fact that they are simulated, and they behave as if they were real nodes in a real mesh network. The simulation environment is also capable of visualizing the mesh network in real time and allows the user to interact with the mesh network through a graphical user interface.
+The simulation environment in the project is quite advanced. It is possible to simulate a large number of nodes in a mesh network, and to simulate the movement of these nodes. The simulation environment is also capable of simulating the transmission of messages between nodes in the mesh network. The simulation environment is also capable of simulating the transmission of HTTP requests to external servers through the mesh network. In the simulation, the nodes are agnostic to the fact that they are simulated, and they behave as if they were real nodes in a real mesh network.
+
+### GUI
+The GUI has multiple filters for easier viewing. Options for packet types to observe, request types between nodes to observe and the ability to filter out failed requests. The GUI is made completely from scratch without any component library, including the text that is rendered using OpenGL. The GUI is also capable of visualizing the mesh network in real time and allows the user to interact with the mesh network through a graphical user interface.
+To select a node:
+        -       Press on a node.
+
+To deselect a node:
+        -       Press on the selected node.
+
+To move a node:
+        -       Select a node.
+        -       Press where you want to move the node.        
 
 ### Implementation
 For the ease of use for testers and future developers, the project only uses the C-standard library and the POSIX library, except for the GUI. The project is written in C11 and compiles with gcc and clang. The project is developed on Linux, but it should be possible to compile and run the project on other operating systems as well. The GUI requires OpenGL and GLFW, and is developed for Linux and Mac-OS.
