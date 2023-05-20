@@ -48,7 +48,7 @@ void render_text(const char *text, float x, float y, float size)
 	float w = slot->bitmap.width * size;
 	float h = slot->bitmap.rows * size;
 
-	glColor4f(0.0f, 0.0f, 0.0f, 1.0f);
+	glColor4f(1.0f, 1.0f, 1.0f, 1.0f);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 	glEnable(GL_TEXTURE_2D);

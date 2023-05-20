@@ -216,6 +216,8 @@ void draw_arrow(float x1, float y1, float x2, float y2, int is_send)
 
 static void draw_node_coords(u16 selected_node)
 {
+    init_free_type();
+    load_font();
     glEnableClientState(GL_VERTEX_ARRAY);
     glEnableClientState(GL_COLOR_ARRAY);
     glPointSize(20);
@@ -223,6 +225,8 @@ static void draw_node_coords(u16 selected_node)
 
     GLfloat colors[MESH_NODE_COUNT * 3];
     GLfloat point_vertices[MESH_NODE_COUNT * 2];
+    char str[5];
+    memset(str, 0, 5);
 
     for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
 	if (i == selected_node) {
@@ -241,6 +245,12 @@ static void draw_node_coords(u16 selected_node)
     glColorPointer(3, GL_FLOAT, 0, colors);
     glVertexPointer(2, GL_FLOAT, 0, point_vertices);
     glDrawArrays(GL_POINTS, 0, MESH_NODE_COUNT);
+
+    for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
+        sprintf(str, "%d", (i + 1));
+        render_text(str, point_vertices[i * 2] + 10, point_vertices[i * 2 + 1] + 10, 2.0f);
+        memset(str, 0, 5);
+    }
 
     glDisable(GL_POINT);
     glDisableClientState(GL_COLOR_ARRAY);
