@@ -66,19 +66,19 @@ $(OBJDIR)/$(SRC)/gui/%.o: $(SRC)/gui/%.c Makefile | $(OBJDIR)/$(SRC)/gui
 $(OBJDIR)/$(SRC)/gui:
 	@mkdir -p $@
 
-gui_macos: CFLAGS += -DGUI -I/usr/local/include/freetype2 -I/usr/include/libpng16
-gui_macos: LDLIBS += -L/usr/local/lib -lglfw -framework OpenGL -lfreetype
+$(TARGET_GUI_MACOS): CFLAGS += -DGUI -I/usr/local/include -I/usr/local/include/freetype2
+$(TARGET_GUI_MACOS): LDLIBS += -L/usr/local/lib -lglfw -framework OpenGL -lfreetype
 
-GUI_SRCS := $(shell find $(SRC)/gui -type f -name "*.c")
-GUI_OBJS := $(GUI_SRCS:$(SRC)/gui/%.c=$(OBJDIR)/$(SRC)/gui/%.o)
+GUI_MACOS_SRCS := $(shell find $(SRC)/gui -type f -name "*.c")
+GUI_MACOS_OBJS := $(GUI_MACOS_SRCS:$(SRC)/gui/%.c=$(OBJDIR)/$(SRC)/gui_macos/%.o)
 
-$(TARGET_GUI_MACOS): $(GUI_OBJS) $(OBJS)
+$(TARGET_GUI_MACOS): $(GUI_MACOS_OBJS) $(OBJS)
 	@echo [LD] $@
 	@$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
 
-$(OBJDIR)/$(SRC)/gui/%.o: $(SRC)/gui/%.c Makefile | $(OBJDIR)/$(SRC)/gui
+$(OBJDIR)/$(SRC)/gui_macos/%.o: $(SRC)/gui/%.c Makefile | $(OBJDIR)/$(SRC)/gui_macos
 	@echo [CC] $@
 	@$(CC) -c $(CFLAGS) $< -o $@
 
-$(OBJDIR)/$(SRC)/gui:
+$(OBJDIR)/$(SRC)/gui_macos:
 	@mkdir -p $@
