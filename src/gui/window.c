@@ -20,7 +20,6 @@
 #include <string.h>
 
 #include <math.h>
-// #include <stb/stb_image.h>
 
 #include "gui/window.h"
 #include "lib/common.h"
@@ -106,12 +105,6 @@ GLFWwindow *window_create()
     }
 
     window = glfwCreateWindow(SIMULATION_WIDTH, SIMULATION_LENGTH, "ULSR Simulation", NULL, NULL);
-
-    GLFWimage images[1];
-    // images[0].pixels =
-    //     stbi_load("./include/static/icon.png", &images[0].width, &images[0].height, 0, 4);
-    // glfwSetWindowIcon(window, 1, images);
-    // stbi_image_free(images[0].pixels);
 
     if (!window) {
 	glfwTerminate();
@@ -302,7 +295,7 @@ void draw_ranges()
     }
 }
 
-static void draw_toolbar_2(int selected_request_filter)
+static void draw_request_filter_buttons(int selected_request_filter)
 {
     init_free_type();
     load_font();
@@ -387,7 +380,7 @@ void window_update(GLFWwindow *window)
 
     draw_toolbar(window_data->selected_radio_button);
 
-    draw_toolbar_2(window_data->selected_request_filter);
+    draw_request_filter_buttons(window_data->selected_request_filter);
 
     draw_arrows(window_data->arrow_queue);
 
