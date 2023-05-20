@@ -115,3 +115,4 @@ In the future, packets in and out of the network should not be bound to TCP, but
 
 ### Known bugs
 - The whole GUI is buggy and largely needs to be rewritten as there are multiple causes for segfaults and memory leaks.
+- Packets are not always freed correctly, which causes memory leaks. This is however not a problem in a real world scenario, as the packets are freed when they are sent as it would go through a socket.
