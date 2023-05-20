@@ -126,7 +126,7 @@ GLFWwindow *window_create()
     GLenum glewInitStatus = glewInit();
 
     if (glewInitStatus != GLEW_OK) {
-        return NULL;
+	return NULL;
     }
 
     glViewport(0.0f, 0.0f, width, height);
@@ -145,7 +145,7 @@ GLFWwindow *window_create()
     window_data->selected_radio_button = 0;
     window_data->selected_node = -1;
     window_data->arrow_queue = malloc(sizeof(struct queue_t));
-    queue_init(window_data->arrow_queue, 32);
+    queue_init(window_data->arrow_queue, 256);
 
     glfwSetWindowUserPointer(window, (void *)window_data);
 
@@ -292,11 +292,11 @@ void draw_ranges(i16 selected_node)
 
     if (radius > SIMULATION_NODE_RANGE) {
 	glfwSetTime(0);
-        radius = STARTING_RING_RADIUS;
+	radius = STARTING_RING_RADIUS;
     }
-    
+
     if (selected_node != -1)
-        draw_circle(coords[selected_node].x, coords[selected_node].y, radius);
+	draw_circle(coords[selected_node].x, coords[selected_node].y, radius);
 }
 
 static void draw_request_filter_buttons(int selected_request_filter)
@@ -395,6 +395,15 @@ void window_update(GLFWwindow *window)
 
 void window_destroy(GLFWwindow *window)
 {
+    struct window_data_t *window_data = (struct window_data_t *)glfwGetWindowUserPointer(window);
+    struct queue_t *arrow_queue = window_data->arrow_queue;
+    struct arrow_queue_data_t *data = NULL;
+    while ((data = (struct arrow_queue_data_t *)queue_pop(arrow_queue)) != NULL) {
+	free(data);
+    }
+    free_queue(arrow_queue);
+    free(arrow_queue);
+    free(window_data);
     clean_font();
     glfwDestroyWindow(window);
     glfwTerminate();

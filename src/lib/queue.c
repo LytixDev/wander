@@ -29,6 +29,9 @@ void queue_init(struct queue_t *queue, int size)
 
 bool queue_empty(struct queue_t *queue)
 {
+    if (!queue)
+	return true;
+
     return !queue->size;
 }
 

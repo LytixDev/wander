@@ -141,7 +141,8 @@ void pop_and_free(void *arg)
     struct arrow_queue_data_t *data = queue_pop(arrow_queue);
     pthread_mutex_unlock(&window_threadpool.cond_var->cond_lock);
     pthread_cond_signal(&window_threadpool.cond_var->cond_variable);
-    free(data);
+    if (data != NULL)
+	free(data);
 }
 
 void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 from, u16 to,
@@ -298,10 +299,10 @@ bool simulate(void)
     /* main threadpool */
 #ifdef GUI
     /* init the window threadpool */
-    init_threadpool(&window_threadpool, MESH_NODE_COUNT + 1, 8);
+    init_threadpool(&window_threadpool, 2 * MESH_NODE_COUNT + 1, 32);
     start_threadpool(&window_threadpool);
 #endif
-    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
+    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 32);
     start_threadpool(&threadpool);
 
     /* init all nodes and make them run on the threadpool */
@@ -341,7 +342,9 @@ bool simulate(void)
     }
 #endif
 
+#ifdef GUI
 end_simulation:
+#endif
     running = false;
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
