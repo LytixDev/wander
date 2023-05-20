@@ -35,10 +35,10 @@ void propogate_failure()
 }
 
 static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *pt, u16 *ignore_list,
-				   u16 ignore_len)
+				   u16 *ignore_len)
 {
-    u16 next_hop_id = find_random_neighbor(node, pt->path, pt->step, ignore_list, ignore_len);
-    ignore_list[ignore_len++] = next_hop_id;
+    u16 next_hop_id = find_random_neighbor(node, pt->path, pt->step, ignore_list, *ignore_len);
+    ignore_list[(*ignore_len)++] = next_hop_id;
     pt->path[pt->step + 1] = next_hop_id;
     return next_hop_id;
 }
@@ -48,12 +48,11 @@ bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
     LOG_NODE_INFO(node->node_id, "use bogo, step %d", packet->pt->step);
     packet->pt->path = realloc(packet->pt->path, (packet->pt->len + 1) * sizeof(u16));
 
-
     /* find random neighbor until packet sent or no more neighbors */
     u16 ignore_list[node->known_nodes_count];
     u16 ignore_len = 0;
     bool came_through;
-    u16 next_hop_id = bogo_find_neighbor_stub(node, packet->pt, ignore_list, ignore_len);
+    u16 next_hop_id = bogo_find_neighbor_stub(node, packet->pt, ignore_list, &ignore_len);
     while (next_hop_id != 0) {
         packet->pt->len++;
 	came_through = use_packet_route(packet, node);
@@ -62,8 +61,9 @@ bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 	    find_all_routes(node, node->known_nodes_count);
 	    return true;
 	}
+        /* was not routed, so len needs to be decremented before call to find neighbor */
         packet->pt->len--;
-	next_hop_id = bogo_find_neighbor_stub(node, packet->pt, ignore_list, ignore_len);
+	next_hop_id = bogo_find_neighbor_stub(node, packet->pt, ignore_list, &ignore_len);
     }
 
     /* packet got stuck in bogo :-( */
@@ -93,8 +93,9 @@ u16 find_random_neighbor(struct node_t *node, u16 *path, u16 path_len, u16 *igno
 	/* if node is in ignore list, ignore */
 	if (ignore_list != NULL) {
 	    for (u16 j = 0; j < ignore_len; j++) {
-		if (ignore_list[j] == i + 1)
+		if (ignore_list[j] == i + 1) {
 		    goto ignore;
+                }
 	    }
 	}
 
@@ -233,9 +234,11 @@ void main_recv_thread(void *arg)
 	    continue;
 	}
 
+        #define LOG_ALL_INTERNAL_INCOMING
 #ifdef LOG_ALL_INTERNAL_INCOMING
-	LOG_NODE_INFO(node->node_id, "Received packet type %s from %d",
-		      uslr_internal_type_to_str[packet->type], packet->prev_node_id);
+        if (packet->type == PACKET_DATA)
+            LOG_NODE_INFO(node->node_id, "Received packet type %s from %d",
+                          uslr_internal_type_to_str[packet->type], packet->prev_node_id);
 #endif
 
 	switch (packet->type) {

@@ -259,6 +259,9 @@ i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
     if (nodes[node_id - 1].node_id == NODE_INACTIVE_ID)
 	return -1;
 
+    if (packet->type == PACKET_DATA)
+	LOG_INFO("SEND FUNC SUCCESS from %d to %d", packet->prev_node_id, node_id);
+
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
 
     /* critical section */
@@ -298,6 +301,9 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 #endif
 
     pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
+
+    if (packet->type == PACKET_DATA)
+        LOG_INFO("receiving packet");
     return packet;
 }
 
@@ -334,7 +340,7 @@ bool simulate(void)
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	bool success =
 	    init_node(&nodes[i], i + 1, HELLO_POLL_INTERVAL, REMOVE_NEIGHBOR_THRESHOLD,
-		      MESH_NODE_COUNT, 8, 8, 8, set_initial_node_ids, node_can_connect_func,
+		      MESH_NODE_COUNT, 8, 8, 64, set_initial_node_ids, node_can_connect_func,
 		      node_send_func, node_recv_func, ULSR_DEVICE_PORT_START + i);
 	if (!success)
 	    exit(1);
