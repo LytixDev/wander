@@ -108,4 +108,7 @@ u16 send_func(struct ulsr_internal_packet *packet, u16 node_id);
 /* returns one heap allocated packet at a time */
 struct ulsr_internal_packet *recv_func(u16 node_id);
 
+/* simulation specific functions */
+void update_coord(u16 node_id, u16 new_x, u16 new_y);
+
 #endif /* IMPL_H */

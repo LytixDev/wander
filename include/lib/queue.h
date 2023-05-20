@@ -78,6 +78,12 @@ bool queue_push(struct queue_t *queue, void *item);
 void *queue_pop(struct queue_t *queue);
 
 /**
+ * Function used to clear a queue.
+ * @param queue queue to clear.
+ */
+void queue_clear(struct queue_t *queue);
+
+/**
  * Function used to free a queue.
  * @param queue queue to free.
  */
