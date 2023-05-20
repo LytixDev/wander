@@ -169,8 +169,10 @@ void main_recv_thread(void *arg)
 	    continue;
 	}
 
+#ifdef LOG_ALL_INTERNAL_INCOMING
 	LOG_NODE_INFO(node->node_id, "Received packet type %s from %d",
 		      uslr_internal_type_to_str[packet->type], packet->prev_node_id);
+#endif
 
 	switch (packet->type) {
 	case PACKET_DATA:
