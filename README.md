@@ -1,4 +1,6 @@
-# Project in IDATT2104
+# WANDER
+### Wireless mesh Ad-hoc Network protocol for Triangulation Evasion and Routing
+
 Copyright © 2023 Nicolai Brand and Callum Grand under GPL v3 (see LICENSE.txt). .clang-format is licensed under GPL v2.
 
 ## Compile and run
@@ -94,3 +96,4 @@ $ ./client
 - `make clean` - not dirty.
 - `make bear` - generates a file of the compiler options.
 - `make format` - makes the code objectively pretty.
+
