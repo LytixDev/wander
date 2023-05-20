@@ -16,6 +16,7 @@
  */
 
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -77,6 +78,8 @@ void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id)
 
 void remove_old_neighbors(struct node_t *node)
 {
+    // TODO: if high lock contention consider condition variable
+    pthread_mutex_lock(&node->neighbor_list_lock);
     time_t now = time(NULL);
 
     struct neighbor_t *neighbor = NULL;
@@ -93,6 +96,8 @@ void remove_old_neighbors(struct node_t *node)
 	    remove_route_with_old_neighbor(node, i + 1);
 	}
     }
+
+    pthread_mutex_unlock(&node->neighbor_list_lock);
 }
 
 /* node lifetime functions */
@@ -157,6 +162,7 @@ bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_nei
     for (int i = 0; i < node->known_nodes_count; i++) {
 	node->neighbors[i] = NULL;
     }
+    pthread_mutex_init(&node->neighbor_list_lock, NULL);
 
     /* known id list */
     node->known_nodes = malloc(sizeof(struct u16_arraylist_t));
@@ -220,6 +226,7 @@ void close_node(struct node_t *node)
     close_all_external_connections(node->connections);
     threadpool_stop(node->threadpool);
     close(node->sockfd);
+    pthread_mutex_destroy(&node->neighbor_list_lock);
     LOG_NODE_INFO(node->node_id, "Shutdown complete");
 }
 

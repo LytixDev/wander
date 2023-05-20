@@ -18,6 +18,7 @@
 #ifndef NODE_H
 #define NODE_H
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -110,6 +111,7 @@ struct node_t {
     struct queue_t *route_queue;
     struct u16_arraylist_t *known_nodes;
     struct neighbor_t **neighbors;
+    pthread_mutex_t neighbor_list_lock;
 };
 
 

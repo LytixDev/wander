@@ -110,7 +110,7 @@ void handle_external(void *arg)
 	goto cleanup;
     }
 
-    // LOG_NODE_INFO(node->node_id, "Received external packet");
+    LOG_NODE_INFO(node->node_id, "Received external packet");
 
     /* validate checksum */
     // u32 checksum = ulsr_checksum((u8 *)&packet, (unsigned long)bytes_read);
@@ -125,7 +125,6 @@ void handle_external(void *arg)
 
     /* find path to destination */
     if (!queue_empty(node->route_queue)) {
-	LOG_NODE_INFO(node->node_id, "queue not empty");
 	struct packet_route_t *pr = route_to_packet_route(queue_pop(node->route_queue));
 	internal_packet->pr = pr;
 	bool came_through = use_packet_route(internal_packet, node);
@@ -137,7 +136,6 @@ void handle_external(void *arg)
 	if (!came_through)
 	    propogate_failure();
     } else {
-	LOG_NODE_INFO(node->node_id, "No path, use BOGO");
 	/* should be a function */
 	internal_packet->pr = malloc(sizeof(struct packet_route_t));
 	internal_packet->pr->len = 1;

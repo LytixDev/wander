@@ -15,6 +15,7 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -45,14 +46,7 @@ static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *p
 
 bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 {
-    LOG_NODE_INFO(node->node_id, "use bogo, step %d", packet->pr->step);
-
-    printf("bogo route so far: ");
-    for (u16 i = 0; i < packet->pr->len; i++) {
-	printf("%d ", packet->pr->path[i]);
-    }
-
-    printf("\n");
+    // LOG_NODE_INFO(node->node_id, "use bogo, step %d", packet->pr->step);
 
     packet->pr->path = realloc(packet->pr->path, (packet->pr->step + 2) * sizeof(u16));
     packet->pr->len = packet->pr->step + 1;
@@ -97,6 +91,8 @@ bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node)
 u16 find_random_neighbor(struct node_t *node, u16 *path, u16 path_len, u16 *ignore_list,
 			 u16 ignore_len)
 {
+    pthread_mutex_lock(&node->neighbor_list_lock);
+
     struct neighbor_t *neighbors[node->known_nodes_count];
     u16 counter = 0;
     for (u16 i = 0; i < node->known_nodes_count; i++) {
@@ -122,6 +118,8 @@ ignore:
 	continue;
     }
 
+    pthread_mutex_unlock(&node->neighbor_list_lock);
+
     if (counter == 0)
 	return 0;
 
@@ -133,7 +131,6 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
     LOG_NODE_INFO(node->node_id, "Received data packet from %d", packet->prev_node_id);
     /* check last node in route is this node */
     if (node->node_id == packet_route_final_hop(packet->pr)) {
-	LOG_NODE_INFO(node->node_id, "final hop");
 	// TODO: here we assume that the final hop of a route that is a response can connect to the
 	// client
 	/* check if data is for client */
@@ -156,14 +153,8 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	 * 2. If no existing route on node: bogo
 	 */
 
-	LOG_NODE_INFO(node->node_id, "Last hop, but could not connect to external");
 	/* 1 */
 	if (!queue_empty(node->route_queue)) {
-	    // LOG_ERR("expect failure");
-	    // propogate_failure();
-	    // return;
-
-	    LOG_NODE_ERR(node->node_id, "use combine route");
 	    struct packet_route_t *append = route_to_packet_route(queue_pop(node->route_queue));
 	    struct packet_route_t *pt = packet_route_combine(packet->pr, append);
 
@@ -183,7 +174,6 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 
 	    /* 2 */
 	} else {
-	    LOG_NODE_INFO(node->node_id, "queue empty");
 	    /* send packet to random neighbor */
 	    bool came_through = send_bogo(packet, node);
 	    if (!came_through)
@@ -196,6 +186,8 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	if (came_through)
 	    return;
 
+	/* */
+
 	/* path failed */
 	came_through = send_bogo(packet, node);
 	if (!came_through)
@@ -206,14 +198,18 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 static void handle_hello_packet(struct node_t *node, struct ulsr_internal_packet *packet)
 {
     u16 neighbor_id = packet->prev_node_id;
+
+    pthread_mutex_lock(&node->neighbor_list_lock);
     struct neighbor_t *neighbor = node->neighbors[neighbor_id - 1];
     if (neighbor == NULL) {
-	// LOG_NODE_INFO(node->node_id, "Found new neighbor %d", neighbor_id);
+	LOG_NODE_INFO(node->node_id, "Found new neighbor %d", neighbor_id);
 	neighbor = malloc(sizeof(struct neighbor_t));
 	neighbor->node_id = neighbor_id;
 	node->neighbors[neighbor_id - 1] = neighbor;
     }
     neighbor->last_seen = time(NULL);
+
+    pthread_mutex_unlock(&node->neighbor_list_lock);
 }
 
 static void handle_routing_packet(struct node_t *node, struct ulsr_internal_packet *packet)
@@ -249,11 +245,9 @@ void main_recv_thread(void *arg)
 	    continue;
 	}
 
-#define LOG_ALL_INTERNAL_INCOMING
 #ifdef LOG_ALL_INTERNAL_INCOMING
-	if (packet->type == PACKET_DATA)
-	    LOG_NODE_INFO(node->node_id, "Received packet type %s from %d",
-			  uslr_internal_type_to_str[packet->type], packet->prev_node_id);
+	LOG_NODE_INFO(node->node_id, "Received packet type %s from %d",
+		      uslr_internal_type_to_str[packet->type], packet->prev_node_id);
 #endif
 
 	switch (packet->type) {
@@ -300,8 +294,8 @@ void hello_poll_thread(void *arg)
 	}
 
 	/* check if any neighbors are "out of date" */
-	// TODO: is a mutex needed here (probably) ?
 	remove_old_neighbors(node);
+
 	sleep(node->hello_poll_interval);
     }
 }

@@ -245,9 +245,6 @@ i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 			      SIMULATION_NODE_RANGE) &&
 				!(nodes[node_id - 1].node_id == NODE_INACTIVE_ID));
 #endif
-
-    if (packet->type == PACKET_DATA)
-	LOG_INFO("SEND FUNC from %d to %d", packet->prev_node_id, node_id);
     /*
      * how the simulation mocks whether a packet addressed for this node can't be received due too
      * bad signal
@@ -259,10 +256,8 @@ i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
     if (nodes[node_id - 1].node_id == NODE_INACTIVE_ID)
 	return -1;
 
-    if (packet->type == PACKET_DATA)
-	LOG_INFO("SEND FUNC SUCCESS from %d to %d", packet->prev_node_id, node_id);
-
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
+
 
     /* critical section */
     struct ulsr_internal_packet *new_packet = malloc(sizeof(struct ulsr_internal_packet));
@@ -274,6 +269,7 @@ i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 
     pthread_cond_signal(&node_locks[node_id - 1].cond_variable);
     pthread_mutex_unlock(&node_locks[node_id - 1].cond_lock);
+
 
     return packet->payload_len;
 };
@@ -301,9 +297,6 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 #endif
 
     pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
-
-    if (packet->type == PACKET_DATA)
-	LOG_INFO("receiving packet");
     return packet;
 }
 
