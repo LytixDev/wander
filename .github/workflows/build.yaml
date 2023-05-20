@@ -21,6 +21,11 @@ jobs:
           sudo apt-get update -qyy
           sudo apt install libglfw3-dev libgl-dev libglew-dev libxxf86vm-dev libxi-dev libxinerama-dev
 
+      - name: Dependencies mac
+        if: startsWith(matrix.os, 'macos-')
+        run: |
+          brew install glfw glew
+
       - name: Build
         run: make CC="${{matrix.cc}}"
 
