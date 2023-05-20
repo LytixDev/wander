@@ -53,12 +53,6 @@ enum ulsr_internal_packet_type {
 
 extern char *uslr_internal_type_to_str[PACKET_TYPE_COUNT];
 
-struct packet_route_t {
-    u16 *path;
-    u16 len;
-    u16 step;
-};
-
 struct ulsr_internal_packet {
     u32 checksum;
     enum ulsr_internal_packet_type type;
@@ -66,7 +60,7 @@ struct ulsr_internal_packet {
     u16 dest_node_id;
     u32 payload_len;
     void *payload;
-    struct packet_route_t *route;
+    struct packet_route_t *pr;
     bool is_response;
 };
 

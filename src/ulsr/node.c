@@ -16,6 +16,7 @@
  */
 
 #include <netinet/in.h>
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
@@ -48,7 +49,7 @@ static void insert_external_connection(struct connections_t *connections, int co
     connections->connections[connections->index] = connection;
 }
 
-static void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id)
+void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id)
 {
     /* if route queue already empty, do nothing */
     if (queue_empty(node->route_queue))
@@ -77,6 +78,8 @@ static void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node
 
 void remove_old_neighbors(struct node_t *node)
 {
+    // TODO: if high lock contention consider condition variable
+    pthread_mutex_lock(&node->neighbor_list_lock);
     time_t now = time(NULL);
 
     struct neighbor_t *neighbor = NULL;
@@ -86,13 +89,15 @@ void remove_old_neighbors(struct node_t *node)
 	    continue;
 
 	if (now - neighbor->last_seen > node->remove_neighbor_threshold) {
-	    LOG_NODE_INFO(node->node_id, "%d removed as neighbor", i + 1);
+	    // LOG_NODE_INFO(node->node_id, "%d removed as neighbor", i + 1);
 	    node->neighbors[i] = NULL;
 	    free(neighbor);
 	    // invalidate all routes that use this neighbor
 	    remove_route_with_old_neighbor(node, i + 1);
 	}
     }
+
+    pthread_mutex_unlock(&node->neighbor_list_lock);
 }
 
 /* node lifetime functions */
@@ -134,7 +139,7 @@ bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_nei
 	return false;
     }
 
-    if (listen(node->sockfd, max_threads) != 0) {
+    if (listen(node->sockfd, max_connections) != 0) {
 	LOG_NODE_ERR(node->node_id, "ABORT!: Failed listen on socket");
 	return false;
     }
@@ -157,13 +162,14 @@ bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_nei
     for (int i = 0; i < node->known_nodes_count; i++) {
 	node->neighbors[i] = NULL;
     }
+    pthread_mutex_init(&node->neighbor_list_lock, NULL);
 
     /* known id list */
     node->known_nodes = malloc(sizeof(struct u16_arraylist_t));
     ARRAY_INIT(node->known_nodes);
     node->init_known_nodes_func(node);
 
-    LOG_NODE_INFO(node->node_id, "Successfully initialized");
+    // LOG_NODE_INFO(node->node_id, "Successfully initialized");
     return true;
 }
 
@@ -220,6 +226,7 @@ void close_node(struct node_t *node)
     close_all_external_connections(node->connections);
     threadpool_stop(node->threadpool);
     close(node->sockfd);
+    pthread_mutex_destroy(&node->neighbor_list_lock);
     LOG_NODE_INFO(node->node_id, "Shutdown complete");
 }
 

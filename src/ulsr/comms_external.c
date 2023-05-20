@@ -66,7 +66,7 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	u8 response[UINT16_MAX];
 	memset(response, 0, UINT16_MAX);
 	/* reverse the route we used to come here, and use that for the response */
-	u16 *reversed = reverse_route(packet->route->path, packet->route->len);
+	u16 *reversed = reverse_route(packet->pr->path, packet->pr->len);
 	u32 seq_nr = 0;
 
 	while (node->running && recv(ext_sockfd, response, UINT16_MAX - 1, 0) > 0) {
@@ -75,20 +75,19 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	    struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(ret_packet);
 
 	    /* init route */
-	    internal_packet->route = malloc(sizeof(struct packet_route_t));
-	    internal_packet->route->len = packet->route->len;
-	    internal_packet->route->step = 1;
-	    internal_packet->route->path = reversed;
+	    internal_packet->pr = malloc(sizeof(struct packet_route_t));
+	    internal_packet->pr->len = packet->pr->len;
+	    internal_packet->pr->step = 1;
+	    internal_packet->pr->path = reversed;
 	    internal_packet->prev_node_id = node->node_id;
-	    internal_packet->dest_node_id = packet->route->path[0];
+	    internal_packet->dest_node_id = packet->pr->path[0];
 	    internal_packet->is_response = true;
 
 	    // LOG_NODE_INFO(node->node_id, "Route length: %d", internal_packet->route->len);
 	    // for (int i = 0; i < internal_packet->route->len; i++) {
 	    //     LOG_NODE_INFO(node->node_id, "Route: %d", internal_packet->route->path[i]);
 	    // }
-	    node->send_func(internal_packet,
-			    internal_packet->route->path[internal_packet->route->step]);
+	    node->send_func(internal_packet, internal_packet->pr->path[internal_packet->pr->step]);
 	    // LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d to node %d", seq_nr,
 	    //		  internal_packet->route->path[internal_packet->route->step]);
 	    seq_nr++;
@@ -111,78 +110,47 @@ void handle_external(void *arg)
 	goto cleanup;
     }
 
-    LOG_NODE_INFO(node->node_id, "Received external packet:");
-    // LOG_NODE_INFO(node->node_id, "External packet source: %s", packet.source_ipv4);
-    // LOG_NODE_INFO(node->node_id, "External packet destination: %s", packet.dest_ipv4);
-    // LOG_NODE_INFO(node->node_id, "External payload: %s", packet.payload);
+    LOG_NODE_INFO(node->node_id, "Received external packet");
 
     /* validate checksum */
-    u32 checksum = ulsr_checksum((u8 *)&packet, (unsigned long)bytes_read);
-    if (checksum != packet.checksum) {
-	LOG_NODE_ERR(node->node_id, "ABORT!: Checksum failed!");
-	goto cleanup;
-    }
+    // u32 checksum = ulsr_checksum((u8 *)&packet, (unsigned long)bytes_read);
+    // if (checksum != packet.checksum) {
+    //     LOG_NODE_ERR(node->node_id, "ABORT!: Checksum failed!");
+    //     goto cleanup;
+    // }
 
     /* pack external packet into internal packet for routing between nodes */
     struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&packet);
     internal_packet->prev_node_id = node->node_id;
 
-    internal_packet->is_response = false;
-    internal_packet->route = malloc(sizeof(struct packet_route_t));
-
     /* find path to destination */
     if (!queue_empty(node->route_queue)) {
-	struct route_t *route = (struct route_t *)queue_pop(node->route_queue);
-	internal_packet->route->path = route->path;
-	internal_packet->route->len = route->path_length;
-	internal_packet->route->step = 1;
-	node->send_func(internal_packet,
-			internal_packet->route->path[internal_packet->route->step]);
-    } else {
-	internal_packet->route->path = malloc(sizeof(u16) * 2);
-	internal_packet->route->path[0] = node->node_id;
+	struct packet_route_t *pr = route_to_packet_route(queue_pop(node->route_queue));
+	internal_packet->pr = pr;
+	bool came_through = use_packet_route(internal_packet, node);
+	if (came_through)
+	    return;
 
-	u16 neighbor_id = find_random_neighbor(node);
-	if (neighbor_id != 0) {
-	    internal_packet->route->path[1] = neighbor_id;
-	    internal_packet->route->len = 2;
-	    internal_packet->route->step = 1;
-	    node->send_func(internal_packet,
-			    internal_packet->route->path[internal_packet->route->step]);
-	} else {
-	    // TODO: FIX
-	    /*
-	     * edge case where no neighbor was found:
-	     * in this case we just send propagate a packet failure down the reversed path to the
-	     * client, if any client is present that is.
-	     * ideally a better solution should be implemented here where a new path is chosen, or
-	     * something like that.
-	     */
-	    // LOG_NODE_ERR(node->node_id, "DATA packet got stuck, sending packet failure to
-	    // client"); struct ulsr_internal_packet *failure_packet =
-	    // ulsr_internal_from_external(ulsr_create_failure(packet->payload));
-	    /* set route for failure packet */
-	    // failure_packet->route = reverse_packet_route(packet->route);
-	    // failure_packet->route->step++;
-	    // node->send_func(failure_packet, failure_packet->route->path[0]);
+	/* path failed */
+	came_through = send_bogo(internal_packet, node);
+	if (!came_through)
+	    propogate_failure();
+    } else {
+	/* should be a function */
+	internal_packet->pr = malloc(sizeof(struct packet_route_t));
+	internal_packet->pr->len = 1;
+	internal_packet->pr->step = 0;
+	internal_packet->pr->path = malloc(sizeof(u16));
+	internal_packet->pr->path[0] = node->node_id;
+
+	/* find random neighbor to forward the packet to */
+	bool came_trough = send_bogo(internal_packet, node);
+	if (!came_trough) {
+	    propogate_failure();
 	}
+
 	find_all_routes(data->node, node->known_nodes_count);
     }
-
-    ///*
-    // * edge case where no neighbor was found:
-    // * in this case we just send propagate a packet failure down the reversed path to the
-    // * client, if any client is present that is.
-    // * ideally a better solution should be implemented here where a new path is chosen, or
-    // * something like that.
-    // */
-    // LOG_NODE_ERR(node->node_id, "DATA packet got stuck, sending packet failure to client");
-    // struct ulsr_internal_packet *failure_packet =
-    // ulsr_internal_from_external(ulsr_create_failure(packet->payload));
-    ///* set route for failure packet */
-    // failure_packet->route = reverse_packet_route(packet->route);
-    // failure_packet->route->step++;
-    // node->send_func(failure_packet, failure_packet->route->path[0]);
 
 cleanup:
     shutdown(data->connection, SHUT_RDWR);

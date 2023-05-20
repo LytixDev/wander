@@ -115,7 +115,7 @@ void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited, u
 
 void find_all_routes(struct node_t *start, u16 total_nodes)
 {
-    LOG_INFO("Finding all routes from node %d", start->node_id);
+    // LOG_INFO("Finding all routes from node %d", start->node_id);
     bool visited[total_nodes];
     memset(visited, false, total_nodes);
     u16 path[total_nodes];
@@ -144,4 +144,42 @@ struct packet_route_t *reverse_packet_route(struct packet_route_t *pt)
     reversed->len = pt->step;
     reversed->step = 0;
     return reversed;
+}
+
+u16 packet_route_next_hop(struct packet_route_t *pt)
+{
+    return pt->path[pt->step];
+}
+
+u16 packet_route_final_hop(struct packet_route_t *pt)
+{
+    return pt->path[pt->len - 1];
+}
+
+struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct packet_route_t *b)
+{
+    struct packet_route_t *combined = malloc(sizeof(struct packet_route_t));
+    combined->len = a->step + b->len;
+    combined->step = a->step;
+    combined->path = malloc(sizeof(u16) * combined->len);
+
+    for (u16 i = 0; i < a->step; i++) {
+	combined->path[i] = a->path[i];
+    }
+
+    for (u16 i = a->step; i < combined->len; i++) {
+	combined->path[i] = b->path[i - a->step];
+    }
+
+    return combined;
+}
+
+struct packet_route_t *route_to_packet_route(struct route_t *route)
+{
+    struct packet_route_t *pr = malloc(sizeof(struct packet_route_t));
+    pr->path = route->path;
+    pr->len = route->path_length;
+    pr->step = 0;
+
+    return pr;
 }

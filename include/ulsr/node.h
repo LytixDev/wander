@@ -18,6 +18,7 @@
 #ifndef NODE_H
 #define NODE_H
 
+#include <pthread.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -35,8 +36,9 @@ struct node_t;
 
 /**
  * Function definition for a function that sends a message.
+ * Returns the amount of bytes that came through.
  */
-typedef u16 (*node_send_func_t)(struct ulsr_internal_packet *packet, u16 node_id);
+typedef i32 (*node_send_func_t)(struct ulsr_internal_packet *packet, u16 node_id);
 
 /**
  * Function definition for a function that receives a message.
@@ -109,6 +111,7 @@ struct node_t {
     struct queue_t *route_queue;
     struct u16_arraylist_t *known_nodes;
     struct neighbor_t **neighbors;
+    pthread_mutex_t neighbor_list_lock;
 };
 
 
@@ -136,6 +139,8 @@ int run_node(struct node_t *node);
 void free_node(struct node_t *node);
 
 void close_node(struct node_t *node);
+
+void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id);
 
 void remove_old_neighbors(struct node_t *node);
 

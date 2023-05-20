@@ -64,7 +64,7 @@ static void run_node_stub(void *arg)
 static void init_coords()
 {
     /* defaults */
-    if (MESH_NODE_COUNT == 8) {
+    if (MESH_NODE_COUNT == 12) {
 	coords[0].x = 100;
 	coords[0].y = 100;
 
@@ -83,11 +83,23 @@ static void init_coords()
 	coords[5].x = 400;
 	coords[5].y = 400;
 
-	coords[6].x = 550;
-	coords[6].y = 450;
+	coords[6].x = 175;
+	coords[6].y = 325;
 
-	coords[7].x = 600;
-	coords[7].y = 50;
+	coords[7].x = 325;
+	coords[7].y = 200;
+
+	coords[8].x = 400;
+	coords[8].y = 500;
+
+	coords[9].x = 500;
+	coords[9].y = 400;
+
+	coords[10].x = 350;
+	coords[10].y = 125;
+
+	coords[11].x = 375;
+	coords[11].y = 250;
 
     } else {
 	/* random */
@@ -225,7 +237,7 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 }
 #endif
 
-u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
+i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
 #ifdef GUI
     sleep_for_visualization(packet->type, packet->prev_node_id, node_id, true,
@@ -238,13 +250,14 @@ u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
      * bad signal
      */
     if (distance(&coords[packet->prev_node_id - 1], &coords[node_id - 1]) > SIMULATION_NODE_RANGE)
-	return 0;
+	return -1;
 
     /* how the simulation mocks a packet can't be sent because a node is not active anymore */
     if (nodes[node_id - 1].node_id == NODE_INACTIVE_ID)
-	return 0;
+	return -1;
 
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
+
 
     /* critical section */
     struct ulsr_internal_packet *new_packet = malloc(sizeof(struct ulsr_internal_packet));
@@ -256,6 +269,7 @@ u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 
     pthread_cond_signal(&node_locks[node_id - 1].cond_variable);
     pthread_mutex_unlock(&node_locks[node_id - 1].cond_lock);
+
 
     return packet->payload_len;
 };
@@ -289,6 +303,7 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 bool simulate(void)
 {
     running = true;
+    srand(time(NULL));
 
     /* init the logger mutex */
     logger_init();
@@ -311,14 +326,14 @@ bool simulate(void)
     init_threadpool(&window_threadpool, 2 * MESH_NODE_COUNT + 1, 32);
     start_threadpool(&window_threadpool);
 #endif
-    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 32);
+    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 16);
     start_threadpool(&threadpool);
 
     /* init all nodes and make them run on the threadpool */
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	bool success =
 	    init_node(&nodes[i], i + 1, HELLO_POLL_INTERVAL, REMOVE_NEIGHBOR_THRESHOLD,
-		      MESH_NODE_COUNT, 8, 8, 8, set_initial_node_ids, node_can_connect_func,
+		      MESH_NODE_COUNT, 8, 8, 64, set_initial_node_ids, node_can_connect_func,
 		      node_send_func, node_recv_func, ULSR_DEVICE_PORT_START + i);
 	if (!success)
 	    exit(1);
