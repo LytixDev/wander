@@ -136,7 +136,7 @@ bool can_reach_external_target(u16 node_id)
 void set_initial_node_ids(struct node_t *node)
 {
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	ARRAY_PUSH(node->known_ids, (u16)(i + 1));
+	ARRAY_PUSH(node->known_nodes, (u16)(i + 1));
     }
 }
 
@@ -318,8 +318,10 @@ bool simulate(void)
 
     /* init all nodes and make them run on the threadpool */
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	bool success = init_node(&nodes[i], i + 1, 8, 8, 8, node_can_connect_func, node_send_func,
-				 node_recv_func, ULSR_DEVICE_PORT_START + i);
+	bool success =
+	    init_node(&nodes[i], i + 1, HELLO_POLL_INTERVAL, REMOVE_NEIGHBOR_THRESHOLD,
+		      MESH_NODE_COUNT, 8, 8, 8, set_initial_node_ids, node_can_connect_func,
+		      node_send_func, node_recv_func, ULSR_DEVICE_PORT_START + i);
 	if (!success)
 	    exit(1);
 
@@ -353,7 +355,10 @@ bool simulate(void)
     }
 #endif
 
+#ifdef GUI
 end_simulation:
+#endif
+
     running = false;
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {

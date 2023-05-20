@@ -26,7 +26,6 @@
 #include "lib/logger.h"
 #include "ulsr/comms_external.h"
 #include "ulsr/comms_internal.h"
-#include "ulsr/impl.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/routing.h"
@@ -167,7 +166,7 @@ void handle_external(void *arg)
 	    // failure_packet->route->step++;
 	    // node->send_func(failure_packet, failure_packet->route->path[0]);
 	}
-	find_all_routes(data->node, MESH_NODE_COUNT);
+	find_all_routes(data->node, node->known_nodes_count);
     }
 
     ///*
