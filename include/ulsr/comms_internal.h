@@ -34,5 +34,10 @@ void hello_poll_thread(void *arg);
 u16 find_random_neighbor(struct node_t *node, u16 *path, u16 path_len, u16 *ignore_list,
 			 u16 ignore_len);
 
+bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node);
+
+bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node);
+
+void propogate_failure();
 
 #endif /* COMMS_INTERNAL_H */

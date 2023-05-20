@@ -131,56 +131,30 @@ void handle_external(void *arg)
 
     /* find path to destination */
     if (!queue_empty(node->route_queue)) {
-	struct route_t *route = (struct route_t *)queue_pop(node->route_queue);
-	internal_packet->pt->path = route->path;
-	internal_packet->pt->len = route->path_length;
-	internal_packet->pt->step = 1;
-	node->send_func(internal_packet, internal_packet->pt->path[internal_packet->pt->step]);
+	LOG_NODE_INFO(node->node_id, "queue not empty");
+	struct packet_route_t *pr = route_to_packet_route(queue_pop(node->route_queue));
+	internal_packet->pt = pr;
+	bool came_through = use_packet_route(internal_packet, node);
+	if (came_through)
+	    return;
+
+	/* path failed */
+	came_through = send_bogo(internal_packet, node);
+	if (!came_through)
+	    propogate_failure();
     } else {
 	internal_packet->pt->path = malloc(sizeof(u16) * 2);
 	internal_packet->pt->path[0] = node->node_id;
 
 	/* find random neighbor to forward the packet to */
-	u16 next_hop_id = find_random_neighbor(node, NULL, 0, NULL, 0);
-	if (next_hop_id != 0) {
-	    internal_packet->pt->path[1] = next_hop_id;
-	    internal_packet->pt->len = 2;
-	    internal_packet->pt->step = 1;
-	    node->send_func(internal_packet, internal_packet->pt->path[internal_packet->pt->step]);
-	} else {
-	    // TODO: FIX
-	    /*
-	     * edge case where no neighbor was found:
-	     * in this case we just send propagate a packet failure down the reversed path to the
-	     * client, if any client is present that is.
-	     * ideally a better solution should be implemented here where a new path is chosen, or
-	     * something like that.
-	     */
-	    // LOG_NODE_ERR(node->node_id, "DATA packet got stuck, sending packet failure to
-	    // client"); struct ulsr_internal_packet *failure_packet =
-	    // ulsr_internal_from_external(ulsr_create_failure(packet->payload));
-	    /* set route for failure packet */
-	    // failure_packet->route = reverse_packet_route(packet->route);
-	    // failure_packet->route->step++;
-	    // node->send_func(failure_packet, failure_packet->route->path[0]);
+	bool came_trough = send_bogo(internal_packet, node);
+	if (!came_trough) {
+	    // propagate failure
+	    LOG_NODE_ERR(node->node_id, "TODO");
 	}
+
 	find_all_routes(data->node, node->known_nodes_count);
     }
-
-    ///*
-    // * edge case where no neighbor was found:
-    // * in this case we just send propagate a packet failure down the reversed path to the
-    // * client, if any client is present that is.
-    // * ideally a better solution should be implemented here where a new path is chosen, or
-    // * something like that.
-    // */
-    // LOG_NODE_ERR(node->node_id, "DATA packet got stuck, sending packet failure to client");
-    // struct ulsr_internal_packet *failure_packet =
-    // ulsr_internal_from_external(ulsr_create_failure(packet->payload));
-    ///* set route for failure packet */
-    // failure_packet->route = reverse_packet_route(packet->route);
-    // failure_packet->route->step++;
-    // node->send_func(failure_packet, failure_packet->route->path[0]);
 
 cleanup:
     shutdown(data->connection, SHUT_RDWR);

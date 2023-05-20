@@ -29,7 +29,7 @@
 #include "ulsr/routing.h"
 
 
-static void propogate_failure()
+void propogate_failure()
 {
     LOG_ERR("PACKET COULD NOT BE ROUTED :-(");
 }
@@ -39,17 +39,15 @@ static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *p
 {
     u16 next_hop_id = find_random_neighbor(node, pt->path, pt->step, ignore_list, ignore_len);
     ignore_list[ignore_len++] = next_hop_id;
-    pt->path[pt->step] = next_hop_id;
+    pt->path[pt->step + 1] = next_hop_id;
     return next_hop_id;
 }
 
-static bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
+bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 {
-    LOG_NODE_INFO(node->node_id, "use bogo");
+    LOG_NODE_INFO(node->node_id, "use bogo, step %d", packet->pt->step);
     packet->prev_node_id = node->node_id;
-    packet->pt->len++;
-    packet->pt->step++;
-    packet->pt->path = realloc(packet->pt->path, packet->pt->len * sizeof(u16));
+    packet->pt->path = realloc(packet->pt->path, (packet->pt->len + 1) * sizeof(u16));
 
 
     /* find random neighbor until packet sent or no more neighbors */
@@ -61,9 +59,12 @@ static bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 	came_through = node->send_func(packet, next_hop_id) != -1;
 	if (came_through) {
 	    /* This is called because this node doesn't have any routes to the destination */
+	    packet->pt->step++;
+	    packet->pt->len++;
 	    find_all_routes(node, node->known_nodes_count);
 	    return true;
 	}
+	next_hop_id = bogo_find_neighbor_stub(node, packet->pt, ignore_list, ignore_len);
     }
 
     /* packet got stuck in bogo :-( */
@@ -73,7 +74,7 @@ static bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
     return false;
 }
 
-static bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node)
+bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node)
 {
     LOG_NODE_INFO(node->node_id, "Use packet route");
     packet->pt->step++;
