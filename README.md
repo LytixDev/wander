@@ -19,7 +19,7 @@ This project is a work in progress as far as the routing protocol is concerned. 
 The simulation environment in the project is quite advanced. It is possible to simulate a large number of nodes in a mesh network, and to simulate the movement of these nodes. The simulation environment is also capable of simulating the transmission of messages between nodes in the mesh network. The simulation environment is also capable of simulating the transmission of HTTP requests to external servers through the mesh network. In the simulation, the nodes are agnostic to the fact that they are simulated, and they behave as if they were real nodes in a real mesh network.
 
 ### GUI
-The GUI is made completely from scratch without any component library, including the text that is rendered using OpenGL. The GUI is also capable of visualizing the mesh network in real time and allows the user to interact with the mesh network through a graphical user interface.
+The GUI is made completely from scratch without any component library, including the text that is rendered using OpenGL. The GUI is also capable of visualizing the simulated mesh network in real time and allows the user to interact with the mesh network through a graphical user interface.
 
 Filtering options for the GUI:
 - Internal packets
