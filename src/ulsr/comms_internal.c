@@ -23,7 +23,6 @@
 #include "lib/logger.h"
 #include "ulsr/comms_external.h"
 #include "ulsr/comms_internal.h"
-#include "ulsr/impl.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 #include "ulsr/routing.h"
@@ -76,14 +75,14 @@ static void packet_bogo_and_find_route(struct ulsr_internal_packet *packet, stru
     }
 
     /* This is called because this node doesn't have any routes to the destination */
-    find_all_routes(node, MESH_NODE_COUNT);
+    find_all_routes(node, node->known_nodes_count);
 }
 
 u16 find_random_neighbor(struct node_t *node)
 {
-    struct neighbor_t *neighbors[MESH_NODE_COUNT];
+    struct neighbor_t *neighbors[node->known_nodes_count];
     u16 counter = 0;
-    for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
+    for (u16 i = 0; i < node->known_nodes_count; i++) {
 	if (node->neighbors[i] != 0)
 	    neighbors[counter++] = node->neighbors[i];
     }
@@ -207,8 +206,8 @@ void hello_poll_thread(void *arg)
 {
     struct node_t *node = (struct node_t *)arg;
     while (node->running) {
-	for (size_t i = 0; i < ARRAY_LEN(node->known_ids); i++) {
-	    u16 to_id = ARRAY_GET(node->known_ids, i);
+	for (size_t i = 0; i < ARRAY_LEN(node->known_nodes); i++) {
+	    u16 to_id = ARRAY_GET(node->known_nodes, i);
 	    if (to_id == node->node_id)
 		continue;
 
@@ -220,6 +219,6 @@ void hello_poll_thread(void *arg)
 	/* check if any neighbors are "out of date" */
 	// TODO: is a mutex needed here (probably) ?
 	remove_old_neighbors(node);
-	sleep(HELLO_POLL_INTERVAL);
+	sleep(node->hello_poll_interval);
     }
 }

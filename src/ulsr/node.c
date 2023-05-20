@@ -28,7 +28,6 @@
 #include "lib/queue.h"
 #include "ulsr/comms_external.h"
 #include "ulsr/comms_internal.h"
-#include "ulsr/impl.h"
 #include "ulsr/node.h"
 
 
@@ -56,7 +55,7 @@ static void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node
 	return;
 
     struct queue_t *new_route_queue = malloc(sizeof(struct queue_t));
-    queue_init(new_route_queue, MESH_NODE_COUNT);
+    queue_init(new_route_queue, node->known_nodes_count);
 
     struct route_t *route = NULL;
     while (!queue_empty(node->route_queue)) {
@@ -81,12 +80,12 @@ void remove_old_neighbors(struct node_t *node)
     time_t now = time(NULL);
 
     struct neighbor_t *neighbor = NULL;
-    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+    for (int i = 0; i < node->known_nodes_count; i++) {
 	neighbor = node->neighbors[i];
 	if (neighbor == NULL)
 	    continue;
 
-	if (now - neighbor->last_seen > REMOVE_NEIGHBOR_THRESHOLD) {
+	if (now - neighbor->last_seen > node->remove_neighbor_threshold) {
 	    LOG_NODE_INFO(node->node_id, "%d removed as neighbor", i + 1);
 	    node->neighbors[i] = NULL;
 	    free(neighbor);
@@ -97,11 +96,21 @@ void remove_old_neighbors(struct node_t *node)
 }
 
 /* node lifetime functions */
-
-bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
+bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_neighbor_threshold,
+	       u16 known_nodes_count, u16 max_connections, u16 max_threads, u16 queue_size,
+	       node_init_known_nodes_func_t init_known_ids_func,
 	       node_can_connect_func_t can_connect_func, node_send_func_t send_func,
 	       node_recv_func_t rec_func, u16 port)
 {
+    /* set node options */
+    node->init_known_nodes_func = init_known_ids_func;
+    node->can_connect_func = can_connect_func;
+    node->send_func = send_func;
+    node->recv_func = rec_func;
+    node->hello_poll_interval = poll_interval;
+    node->remove_neighbor_threshold = remove_neighbor_threshold;
+    node->known_nodes_count = known_nodes_count;
+
     /* init socket to external connection from client */
     node->node_id = node_id;
     node->sockfd = socket(PF_INET, SOCK_STREAM, 0);
@@ -125,39 +134,34 @@ bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u
 	return false;
     }
 
-    if (listen(node->sockfd, threads) != 0) {
+    if (listen(node->sockfd, max_threads) != 0) {
 	LOG_NODE_ERR(node->node_id, "ABORT!: Failed listen on socket");
 	return false;
     }
 
     node->connections = malloc(sizeof(struct connections_t));
-    node->connections->connections = calloc(connections, sizeof(int));
+    node->connections->connections = calloc(max_connections, sizeof(int));
     node->connections->index = -1;
-    node->connections->cap = connections;
+    node->connections->cap = max_connections;
 
     /* init threadpool */
     node->threadpool = malloc(sizeof(struct threadpool_t));
-    init_threadpool(node->threadpool, threads, queue_size);
-
-    /* set node options */
-    node->can_connect_func = can_connect_func;
-    node->send_func = send_func;
-    node->recv_func = rec_func;
+    init_threadpool(node->threadpool, max_threads, queue_size);
 
     /* init route datastructure */
     node->route_queue = (struct queue_t *)(malloc(sizeof(struct queue_t)));
-    queue_init(node->route_queue, MESH_NODE_COUNT);
+    queue_init(node->route_queue, node->known_nodes_count);
 
     /* init neighbor list */
-    node->neighbors = calloc(MESH_NODE_COUNT, sizeof(struct neighbor_t *));
-    for (int i = 0; i < MESH_NODE_COUNT; i++) {
+    node->neighbors = calloc(node->known_nodes_count, sizeof(struct neighbor_t *));
+    for (int i = 0; i < node->known_nodes_count; i++) {
 	node->neighbors[i] = NULL;
     }
 
     /* known id list */
-    node->known_ids = malloc(sizeof(struct u16_arraylist_t));
-    ARRAY_INIT(node->known_ids);
-    set_initial_node_ids(node);
+    node->known_nodes = malloc(sizeof(struct u16_arraylist_t));
+    ARRAY_INIT(node->known_nodes);
+    node->init_known_nodes_func(node);
 
     LOG_NODE_INFO(node->node_id, "Successfully initialized");
     return true;
@@ -233,7 +237,7 @@ void free_node(struct node_t *node)
     }
 
     if (node->neighbors != NULL) {
-	for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	for (int i = 0; i < node->known_nodes_count; i++) {
 	    if (node->neighbors[i] != NULL)
 		free(node->neighbors[i]);
 	}
@@ -245,9 +249,9 @@ void free_node(struct node_t *node)
 	free(node->route_queue);
     }
 
-    if (node->known_ids != NULL) {
-	ARRAY_FREE(node->known_ids);
-	free(node->known_ids);
+    if (node->known_nodes != NULL) {
+	ARRAY_FREE(node->known_nodes);
+	free(node->known_nodes);
     }
 }
 

@@ -27,6 +27,10 @@
 #include "lib/threadpool.h"
 #include "ulsr/packet.h"
 
+
+/* opaque bro */
+struct node_t;
+
 /* Function definitions. */
 
 /**
@@ -39,14 +43,16 @@ typedef u16 (*node_send_func_t)(struct ulsr_internal_packet *packet, u16 node_id
  */
 typedef struct ulsr_internal_packet *(*node_recv_func_t)(u16 node_id);
 
-/* opaque bro */
-struct node_t;
-
 /**
  * Function definition for a function that checks if a given mesh node is connected to the internet
  * of the target
  */
 typedef bool (*node_can_connect_func_t)(struct node_t *node);
+
+/**
+ * Function definition for a function that sets all the known ids of other nodes in the mesh
+ */
+typedef void (*node_init_known_nodes_func_t)(struct node_t *node);
 
 /**
  * Function definition for a function that frees the data of a node.
@@ -91,13 +97,17 @@ struct node_t {
     u16 node_id;
     int sockfd;
     bool running;
-    node_can_connect_func_t can_connect_func;
+    u8 hello_poll_interval; // in seconds
+    u8 remove_neighbor_threshold; // in seconds
+    u16 known_nodes_count; // currently we assume this is constant
+    node_init_known_nodes_func_t init_known_nodes_func;
     node_send_func_t send_func;
     node_recv_func_t recv_func;
+    node_can_connect_func_t can_connect_func;
     struct connections_t *connections;
     struct threadpool_t *threadpool;
     struct queue_t *route_queue;
-    struct u16_arraylist_t *known_ids;
+    struct u16_arraylist_t *known_nodes;
     struct neighbor_t **neighbors;
 };
 
@@ -106,13 +116,10 @@ struct node_t {
 
 /**
  * Initializes a node.
- * @param node The node to initialize.
- * @param node_id The id of the node.
- * @param connections The amount of connections.
- * @param threads The amount of threads.
- * @param queue_size The size of the queue.
  */
-bool init_node(struct node_t *node, u16 node_id, u16 connections, u16 threads, u16 queue_size,
+bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_neighbor_threshold,
+	       u16 known_nodes_count, u16 max_connections, u16 max_threads, u16 queue_size,
+	       node_init_known_nodes_func_t init_known_ids_func,
 	       node_can_connect_func_t can_connect_func, node_send_func_t send_func,
 	       node_recv_func_t rec_func, u16 port);
 
