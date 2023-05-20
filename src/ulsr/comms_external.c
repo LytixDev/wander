@@ -134,7 +134,7 @@ void handle_external(void *arg)
 	/* path failed */
 	came_through = send_bogo(internal_packet, node);
 	if (!came_through)
-	    propogate_failure();
+	    propogate_failure(internal_packet, node);
     } else {
 	/* should be a function */
 	internal_packet->pr = malloc(sizeof(struct packet_route_t));
@@ -146,7 +146,7 @@ void handle_external(void *arg)
 	/* find random neighbor to forward the packet to */
 	bool came_trough = send_bogo(internal_packet, node);
 	if (!came_trough) {
-	    propogate_failure();
+	    propogate_failure(internal_packet, node);
 	}
 
 	find_all_routes(data->node, node->known_nodes_count);

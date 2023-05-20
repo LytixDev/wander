@@ -30,9 +30,14 @@
 #include "ulsr/routing.h"
 
 
-void propogate_failure()
+void propogate_failure(struct ulsr_internal_packet *packet, struct node_t *node)
 {
+    struct ulsr_packet *failure_packet = ulsr_create_failure(packet->payload);
+    struct ulsr_internal_packet *failure_internal = ulsr_internal_from_external(failure_packet);
+    failure_internal->pr = reverse_packet_route(packet->pr);
+    failure_internal->is_response = true;
     LOG_ERR("PACKET COULD NOT BE ROUTED :-(");
+    use_packet_route(failure_internal, node);
 }
 
 static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *pt, u16 *ignore_list,
@@ -71,7 +76,7 @@ bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
     }
 
     /* packet got stuck in bogo :-( */
-    propogate_failure();
+    propogate_failure(packet, node);
     /* This is called because this node doesn't have any routes to the destination */
     find_all_routes(node, node->known_nodes_count);
     return false;
@@ -170,14 +175,14 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	    /* path failed */
 	    came_through = send_bogo(packet, node);
 	    if (!came_through)
-		propogate_failure();
+		propogate_failure(packet, node);
 
 	    /* 2 */
 	} else {
 	    /* send packet to random neighbor */
 	    bool came_through = send_bogo(packet, node);
 	    if (!came_through)
-		propogate_failure();
+		propogate_failure(packet, node);
 	}
 
     } else {
@@ -191,7 +196,7 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	/* path failed */
 	came_through = send_bogo(packet, node);
 	if (!came_through)
-	    propogate_failure();
+	    propogate_failure(packet, node);
     }
 }
 
