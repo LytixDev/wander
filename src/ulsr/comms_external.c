@@ -143,7 +143,10 @@ void handle_external(void *arg)
 	if (!came_through)
 	    propogate_failure();
     } else {
-	internal_packet->pt->path = malloc(sizeof(u16) * 2);
+        LOG_NODE_INFO(node->node_id, "No path, use BOGO");
+	internal_packet->pt->len = 1;
+	internal_packet->pt->step = 0;
+	internal_packet->pt->path = malloc(sizeof(u16));
 	internal_packet->pt->path[0] = node->node_id;
 
 	/* find random neighbor to forward the packet to */

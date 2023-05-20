@@ -247,7 +247,7 @@ i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 #endif
 
     if (packet->type == PACKET_DATA)
-	LOG_INFO("SEND FUNC to %d from %d", node_id, packet->prev_node_id);
+	LOG_INFO("SEND FUNC from %d to %d", packet->prev_node_id, node_id);
     /*
      * how the simulation mocks whether a packet addressed for this node can't be received due too
      * bad signal
