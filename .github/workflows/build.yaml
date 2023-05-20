@@ -1,5 +1,5 @@
 name: ulsr build
-on: [pull_request]
+on: [pull_request, push]
 
 jobs:
   build:
@@ -17,7 +17,7 @@ jobs:
 
       - name: Dependencies
         if: startswith(matrix.os, 'ubuntu-')
-        run: 
+        run: |
           sudo apt-get update -qyy
           sudo apt install libglfw3-dev
 
@@ -26,6 +26,6 @@ jobs:
 
       - name: Build gui
         if: startswith(matrix.os, 'ubuntu-')
-        run:
+        run: |
           make clean
           make gui CC="${{matrix.cc}}"
