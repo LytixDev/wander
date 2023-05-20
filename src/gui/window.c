@@ -125,6 +125,10 @@ GLFWwindow *window_create()
 
     GLenum glewInitStatus = glewInit();
 
+    if (glewInitStatus != GLEW_OK) {
+        return NULL;
+    }
+
     glViewport(0.0f, 0.0f, width, height);
 
     glMatrixMode(GL_PROJECTION);
@@ -281,18 +285,18 @@ void draw_target_coords()
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
-void draw_ranges()
+void draw_ranges(i16 selected_node)
 {
     float current_time = glfwGetTime();
     float radius = STARTING_RING_RADIUS + (RING_SPEED * current_time);
 
     if (radius > SIMULATION_NODE_RANGE) {
 	glfwSetTime(0);
+        radius = STARTING_RING_RADIUS;
     }
-
-    for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
-	draw_circle(coords[i].x, coords[i].y, radius);
-    }
+    
+    if (selected_node != -1)
+        draw_circle(coords[selected_node].x, coords[selected_node].y, radius);
 }
 
 static void draw_request_filter_buttons(int selected_request_filter)
@@ -376,7 +380,7 @@ void window_update(GLFWwindow *window)
 
     draw_target_coords();
 
-    draw_ranges();
+    draw_ranges(window_data->selected_node);
 
     draw_toolbar(window_data->selected_radio_button);
 
@@ -395,4 +399,5 @@ void window_destroy(GLFWwindow *window)
     glfwDestroyWindow(window);
     glfwTerminate();
 }
+
 #endif
