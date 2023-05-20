@@ -19,7 +19,7 @@ jobs:
         if: startswith(matrix.os, 'ubuntu-')
         run: |
           sudo apt-get update -qyy
-          sudo apt install libglfw3-dev libgl-dev libglew-dev libx11-dev
+          sudo apt install libglfw3-dev libgl-dev libglew-dev libxxf86vm-dev libxi-dev libxinerama-dev
 
       - name: Build
         run: make CC="${{matrix.cc}}"
