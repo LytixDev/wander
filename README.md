@@ -21,7 +21,23 @@ IMPORTANT: if you have already built the simulated mobile mesh using `make`, you
 #### Optional dependencies for the visualization (make gui)
 - `OpenGL` - Graphics rendering library.
 - `X11` - The X11 window system. Wayland users can use the Xwayland compatability layer. For Winodws and Mac OS users you need a forwarding layer.
-- `glfw-x11` An OpenGL "wrapper" for X11. For debian based systems: `sudo apt install libglfw3-dev`. Arch based systems: `sudo pacman -S glfw-x11`.
+- `glfw-x11` An OpenGL "wrapper" for X11
+
+For debian-based systems, the added dependencies required to make the gui are:
+- libglfw3-dev 
+- libgl-dev 
+- libglew-dev 
+- libxxf86vm-dev 
+- libxi-dev 
+- libxinerama-dev
+
+For arch-based systems, the added dependencies required to make the gui are:
+- glfw-x11
+- mesa
+- glew
+- libxxf86vm
+- libxi
+- libxinerama
 
 #### Optional dependencies for further development
 - `python`, `clang-format` - for formatting the source code.
