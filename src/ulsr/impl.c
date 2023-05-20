@@ -65,8 +65,8 @@ static void init_coords()
 {
     /* defaults */
     if (MESH_NODE_COUNT == 8) {
-	coords[0].x = 75;
-	coords[0].y = 75;
+	coords[0].x = 100;
+	coords[0].y = 100;
 
 	coords[1].x = 225;
 	coords[1].y = 150;
