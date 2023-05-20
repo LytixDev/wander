@@ -17,7 +17,15 @@ jobs:
 
       - name: Dependencies
         if: startswith(matrix.os, 'ubuntu-')
-        run: sudo apt-get update -qyy
+        run: 
+          sudo apt-get update -qyy
+          sudo apt install libglfw3-dev
 
       - name: Build
         run: make CC="${{matrix.cc}}"
+
+      - name: Build gui
+        if: startswith(matrix.os, 'ubuntu-')
+        run:
+          make clean
+          make gui CC="${{matrix.cc}}"
