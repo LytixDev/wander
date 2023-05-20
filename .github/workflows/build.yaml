@@ -1,5 +1,5 @@
 name: ulsr build
-on: [pull_request, push]
+on: [push]
 
 jobs:
   build:
@@ -19,7 +19,7 @@ jobs:
         if: startswith(matrix.os, 'ubuntu-')
         run: |
           sudo apt-get update -qyy
-          sudo apt install libglfw3-dev libgl-dev
+          sudo apt install libglfw3-dev libgl-dev libglew-dev
 
       - name: Build
         run: make CC="${{matrix.cc}}"
