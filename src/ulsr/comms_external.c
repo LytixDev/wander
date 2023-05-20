@@ -66,7 +66,7 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	u8 response[UINT16_MAX];
 	memset(response, 0, UINT16_MAX);
 	/* reverse the route we used to come here, and use that for the response */
-	u16 *reversed = reverse_route(packet->route->path, packet->route->len);
+	u16 *reversed = reverse_route(packet->pt->path, packet->pt->len);
 	u32 seq_nr = 0;
 
 	while (node->running && recv(ext_sockfd, response, UINT16_MAX - 1, 0) > 0) {
@@ -75,20 +75,19 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	    struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(ret_packet);
 
 	    /* init route */
-	    internal_packet->route = malloc(sizeof(struct packet_route_t));
-	    internal_packet->route->len = packet->route->len;
-	    internal_packet->route->step = 1;
-	    internal_packet->route->path = reversed;
+	    internal_packet->pt = malloc(sizeof(struct packet_route_t));
+	    internal_packet->pt->len = packet->pt->len;
+	    internal_packet->pt->step = 1;
+	    internal_packet->pt->path = reversed;
 	    internal_packet->prev_node_id = node->node_id;
-	    internal_packet->dest_node_id = packet->route->path[0];
+	    internal_packet->dest_node_id = packet->pt->path[0];
 	    internal_packet->is_response = true;
 
 	    // LOG_NODE_INFO(node->node_id, "Route length: %d", internal_packet->route->len);
 	    // for (int i = 0; i < internal_packet->route->len; i++) {
 	    //     LOG_NODE_INFO(node->node_id, "Route: %d", internal_packet->route->path[i]);
 	    // }
-	    node->send_func(internal_packet,
-			    internal_packet->route->path[internal_packet->route->step]);
+	    node->send_func(internal_packet, internal_packet->pt->path[internal_packet->pt->step]);
 	    // LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d to node %d", seq_nr,
 	    //		  internal_packet->route->path[internal_packet->route->step]);
 	    seq_nr++;
@@ -128,27 +127,26 @@ void handle_external(void *arg)
     internal_packet->prev_node_id = node->node_id;
 
     internal_packet->is_response = false;
-    internal_packet->route = malloc(sizeof(struct packet_route_t));
+    internal_packet->pt = malloc(sizeof(struct packet_route_t));
 
     /* find path to destination */
     if (!queue_empty(node->route_queue)) {
 	struct route_t *route = (struct route_t *)queue_pop(node->route_queue);
-	internal_packet->route->path = route->path;
-	internal_packet->route->len = route->path_length;
-	internal_packet->route->step = 1;
-	node->send_func(internal_packet,
-			internal_packet->route->path[internal_packet->route->step]);
+	internal_packet->pt->path = route->path;
+	internal_packet->pt->len = route->path_length;
+	internal_packet->pt->step = 1;
+	node->send_func(internal_packet, internal_packet->pt->path[internal_packet->pt->step]);
     } else {
-	internal_packet->route->path = malloc(sizeof(u16) * 2);
-	internal_packet->route->path[0] = node->node_id;
+	internal_packet->pt->path = malloc(sizeof(u16) * 2);
+	internal_packet->pt->path[0] = node->node_id;
 
-	u16 neighbor_id = find_random_neighbor(node);
-	if (neighbor_id != 0) {
-	    internal_packet->route->path[1] = neighbor_id;
-	    internal_packet->route->len = 2;
-	    internal_packet->route->step = 1;
-	    node->send_func(internal_packet,
-			    internal_packet->route->path[internal_packet->route->step]);
+	/* find random neighbor to forward the packet to */
+	u16 next_hop_id = find_random_neighbor(node, NULL, 0);
+	if (next_hop_id != 0) {
+	    internal_packet->pt->path[1] = next_hop_id;
+	    internal_packet->pt->len = 2;
+	    internal_packet->pt->step = 1;
+	    node->send_func(internal_packet, internal_packet->pt->path[internal_packet->pt->step]);
 	} else {
 	    // TODO: FIX
 	    /*

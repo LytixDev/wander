@@ -30,6 +30,13 @@
  */
 ARRAY_T(route_array_t, struct route_t *);
 
+
+struct packet_route_t {
+    u16 *path;
+    u16 len;
+    u16 step;
+};
+
 /**
  * Struct for data to be sent to the routing thread
  */
@@ -140,5 +147,11 @@ u32 find_longest_time_taken(struct route_array_t *routes);
 u16 *reverse_route(u16 *route, u16 route_length);
 
 struct packet_route_t *reverse_packet_route(struct packet_route_t *pt);
+
+u16 packet_route_next_hop(struct packet_route_t *pt);
+
+u16 packet_route_final_hop(struct packet_route_t *pt);
+
+struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct packet_route_t *b);
 
 #endif /* ROUTING_H */

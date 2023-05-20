@@ -48,7 +48,7 @@ static void insert_external_connection(struct connections_t *connections, int co
     connections->connections[connections->index] = connection;
 }
 
-static void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id)
+void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id)
 {
     /* if route queue already empty, do nothing */
     if (queue_empty(node->route_queue))
@@ -86,7 +86,7 @@ void remove_old_neighbors(struct node_t *node)
 	    continue;
 
 	if (now - neighbor->last_seen > node->remove_neighbor_threshold) {
-	    LOG_NODE_INFO(node->node_id, "%d removed as neighbor", i + 1);
+	    // LOG_NODE_INFO(node->node_id, "%d removed as neighbor", i + 1);
 	    node->neighbors[i] = NULL;
 	    free(neighbor);
 	    // invalidate all routes that use this neighbor
@@ -163,7 +163,7 @@ bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_nei
     ARRAY_INIT(node->known_nodes);
     node->init_known_nodes_func(node);
 
-    LOG_NODE_INFO(node->node_id, "Successfully initialized");
+    // LOG_NODE_INFO(node->node_id, "Successfully initialized");
     return true;
 }
 

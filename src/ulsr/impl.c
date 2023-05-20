@@ -230,21 +230,24 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 }
 #endif
 
-u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
+i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
 #ifdef GUI
     sleep_for_visualization(packet->type, packet->prev_node_id, node_id, true);
 #endif
+
+    if (packet->type == PACKET_DATA)
+	LOG_INFO("SEND FUNC to %d from %d", packet->prev_node_id, node_id);
     /*
      * how the simulation mocks whether a packet addressed for this node can't be received due too
      * bad signal
      */
     if (distance(&coords[packet->prev_node_id - 1], &coords[node_id - 1]) > SIMULATION_NODE_RANGE)
-	return 0;
+	return -1;
 
     /* how the simulation mocks a packet can't be sent because a node is not active anymore */
     if (nodes[node_id - 1].node_id == NODE_INACTIVE_ID)
-	return 0;
+	return -1;
 
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
 
@@ -291,6 +294,7 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 bool simulate(void)
 {
     running = true;
+    srand(time(NULL));
 
     /* init the logger mutex */
     logger_init();

@@ -21,6 +21,7 @@
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
+#include "lib/queue.h"
 #include "ulsr/comms_external.h"
 #include "ulsr/comms_internal.h"
 #include "ulsr/node.h"
@@ -28,35 +29,92 @@
 #include "ulsr/routing.h"
 
 
-static void packet_use_route(struct ulsr_internal_packet *packet, struct node_t *node)
+// static void use_route_or_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
+//{
+//     //packet->route->step++;
+//     //packet->prev_node_id = node->node_id;
+//     ///* some data was sent */
+//     //if (node->send_func(packet, to_id) != -1)
+//     //    return;
+//
+//     LOG_NODE_ERR(node->node_id, "BOGO");
+//
+//     struct packet_route_t *pt = malloc(sizeof(struct packet_route_t));
+//     /* advance the step (we will find the next hop shortly) */
+//     pt->step = packet->pt->step + 1;
+//     pt->len = pt->step;
+//     pt->path = malloc(sizeof(u16) * pt->len);
+//
+//     /* copy the path until this point */
+//     for (u16 i = 0; i < packet->pt->step; i++) {
+//         pt->path[i] = packet->pt->path[i];
+//     }
+//
+//     /*
+//      * Packet was not received. This means that we can't trust that to_id is a neighbor any
+//      longer
+//      */
+//     //struct neighbor_t *neighbor = node->neighbors[to_id - 1];
+//     //if (neighbor != NULL) {
+//     //    node->neighbors[to_id - 1] = NULL;
+//     //    free(neighbor);
+//     //    // invalidate all routes that use this neighbor
+//     //    remove_route_with_old_neighbor(node, to_id);
+//     //}
+//
+//
+//     /*
+//      * find random neighbor to set as next hop
+//      */
+//     u16 next_hop_id = find_random_neighbor(node, pt->path, pt->len - 1);
+//     if (next_hop_id == 0) {
+//         LOG_NODE_ERR(node->node_id, "FAIL");
+//         return;
+//     }
+//
+//     pt->path[pt->len] = next_hop_id;
+//     packet->pt = pt;
+//     node->send_func(packet, next_hop_id);
+// }
+
+// static void use_any_route(struct ulsr_internal_packet *packet, struct node_t *node)
+//{
+//     struct route_t *route_to_use = (struct route_t *)queue_pop(node->route_queue);
+//     u16 new_len = route_to_use->path_length + packet->pt->step;
+//     packet->pt->path = realloc(packet->pt->path, new_len * sizeof(u16));
+//
+//     for (int i = packet->pt->step; i < packet->pt->step + route_to_use->path_length; i++) {
+//	packet->pt->path[i] = route_to_use->path[i - packet->pt->step];
+//     }
+//
+//     /* has been copied over and served its cause */
+//     free(route_to_use);
+//
+//     packet->pt->len = new_len;
+//     packet->pt->step++;
+//     node->send_func(packet, packet->pt->path[packet->pt->step]);
+// }
+
+static void propogate_failure()
 {
-    struct route_t *route_to_use = (struct route_t *)queue_pop(node->route_queue);
-    u16 new_len = route_to_use->path_length + packet->route->step;
-    packet->route->path = realloc(packet->route->path, new_len * sizeof(u16));
-
-    for (int i = packet->route->step; i < packet->route->step + route_to_use->path_length; i++) {
-	packet->route->path[i] = route_to_use->path[i - packet->route->step];
-    }
-
-    /* has been copied over and served its cause */
-    free(route_to_use);
-
-    packet->route->len = new_len;
-    packet->route->step++;
-    node->send_func(packet, packet->route->path[packet->route->step]);
+    LOG_ERR("PACKET COULD NOT BE ROUTED :-(");
 }
 
-static void packet_bogo_and_find_route(struct ulsr_internal_packet *packet, struct node_t *node)
+static bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 {
-    packet->route->len++;
-    packet->route->step++;
-    packet->route->path = realloc(packet->route->path, packet->route->len * sizeof(u16));
+    LOG_NODE_INFO(node->node_id, "use bogo");
+    packet->prev_node_id = node->node_id;
+    packet->pt->len++;
+    packet->pt->step++;
+    packet->pt->path = realloc(packet->pt->path, packet->pt->len * sizeof(u16));
 
-    u16 next_hop_id = find_random_neighbor(node);
+    u16 next_hop_id = find_random_neighbor(node, packet->pt->path, packet->pt->step);
     if (next_hop_id != 0) {
-	packet->route->path[packet->route->step] = next_hop_id;
-	node->send_func(packet, packet->route->path[packet->route->step]);
-    } else if (packet->type == PACKET_DATA) {
+	packet->pt->path[packet->pt->step] = next_hop_id;
+	bool came_through = node->send_func(packet, next_hop_id) != -1;
+	if (!came_through)
+	    propogate_failure();
+    } else {
 	/*
 	 * edge case where no neighbor was found:
 	 * in this case we just send propagate a packet failure down the reversed path to the
@@ -66,25 +124,38 @@ static void packet_bogo_and_find_route(struct ulsr_internal_packet *packet, stru
 	 */
 	// TODO: fix
 	LOG_NODE_ERR(node->node_id, "DATA packet got stuck, sending packet failure to client");
-	// struct ulsr_internal_packet *failure_packet =
-	// ulsr_internal_from_external(ulsr_create_failure(packet->payload));
-	///* set route for failure packet */
-	// failure_packet->route = reverse_packet_route(packet->route);
-	// failure_packet->route->step++;
-	// node->send_func(failure_packet, failure_packet->route->path[0]);
+	return false;
     }
 
     /* This is called because this node doesn't have any routes to the destination */
     find_all_routes(node, node->known_nodes_count);
+    return true;
 }
 
-u16 find_random_neighbor(struct node_t *node)
+static bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node)
+{
+    LOG_NODE_INFO(node->node_id, "Use packet route");
+    packet->pt->step++;
+    packet->prev_node_id = node->node_id;
+    return node->send_func(packet, packet->pt->path[packet->pt->step]) != -1;
+}
+
+u16 find_random_neighbor(struct node_t *node, u16 *path, u16 path_len)
 {
     struct neighbor_t *neighbors[node->known_nodes_count];
     u16 counter = 0;
     for (u16 i = 0; i < node->known_nodes_count; i++) {
-	if (node->neighbors[i] != 0)
+	/* if neighbor */
+	if (node->neighbors[i] != NULL) {
+	    /* if already used in path, ignore */
+	    for (u16 j = 0; j < path_len; j++) {
+		if (path[j] == i + 1)
+		    goto ignore;
+	    }
 	    neighbors[counter++] = node->neighbors[i];
+	}
+ignore:
+	continue;
     }
 
     if (counter == 0)
@@ -95,30 +166,64 @@ u16 find_random_neighbor(struct node_t *node)
 
 static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet *packet)
 {
-    /* check if route destination is this node */
-    if (node->node_id == packet->route->path[packet->route->len - 1]) {
-	/* checks if packet can be sent to external network */
-	if (node->can_connect_func(node)) {
+    LOG_NODE_INFO(node->node_id, "Received data packet from %d", packet->prev_node_id);
+    /* check last node in route is this node */
+    if (node->node_id == packet_route_final_hop(packet->pt)) {
+	// TODO: here we assume that the final hop of a route that is a response can connect to the
+	// client
+	/* check if data is for client */
+	if (packet->is_response) {
 	    handle_send_external(node, packet);
 	    return;
 	}
 
-	packet->prev_node_id = node->node_id;
-	/* check if packet can be sent to another node that can connect to external network */
+	/* packet is for external network, so check if node can connect to external network */
+	if (node->can_connect_func(node)) {
+	    LOG_NODE_INFO(node->node_id, "Sending to external");
+	    // TODO: handle failure
+	    handle_send_external(node, packet);
+	    return;
+	}
+
+	/*
+	 * Strategy when packet can't be sent to external, and we have no further path.
+	 * 1. Try to use an existing route on the node
+	 * 2. If no existing route on node: bogo
+	 */
+
+	LOG_NODE_INFO(node->node_id, "Last hop, but could not connect to external");
+	/* 1 */
 	if (!queue_empty(node->route_queue)) {
-	    packet_use_route(packet, node);
+	    struct packet_route_t *append = queue_pop(node->route_queue);
+	    struct packet_route_t *pt = packet_route_combine(packet->pt, append);
+	    packet->pt = pt;
+	    bool came_through = use_packet_route(packet, node);
+	    if (came_through)
+		return;
+
+	    /* path failed */
+	    came_through = send_bogo(packet, node);
+	    if (!came_through)
+		propogate_failure();
+
+	    /* 2 */
 	} else {
 	    /* send packet to random neighbor */
-	    // TODO: handle edge case where 1. no neighbors, and 2. all neighbors have been "used
-	    // up"
-	    packet_bogo_and_find_route(packet, node);
+	    bool came_through = send_bogo(packet, node);
+	    if (!came_through)
+		propogate_failure();
 	}
 
     } else {
 	/* use next hop from route */
-	packet->route->step++;
-	packet->prev_node_id = node->node_id;
-	node->send_func(packet, packet->route->path[packet->route->step]);
+	bool came_through = use_packet_route(packet, node);
+	if (came_through)
+	    return;
+
+	/* path failed */
+	came_through = send_bogo(packet, node);
+	if (!came_through)
+	    propogate_failure();
     }
 }
 
@@ -127,7 +232,7 @@ static void handle_hello_packet(struct node_t *node, struct ulsr_internal_packet
     u16 neighbor_id = packet->prev_node_id;
     struct neighbor_t *neighbor = node->neighbors[neighbor_id - 1];
     if (neighbor == NULL) {
-	LOG_NODE_INFO(node->node_id, "Found new neighbor %d", neighbor_id);
+	// LOG_NODE_INFO(node->node_id, "Found new neighbor %d", neighbor_id);
 	neighbor = malloc(sizeof(struct neighbor_t));
 	neighbor->node_id = neighbor_id;
 	node->neighbors[neighbor_id - 1] = neighbor;

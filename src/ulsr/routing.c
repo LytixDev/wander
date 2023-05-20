@@ -145,3 +145,26 @@ struct packet_route_t *reverse_packet_route(struct packet_route_t *pt)
     reversed->step = 0;
     return reversed;
 }
+
+u16 packet_route_next_hop(struct packet_route_t *pt)
+{
+    return pt->path[pt->step];
+}
+
+u16 packet_route_final_hop(struct packet_route_t *pt)
+{
+    return pt->path[pt->len - 1];
+}
+
+struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct packet_route_t *b)
+{
+    struct packet_route_t *combined = malloc(sizeof(struct packet_route_t));
+    combined->len = a->len + b->len;
+    combined->step = a->step;
+    combined->path = malloc(sizeof(u16) * combined->len);
+    memcpy(combined->path, a->path, a->len);
+    memcpy(combined->path + a->len, b->path, b->len);
+    // free(a);
+    // free(b)
+    return combined;
+}

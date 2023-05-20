@@ -31,7 +31,7 @@ void main_recv_thread(void *arg);
 
 void hello_poll_thread(void *arg);
 
-u16 find_random_neighbor(struct node_t *node);
+u16 find_random_neighbor(struct node_t *node, u16 *path, u16 path_len);
 
 
 #endif /* COMMS_INTERNAL_H */
