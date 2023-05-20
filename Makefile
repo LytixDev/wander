@@ -16,6 +16,7 @@ LDLIBS = -lm
 TARGET = ulsr
 TARGET_CLIENT = client
 TARGET_GUI = gui
+TARGET_GUI_MACOS = gui_macos
 
 all: $(TARGET)
 
@@ -31,7 +32,7 @@ debug: CFLAGS += -g -DDEBUG
 debug: $(TARGET)
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET) $(TARGET_CLIENT) $(TARGET_GUI)
+	rm -rf $(OBJDIR) $(TARGET) $(TARGET_CLIENT) $(TARGET_GUI) $(TARGET_GUI_MACOS)
 
 tags:
 	@ctags -R
@@ -48,7 +49,7 @@ $(TARGET_CLIENT):
 $(OBJDIR):
 	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))
 
-gui: CFLAGS += -DGUI -I/usr/include/freetype2 -I/usr/include/libpng16
+gui: CFLAGS += -DGUI -I/usr/include/freetype2 -I/usr/include/libpng16 -g -DDEBUG
 gui: LDLIBS += -lglfw -lGLU -lGL -lXrandr -lXxf86vm -lXi -lXinerama -lX11 -lrt -ldl -lfreetype -lGLEW
 
 GUI_SRCS := $(shell find $(SRC)/gui -type f -name "*.c")
@@ -63,4 +64,21 @@ $(OBJDIR)/$(SRC)/gui/%.o: $(SRC)/gui/%.c Makefile | $(OBJDIR)/$(SRC)/gui
 	@$(CC) -c $(CFLAGS) $< -o $@
 
 $(OBJDIR)/$(SRC)/gui:
+	@mkdir -p $@
+
+$(TARGET_GUI_MACOS): CFLAGS += -DGUI -I/usr/local/include -I/usr/local/include/freetype2
+$(TARGET_GUI_MACOS): LDLIBS += -L/usr/local/lib -lglfw -framework OpenGL -lfreetype -lGLEW
+
+GUI_MACOS_SRCS := $(shell find $(SRC)/gui -type f -name "*.c")
+GUI_MACOS_OBJS := $(GUI_MACOS_SRCS:$(SRC)/gui/%.c=$(OBJDIR)/$(SRC)/gui_macos/%.o)
+
+$(TARGET_GUI_MACOS): $(GUI_MACOS_OBJS) $(OBJS)
+	@echo [LD] $@
+	@$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+$(OBJDIR)/$(SRC)/gui_macos/%.o: $(SRC)/gui/%.c Makefile | $(OBJDIR)/$(SRC)/gui_macos
+	@echo [CC] $@
+	@$(CC) -c $(CFLAGS) $< -o $@
+
+$(OBJDIR)/$(SRC)/gui_macos:
 	@mkdir -p $@

@@ -69,6 +69,7 @@ struct arrow_queue_data_t {
     i16 from_node;
     i16 to_node;
     bool is_send;
+    bool success;
 };
 
 struct window_data_t {
@@ -76,6 +77,7 @@ struct window_data_t {
     int selected_request_filter;
     i16 selected_node;
     struct queue_t *arrow_queue;
+    bool show_only_success;
 };
 
 extern struct threadpool_t window_threadpool;
@@ -107,5 +109,8 @@ u16 send_func(struct ulsr_internal_packet *packet, u16 node_id);
 
 /* returns one heap allocated packet at a time */
 struct ulsr_internal_packet *recv_func(u16 node_id);
+
+/* simulation specific functions */
+void update_coord(u16 node_id, u16 new_x, u16 new_y);
 
 #endif /* IMPL_H */
