@@ -3,8 +3,8 @@
 
 OBJDIR = .obj
 SRC = src
-DIRS := $(shell find $(SRC) -type d -not -wholename "src/client")
-SRCS := $(shell find $(SRC) -type f -name "*.c" -not -wholename "src/client/*")
+DIRS := $(shell find $(SRC) -type d -not -wholename "src/client" -not -wholename "src/gui")
+SRCS := $(shell find $(SRC) -type f -name "*.c" -not -wholename "src/client/*" -not -wholename "src/gui/*")
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
 CFLAGS = -Iinclude -Wall -Wextra -Wshadow -std=c11
@@ -15,12 +15,13 @@ LDLIBS = -lm
 .PHONY: format clean tags bear $(OBJDIR)
 TARGET = ulsr
 TARGET_CLIENT = client
+TARGET_GUI = gui
 
 all: $(TARGET)
 
 $(OBJDIR)/%.o: %.c Makefile | $(OBJDIR)
 	@echo [CC] $@
-	@$(CC) -c $(CFLAGS) -c $< -o $@
+	@$(CC) -c $(CFLAGS) $< -o $@
 
 $(TARGET): $(OBJS)
 	@echo [LD] $@
@@ -30,7 +31,7 @@ debug: CFLAGS += -g -DDEBUG
 debug: $(TARGET)
 
 clean:
-	rm -rf $(OBJDIR) $(TARGET) $(TARGET_CLIENT)
+	rm -rf $(OBJDIR) $(TARGET) $(TARGET_CLIENT) $(TARGET_GUI)
 
 tags:
 	@ctags -R
@@ -46,3 +47,20 @@ $(TARGET_CLIENT):
 
 $(OBJDIR):
 	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))
+
+gui: CFLAGS += -DGUI -I/usr/include/freetype2 -I/usr/include/libpng16
+gui: LDLIBS += -lglfw -lGLU -lGL -lXrandr -lXxf86vm -lXi -lXinerama -lX11 -lrt -ldl -lfreetype -lGLEW
+
+GUI_SRCS := $(shell find $(SRC)/gui -type f -name "*.c")
+GUI_OBJS := $(GUI_SRCS:$(SRC)/gui/%.c=$(OBJDIR)/$(SRC)/gui/%.o)
+
+$(TARGET_GUI): $(GUI_OBJS) $(OBJS)
+	@echo [LD] $@
+	@$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
+
+$(OBJDIR)/$(SRC)/gui/%.o: $(SRC)/gui/%.c Makefile | $(OBJDIR)/$(SRC)/gui
+	@echo [CC] $@
+	@$(CC) -c $(CFLAGS) $< -o $@
+
+$(OBJDIR)/$(SRC)/gui:
+	@mkdir -p $@

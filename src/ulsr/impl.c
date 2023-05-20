@@ -20,6 +20,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#ifdef GUI
+#include "gui/window.h"
+#endif
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
@@ -33,18 +36,23 @@
 
 /* global simulation running variable */
 static bool running;
+
+#ifdef GUI
+GLFWwindow *window;
+struct threadpool_t window_threadpool;
+#endif
+
 struct node_t nodes[MESH_NODE_COUNT];
 struct queue_t packet_limbo[MESH_NODE_COUNT];
 struct await_t node_locks[MESH_NODE_COUNT];
 struct simulation_coord_t coords[MESH_NODE_COUNT];
-/* the coordinates of the destination for the client's request */
-struct simulation_coord_t target_coords = { .x = 500, .y = 500 };
-
+struct simulation_coord_t target_coords;
+struct threadpool_t threadpool;
 
 static void init_packet_limbo_queue()
 {
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	init_queue(&packet_limbo[i], 32);
+	queue_init(&packet_limbo[i], 32);
     }
 }
 
@@ -57,8 +65,8 @@ static void init_coords()
 {
     /* defaults */
     if (MESH_NODE_COUNT == 8) {
-	coords[0].x = 50;
-	coords[0].y = 50;
+	coords[0].x = 75;
+	coords[0].y = 75;
 
 	coords[1].x = 225;
 	coords[1].y = 150;
@@ -85,6 +93,17 @@ static void init_coords()
 	/* random */
 	// TODO: implement random coordinates when mesh count is not 8
     }
+}
+
+static void init_target_coords()
+{
+    target_coords.x = 500;
+    target_coords.y = 500;
+}
+
+void update_coord(u16 node_id, u16 new_x, u16 new_y)
+{
+    coords[node_id - 1] = (struct simulation_coord_t){ .x = new_x, .y = new_y };
 }
 
 u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b)
@@ -114,11 +133,105 @@ bool can_connect_func(struct node_t *node)
     return can_reach_external_target(node->node_id);
 }
 
+#ifdef GUI
+void pop_and_free(void *arg)
+{
+    struct queue_t *arrow_queue = (struct queue_t *)arg;
+    pthread_mutex_lock(&window_threadpool.cond_var->cond_lock);
+    struct arrow_queue_data_t *data = queue_pop(arrow_queue);
+    pthread_mutex_unlock(&window_threadpool.cond_var->cond_lock);
+    pthread_cond_signal(&window_threadpool.cond_var->cond_variable);
+    free(data);
+}
+
+void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 from, u16 to,
+			     bool is_send)
+{
+    if (window != NULL) {
+	struct window_data_t *ptr = (struct window_data_t *)glfwGetWindowUserPointer(window);
+	if (ptr != NULL) {
+	    if ((ptr->selected_request_filter == 0 && is_send) ||
+		(ptr->selected_request_filter == 1 && !is_send)) {
+		return;
+	    }
+	    switch (ptr->selected_radio_button) {
+	    case 0:
+		if (packet_type == PACKET_HELLO) {
+		    struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+		    data->to_node = to;
+		    data->from_node = from;
+		    data->is_send = is_send;
+		    queue_push(ptr->arrow_queue, data);
+		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
+					       1);
+		}
+		break;
+	    case 1:
+		if (packet_type == PACKET_DATA) {
+		    struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+		    data->to_node = to;
+		    data->from_node = from;
+		    data->is_send = is_send;
+		    queue_push(ptr->arrow_queue, data);
+		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
+					       1);
+		}
+		break;
+	    case 2:
+		if (packet_type == PACKET_PURGE) {
+		    struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+		    data->to_node = to;
+		    data->from_node = from;
+		    data->is_send = is_send;
+		    queue_push(ptr->arrow_queue, data);
+		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
+					       1);
+		}
+		break;
+	    case 3:
+		if (packet_type == PACKET_ROUTING) {
+		    struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+		    data->to_node = to;
+		    data->from_node = from;
+		    data->is_send = is_send;
+		    queue_push(ptr->arrow_queue, data);
+		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
+					       1);
+		}
+		break;
+	    case 4:
+		if (packet_type == PACKET_ROUTING_DONE) {
+		    struct arrow_queue_data_t *data = malloc(sizeof(struct arrow_queue_data_t));
+		    data->to_node = to;
+		    data->from_node = from;
+		    data->is_send = is_send;
+		    queue_push(ptr->arrow_queue, data);
+		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
+					       1);
+		}
+		break;
+	    default:
+		break;
+	    }
+	}
+    }
+}
+#endif
+
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
-    /* how the simulation mocks whether a packet addressed for this node can't be received due too
-     * bad signal */
+#ifdef GUI
+    sleep_for_visualization(packet->type, packet->prev_node_id, node_id, true);
+#endif
+    /*
+     * how the simulation mocks whether a packet addressed for this node can't be received due too
+     * bad signal
+     */
     if (distance(&coords[packet->prev_node_id - 1], &coords[node_id - 1]) > SIMULATION_NODE_RANGE)
+	return 0;
+
+    /* how the simulation mocks a packet can't be sent because a node is not active anymore */
+    if (nodes[node_id - 1].node_id == NODE_INACTIVE_ID)
 	return 0;
 
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
@@ -149,8 +262,15 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
     struct ulsr_internal_packet *packet;
     if (queue_empty(&packet_limbo[node_idx]))
 	packet = NULL;
+#ifdef GUI
+    else {
+	packet = queue_pop(&packet_limbo[node_idx]);
+	sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false);
+    }
+#else
     else
 	packet = queue_pop(&packet_limbo[node_idx]);
+#endif
 
     pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
     return packet;
@@ -165,6 +285,7 @@ bool simulate(void)
 
     /* mock distance */
     init_coords();
+    init_target_coords();
 
     /* simulated queue of incoming packets */
     init_packet_limbo_queue();
@@ -175,7 +296,11 @@ bool simulate(void)
     node_recv_func_t node_recv_func = recv_func;
 
     /* main threadpool */
-    struct threadpool_t threadpool;
+#ifdef GUI
+    /* init the window threadpool */
+    init_threadpool(&window_threadpool, MESH_NODE_COUNT + 1, 8);
+    start_threadpool(&window_threadpool);
+#endif
     init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
     start_threadpool(&threadpool);
 
@@ -189,10 +314,35 @@ bool simulate(void)
 	submit_worker_task(&threadpool, run_node_stub, &nodes[i]);
     }
 
+#ifdef GUI
+    /* init the window */
+    if (!(window = window_create())) {
+	goto end_simulation;
+    }
+
+    while (!glfwWindowShouldClose(window)) {
+	window_update(window);
+    }
+
+    window_destroy(window);
+#else
     /* run simulation until 'q' is pressed */
-    while (running)
-	running = (getc(stdin) != 'q');
-    ;
+    while (running) {
+	char c = getc(stdin);
+	if (c == 'q')
+	    running = false;
+	else if (c == 'm') {
+	    LOG_INFO("MOVE: node 5");
+	    update_coord(5, 500, 500);
+	} else if (c == 'd') {
+	    LOG_INFO("DESTROY: node 5");
+	    destroy_node(&nodes[4]);
+	}
+    }
+#endif
+
+end_simulation:
+    running = false;
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	pthread_mutex_lock(&node_locks[i].cond_lock);
@@ -204,12 +354,18 @@ bool simulate(void)
 
     // TODO: parallelliser dette
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
+	if (nodes[i].node_id == NODE_INACTIVE_ID)
+	    continue;
 	close_node(&nodes[i]);
 	free_node(&nodes[i]);
     }
 
     threadpool_stop(&threadpool);
     free_threadpool(&threadpool);
+#ifdef GUI
+    threadpool_stop(&window_threadpool);
+    free_threadpool(&window_threadpool);
+#endif
 
     logger_destroy();
 

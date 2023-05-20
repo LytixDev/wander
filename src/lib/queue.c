@@ -20,9 +20,9 @@
 
 #include "lib/queue.h"
 
-void init_queue(struct queue_t *queue, int size)
+void queue_init(struct queue_t *queue, int size)
 {
-    queue->items = (void *)(malloc(size * sizeof(void *)));
+    queue->items = malloc(size * sizeof(void *));
     queue->max = size;
     queue->start = queue->end = queue->size = 0;
 }
@@ -57,6 +57,11 @@ void *queue_pop(struct queue_t *queue)
     queue->start = (queue->start + 1) % queue->max;
     --queue->size;
     return element;
+}
+
+void queue_clear(struct queue_t *queue)
+{
+    queue->start = queue->end = queue->size = 0;
 }
 
 void free_queue(struct queue_t *queue)

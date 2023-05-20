@@ -139,4 +139,6 @@ u32 find_longest_time_taken(struct route_array_t *routes);
 
 u16 *reverse_route(u16 *route, u16 route_length);
 
+struct packet_route_t *reverse_packet_route(struct packet_route_t *pt);
+
 #endif /* ROUTING_H */

@@ -23,6 +23,8 @@
 
 enum ulsr_packet_type {
     ULSR_HTTP,
+    ULSR_RESPONSE,
+    ULSR_INTERNAL_FAILURE,
 };
 
 struct ulsr_packet {
@@ -40,17 +42,16 @@ struct ulsr_packet {
  * packets used for internal communication between devices in the simulation
  */
 enum ulsr_internal_packet_type {
-    PACKET_DATA, // data packets final destination will always be an external entity
+    PACKET_DATA = 0, // data packets final destination will always be an external entity
     PACKET_HELLO,
     PACKET_PURGE,
     PACKET_ROUTING,
     PACKET_ROUTING_DONE,
     PACKET_NONE,
+    PACKET_TYPE_COUNT,
 };
 
-static char *uslr_internal_type_to_str[] = {
-    "DATA", "HELLO", "PURGE", "ROUTING", "ROUTING_DONE", "NONE",
-};
+extern char *uslr_internal_type_to_str[PACKET_TYPE_COUNT];
 
 struct packet_route_t {
     u16 *path;
@@ -78,6 +79,8 @@ struct ulsr_packet *ulsr_create_response(struct ulsr_packet *packet, u8 *respons
  * Allocates the internal packet on the heap.
  */
 struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *external_packet);
+
+struct ulsr_packet *ulsr_create_failure(struct ulsr_packet *packet_that_failed);
 
 struct ulsr_internal_packet *ulsr_internal_create_hello(u16 from, u16 to);
 

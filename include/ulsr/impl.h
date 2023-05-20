@@ -30,19 +30,29 @@
 #include <stdbool.h>
 
 #include "lib/common.h"
+#include "lib/queue.h"
 #include "ulsr/node.h"
 #include "ulsr/packet.h"
 
+
+/* NOTE: variables that need to be defined: */
+
 /* starting node (device) count */
-#define MESH_NODE_COUNT 8
+#define MESH_NODE_COUNT 8 // TODO: this should be initial starting node count
 /* how often each node polls every other known node to see if its in range to receive */
 #define HELLO_POLL_INTERVAL 3
+/* how long until a neighboring node is considered no longer a neighbor */
+#define REMOVE_NEIGHBOR_THRESHOLD HELLO_POLL_INTERVAL * 3
+
+
+/* NOTE: simulation specific variables */
+
+#define NODE_INACTIVE_ID 0
 
 /* these values are in pixels */
-#define SIMULATION_NODE_RANGE 200
-#define SIMULATION_WIDTH 800
-#define SIMULATION_LENGTH 800
-
+#define SIMULATION_NODE_RANGE 150
+#define SIMULATION_WIDTH 700
+#define SIMULATION_LENGTH 700
 
 struct await_t {
     pthread_mutex_t cond_lock;
@@ -54,6 +64,30 @@ struct simulation_coord_t {
     u16 y;
 };
 
+#ifdef GUI
+struct arrow_queue_data_t {
+    i16 from_node;
+    i16 to_node;
+    bool is_send;
+};
+
+struct window_data_t {
+    int selected_radio_button;
+    int selected_request_filter;
+    i16 selected_node;
+    struct queue_t *arrow_queue;
+};
+
+extern struct threadpool_t window_threadpool;
+#endif
+
+/* Global variables for the simulation */
+extern struct node_t nodes[MESH_NODE_COUNT];
+extern struct queue_t packet_limbo[MESH_NODE_COUNT];
+extern struct await_t node_locks[MESH_NODE_COUNT];
+extern struct simulation_coord_t coords[MESH_NODE_COUNT];
+extern struct simulation_coord_t target_coords;
+extern struct threadpool_t threadpool;
 
 /* standard euclidian distance for a 2D system */
 u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b);
