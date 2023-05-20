@@ -201,11 +201,21 @@ void draw_arrow(float x1, float y1, float x2, float y2, int is_send)
     };
 
     glEnable(GL_LINE_SMOOTH);
-    glLineWidth(10);
+    glLineWidth(5);
     glEnableClientState(GL_VERTEX_ARRAY);
 
     glVertexPointer(2, GL_FLOAT, 0, line_vertices);
     glDrawArrays(GL_LINES, 0, 2);
+
+    if (is_send) {
+	glColor3f(100, 255, 255);
+	x1 -= 5;
+	x2 -= 5;
+    } else {
+	glColor3f(255, 255, 100);
+	x1 += 5;
+	x2 += 5;
+    }
 
     glVertexPointer(2, GL_FLOAT, 0, arrowhead_vertices);
     glDrawArrays(GL_TRIANGLES, 0, 3);
