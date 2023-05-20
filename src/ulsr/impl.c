@@ -39,7 +39,15 @@ static bool running;
 
 #ifdef GUI
 GLFWwindow *window;
+struct threadpool_t window_threadpool;
 #endif
+
+struct node_t nodes[MESH_NODE_COUNT];
+struct queue_t packet_limbo[MESH_NODE_COUNT];
+struct await_t node_locks[MESH_NODE_COUNT];
+struct simulation_coord_t coords[MESH_NODE_COUNT];
+struct simulation_coord_t target_coords;
+struct threadpool_t threadpool;
 
 static void init_packet_limbo_queue()
 {

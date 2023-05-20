@@ -1,10 +1,11 @@
+
 # Nicolai Brand (lytix.dev) 2022-2023
 # See LICENSE for license info
 
 OBJDIR = .obj
 SRC = src
-DIRS := $(shell find $(SRC) -type d -not -wholename "src/client")
-SRCS := $(shell find $(SRC) -type f -name "*.c" -not -wholename "src/client/*")
+DIRS := $(shell find $(SRC) -type d -not -wholename "src/client" -not -wholename "src/gui")
+SRCS := $(shell find $(SRC) -type f -name "*.c" -not -wholename "src/client/*" -not -wholename "src/gui/*")
 OBJS := $(SRCS:%.c=$(OBJDIR)/%.o)
 
 CFLAGS = -Iinclude -Wall -Wextra -Wshadow -std=c11
@@ -48,22 +49,8 @@ $(TARGET_CLIENT):
 $(OBJDIR):
 	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))
 
-GUI_DIRS := $(shell find $(SRC) -type d -name "gui")
-GUI_SRCS := $(shell find $(GUI_DIRS) -type f -name "*.c")
-GUI_OBJS := $(GUI_SRCS:$(SRC)/%.c=$(OBJDIR)/%.o)
-
+gui: DIRS += src/gui
+gui: SRCS += $(shell find $(SRC)/gui -type f -name "*.c")
 gui: CFLAGS += -DGUI -I/usr/include/freetype2 -I/usr/include/libpng16
-gui: LDLIBS += -lglfw -lGLU -lGL -lXrandr -lXxf86vm -lXi -lXinerama -lX11 -lrt -ldl -lstb -lfreetype -lGLEW
-
-gui: $(TARGET_GUI)
-
-$(OBJDIR)/%.o: %.c Makefile | $(OBJDIR)
-	@echo [CC] $@
-	@$(CC) -c $(CFLAGS) $< -o $@
-
-$(TARGET_GUI): $(OBJS)
-	@echo [LD] $@
-	@$(CC) $(LDFLAGS) -o $@ $^ $(LDLIBS)
-
-gui_debug: CFLAGS += -g -DDEBUG
-gui_debug: $(TARGET_GUI)
+gui: LDLIBS += -lglfw -lGLU -lGL -lXrandr -lXxf86vm -lXi -lXinerama -lX11 -lrt -ldl -lfreetype -lGLEW
+gui: $(TARGET)

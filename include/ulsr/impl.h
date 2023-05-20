@@ -78,16 +78,16 @@ struct window_data_t {
     struct queue_t *arrow_queue;
 };
 
-struct threadpool_t window_threadpool;
+extern struct threadpool_t window_threadpool;
 #endif
 
 /* Global variables for the simulation */
-struct node_t nodes[MESH_NODE_COUNT];
-struct queue_t packet_limbo[MESH_NODE_COUNT];
-struct await_t node_locks[MESH_NODE_COUNT];
-struct simulation_coord_t coords[MESH_NODE_COUNT];
-struct simulation_coord_t target_coords;
-struct threadpool_t threadpool;
+extern struct node_t nodes[MESH_NODE_COUNT];
+extern struct queue_t packet_limbo[MESH_NODE_COUNT];
+extern struct await_t node_locks[MESH_NODE_COUNT];
+extern struct simulation_coord_t coords[MESH_NODE_COUNT];
+extern struct simulation_coord_t target_coords;
+extern struct threadpool_t threadpool;
 
 /* standard euclidian distance for a 2D system */
 u16 distance(struct simulation_coord_t *a, struct simulation_coord_t *b);

@@ -5,6 +5,9 @@
 #include "gui/font.h"
 #include "lib/logger.h"
 
+FT_Library ft;
+FT_Face face;
+
 void init_free_type()
 {
     if (FT_Init_FreeType(&ft)) {

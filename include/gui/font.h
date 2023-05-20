@@ -12,8 +12,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-FT_Library ft;
-FT_Face face;
+extern FT_Library ft;
+extern FT_Face face;
 
 void init_free_type();
 

@@ -23,6 +23,10 @@
 #include "ulsr/packet.h"
 #include "ulsr/ulsr.h"
 
+char *uslr_internal_type_to_str[PACKET_TYPE_COUNT] = {
+    "DATA", "HELLO", "PURGE", "ROUTING", "ROUTING_DONE", "NONE",
+};
+
 struct ulsr_packet *ulsr_create_response(struct ulsr_packet *packet, u8 *response, u16 seq_nr)
 {
     struct ulsr_packet *response_packet = malloc(sizeof(struct ulsr_packet));

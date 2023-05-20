@@ -20,10 +20,11 @@
 #include <string.h>
 
 #include <math.h>
-#include <stb/stb_image.h>
+// #include <stb/stb_image.h>
 
 #include "gui/window.h"
 #include "lib/common.h"
+#include "lib/queue.h"
 #include "ulsr/impl.h"
 
 static i16 node_find(int x, int y)
@@ -107,10 +108,10 @@ GLFWwindow *window_create()
     window = glfwCreateWindow(SIMULATION_WIDTH, SIMULATION_LENGTH, "ULSR Simulation", NULL, NULL);
 
     GLFWimage images[1];
-    images[0].pixels =
-	stbi_load("./include/static/icon.png", &images[0].width, &images[0].height, 0, 4);
-    glfwSetWindowIcon(window, 1, images);
-    stbi_image_free(images[0].pixels);
+    // images[0].pixels =
+    //     stbi_load("./include/static/icon.png", &images[0].width, &images[0].height, 0, 4);
+    // glfwSetWindowIcon(window, 1, images);
+    // stbi_image_free(images[0].pixels);
 
     if (!window) {
 	glfwTerminate();
