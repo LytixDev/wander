@@ -146,7 +146,7 @@ void pop_and_free(void *arg)
 }
 
 void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 from, u16 to,
-			     bool is_send)
+			     bool is_send, bool success)
 {
     if (window != NULL) {
 	struct window_data_t *ptr = (struct window_data_t *)glfwGetWindowUserPointer(window);
@@ -162,6 +162,7 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->to_node = to;
 		    data->from_node = from;
 		    data->is_send = is_send;
+		    data->success = success;
 		    queue_push(ptr->arrow_queue, data);
 		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
 					       1);
@@ -173,6 +174,7 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->to_node = to;
 		    data->from_node = from;
 		    data->is_send = is_send;
+		    data->success = success;
 		    queue_push(ptr->arrow_queue, data);
 		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
 					       1);
@@ -184,6 +186,7 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->to_node = to;
 		    data->from_node = from;
 		    data->is_send = is_send;
+		    data->success = success;
 		    queue_push(ptr->arrow_queue, data);
 		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
 					       1);
@@ -195,6 +198,7 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->to_node = to;
 		    data->from_node = from;
 		    data->is_send = is_send;
+		    data->success = success;
 		    queue_push(ptr->arrow_queue, data);
 		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
 					       1);
@@ -206,6 +210,8 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->to_node = to;
 		    data->from_node = from;
 		    data->is_send = is_send;
+		    data->success = success;
+
 		    queue_push(ptr->arrow_queue, data);
 		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
 					       1);
@@ -222,7 +228,10 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 u16 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
 #ifdef GUI
-    sleep_for_visualization(packet->type, packet->prev_node_id, node_id, true);
+    sleep_for_visualization(packet->type, packet->prev_node_id, node_id, true,
+			    !(distance(&coords[packet->prev_node_id - 1], (&coords[node_id - 1])) >
+			      SIMULATION_NODE_RANGE) &&
+				!(nodes[node_id - 1].node_id == NODE_INACTIVE_ID));
 #endif
     /*
      * how the simulation mocks whether a packet addressed for this node can't be received due too
@@ -266,7 +275,7 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 #ifdef GUI
     else {
 	packet = queue_pop(&packet_limbo[node_idx]);
-	sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false);
+	sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false, true);
     }
 #else
     else

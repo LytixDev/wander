@@ -69,6 +69,7 @@ struct arrow_queue_data_t {
     i16 from_node;
     i16 to_node;
     bool is_send;
+    bool success;
 };
 
 struct window_data_t {
@@ -76,6 +77,7 @@ struct window_data_t {
     int selected_request_filter;
     i16 selected_node;
     struct queue_t *arrow_queue;
+    bool show_only_success;
 };
 
 extern struct threadpool_t window_threadpool;
