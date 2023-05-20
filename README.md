@@ -20,15 +20,16 @@ The simulation environment in the project is quite advanced. It is possible to s
 
 ### GUI
 The GUI has multiple filters for easier viewing. Options for packet types to observe, request types between nodes to observe and the ability to filter out failed requests. The GUI is made completely from scratch without any component library, including the text that is rendered using OpenGL. The GUI is also capable of visualizing the mesh network in real time and allows the user to interact with the mesh network through a graphical user interface.
+
 To select a node:
-        -       Press on a node.
+- Press on a node.
 
 To deselect a node:
-        -       Press on the selected node.
+- Press on the selected node.
 
 To move a node:
-        -       Select a node.
-        -       Press where you want to move the node.        
+- Select a node.
+- Press where you want to move the node.        
 
 ### Implementation
 For the ease of use for testers and future developers, the project only uses the C-standard library and the POSIX library, except for the GUI. The project is written in C11 and compiles with gcc and clang. The project is developed on Linux, but it should be possible to compile and run the project on other operating systems as well. The GUI requires OpenGL and GLFW, and is developed for Linux and Mac-OS.
