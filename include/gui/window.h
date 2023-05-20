@@ -32,6 +32,8 @@
 #define RING_SPEED 100.0f
 #define TOOLBAR_HEIGHT 50.0f
 #define TOOLBAR_ITEM_COUNT 5
+#define FILTERBAR_WIDTH 140.0f
+#define FILTERBAR_ITEM_COUNT 3
 
 static char *toolbar_items[] = { "Hello Packets", "Data Packets", "Purge Packets",
 				 "Routing Packets", "Routing Done Packets" };

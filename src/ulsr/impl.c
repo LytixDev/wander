@@ -153,11 +153,12 @@ void pop_and_free(void *arg)
     struct arrow_queue_data_t *data = queue_pop(arrow_queue);
     pthread_mutex_unlock(&window_threadpool.cond_var->cond_lock);
     pthread_cond_signal(&window_threadpool.cond_var->cond_variable);
-    free(data);
+    if (data != NULL)
+	free(data);
 }
 
 void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 from, u16 to,
-			     bool is_send)
+			     bool is_send, bool success)
 {
     if (window != NULL) {
 	struct window_data_t *ptr = (struct window_data_t *)glfwGetWindowUserPointer(window);
@@ -173,6 +174,7 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->to_node = to;
 		    data->from_node = from;
 		    data->is_send = is_send;
+		    data->success = success;
 		    queue_push(ptr->arrow_queue, data);
 		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
 					       1);
@@ -184,6 +186,7 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->to_node = to;
 		    data->from_node = from;
 		    data->is_send = is_send;
+		    data->success = success;
 		    queue_push(ptr->arrow_queue, data);
 		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
 					       1);
@@ -195,6 +198,7 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->to_node = to;
 		    data->from_node = from;
 		    data->is_send = is_send;
+		    data->success = success;
 		    queue_push(ptr->arrow_queue, data);
 		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
 					       1);
@@ -206,6 +210,7 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->to_node = to;
 		    data->from_node = from;
 		    data->is_send = is_send;
+		    data->success = success;
 		    queue_push(ptr->arrow_queue, data);
 		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
 					       1);
@@ -217,6 +222,8 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 		    data->to_node = to;
 		    data->from_node = from;
 		    data->is_send = is_send;
+		    data->success = success;
+
 		    queue_push(ptr->arrow_queue, data);
 		    submit_worker_task_timeout(&window_threadpool, pop_and_free, ptr->arrow_queue,
 					       1);
@@ -233,7 +240,10 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 {
 #ifdef GUI
-    sleep_for_visualization(packet->type, packet->prev_node_id, node_id, true);
+    sleep_for_visualization(packet->type, packet->prev_node_id, node_id, true,
+			    !(distance(&coords[packet->prev_node_id - 1], (&coords[node_id - 1])) >
+			      SIMULATION_NODE_RANGE) &&
+				!(nodes[node_id - 1].node_id == NODE_INACTIVE_ID));
 #endif
 
     if (packet->type == PACKET_DATA)
@@ -280,7 +290,7 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 #ifdef GUI
     else {
 	packet = queue_pop(&packet_limbo[node_idx]);
-	sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false);
+	sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false, true);
     }
 #else
     else
@@ -314,10 +324,10 @@ bool simulate(void)
     /* main threadpool */
 #ifdef GUI
     /* init the window threadpool */
-    init_threadpool(&window_threadpool, MESH_NODE_COUNT + 1, 8);
+    init_threadpool(&window_threadpool, 2 * MESH_NODE_COUNT + 1, 32);
     start_threadpool(&window_threadpool);
 #endif
-    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 8);
+    init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 32);
     start_threadpool(&threadpool);
 
     /* init all nodes and make them run on the threadpool */
@@ -362,7 +372,6 @@ bool simulate(void)
 #ifdef GUI
 end_simulation:
 #endif
-
     running = false;
 
     for (int i = 0; i < MESH_NODE_COUNT; i++) {

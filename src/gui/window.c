@@ -15,12 +15,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 #ifdef GUI
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include <math.h>
-// #include <stb/stb_image.h>
 
 #include "gui/window.h"
 #include "lib/common.h"
@@ -57,17 +57,20 @@ void mouse_button_callback(GLFWwindow *window, int button, int action, int mods)
 	    }
 
 	    window_data->selected_radio_button = clicked_idx;
-	} else if (y_pos >= TOOLBAR_HEIGHT + 10 && y_pos <= TOOLBAR_HEIGHT + 35 &&
-		   x_pos <= SIMULATION_WIDTH / 5) {
-	    int radio_button_width = SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT / 3;
+	} else if (y_pos >= TOOLBAR_HEIGHT + 10 && y_pos <= TOOLBAR_HEIGHT + 35) {
+	    if (x_pos <= SIMULATION_WIDTH / 5) {
+		int radio_button_width = SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT / 3;
 
-	    int clicked_idx = x_pos / radio_button_width;
+		int clicked_idx = x_pos / radio_button_width;
 
-	    if (clicked_idx != window_data->selected_request_filter) {
-		queue_clear(window_data->arrow_queue);
+		if (clicked_idx != window_data->selected_request_filter) {
+		    queue_clear(window_data->arrow_queue);
+		}
+
+		window_data->selected_request_filter = clicked_idx;
+	    } else if (x_pos >= SIMULATION_WIDTH - (SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT)) {
+		window_data->show_only_success = !window_data->show_only_success;
 	    }
-
-	    window_data->selected_request_filter = clicked_idx;
 	} else if ((node_idx = node_find(x_pos, SIMULATION_LENGTH - y_pos)) != -1) {
 	    if (window_data->selected_node == node_idx) {
 		window_data->selected_node = -1;
@@ -107,12 +110,6 @@ GLFWwindow *window_create()
 
     window = glfwCreateWindow(SIMULATION_WIDTH, SIMULATION_LENGTH, "ULSR Simulation", NULL, NULL);
 
-    GLFWimage images[1];
-    // images[0].pixels =
-    //     stbi_load("./include/static/icon.png", &images[0].width, &images[0].height, 0, 4);
-    // glfwSetWindowIcon(window, 1, images);
-    // stbi_image_free(images[0].pixels);
-
     if (!window) {
 	glfwTerminate();
 	return NULL;
@@ -132,6 +129,10 @@ GLFWwindow *window_create()
 
     GLenum glewInitStatus = glewInit();
 
+    if (glewInitStatus != GLEW_OK) {
+	return NULL;
+    }
+
     glViewport(0.0f, 0.0f, width, height);
 
     glMatrixMode(GL_PROJECTION);
@@ -147,8 +148,10 @@ GLFWwindow *window_create()
     struct window_data_t *window_data = malloc(sizeof(struct window_data_t));
     window_data->selected_radio_button = 0;
     window_data->selected_node = -1;
+    window_data->selected_request_filter = 0;
+    window_data->show_only_success = false;
     window_data->arrow_queue = malloc(sizeof(struct queue_t));
-    queue_init(window_data->arrow_queue, 32);
+    queue_init(window_data->arrow_queue, 256);
 
     glfwSetWindowUserPointer(window, (void *)window_data);
 
@@ -169,16 +172,20 @@ static void draw_circle(float center_x, float center_y, float radius)
     glEnd();
 }
 
-void draw_arrow(float x1, float y1, float x2, float y2, int is_send)
+void draw_arrow(float x1, float y1, float x2, float y2, int is_send, int success)
 {
-    if (is_send) {
-	glColor3f(0, 255, 255);
-	x1 -= 5;
-	x2 -= 5;
+    if (success) {
+	if (is_send) {
+	    glColor3f(0, 1, 1);
+	    x1 -= 5;
+	    x2 -= 5;
+	} else {
+	    glColor3f(1, 1, 0);
+	    x1 += 5;
+	    x2 += 5;
+	}
     } else {
-	glColor3f(255, 255, 0);
-	x1 += 5;
-	x2 += 5;
+	glColor3f(1, 0, 0);
     }
 
     GLfloat line_vertices[] = { x1, y1, x2, y2 };
@@ -189,8 +196,8 @@ void draw_arrow(float x1, float y1, float x2, float y2, int is_send)
     dx /= length;
     dy /= length;
 
-    GLfloat arrowhead_length = 10;
-    GLfloat arrowhead_angle = 1;
+    GLfloat arrowhead_length = 20;
+    GLfloat arrowhead_angle = 0.5;
     GLfloat arrowhead_vertices[] = {
 	x2,
 	y2,
@@ -201,11 +208,25 @@ void draw_arrow(float x1, float y1, float x2, float y2, int is_send)
     };
 
     glEnable(GL_LINE_SMOOTH);
-    glLineWidth(10);
+    glLineWidth(5);
     glEnableClientState(GL_VERTEX_ARRAY);
 
     glVertexPointer(2, GL_FLOAT, 0, line_vertices);
     glDrawArrays(GL_LINES, 0, 2);
+
+    if (success) {
+	if (is_send) {
+	    glColor3f(0, 0.5, 0.5);
+	    x1 -= 5;
+	    x2 -= 5;
+	} else {
+	    glColor3f(0.5, 0.5, 0);
+	    x1 += 5;
+	    x2 += 5;
+	}
+    } else {
+	glColor3f(0.5, 0, 0);
+    }
 
     glVertexPointer(2, GL_FLOAT, 0, arrowhead_vertices);
     glDrawArrays(GL_TRIANGLES, 0, 3);
@@ -278,27 +299,27 @@ void draw_target_coords()
     glDisableClientState(GL_VERTEX_ARRAY);
 }
 
-void draw_ranges()
+void draw_ranges(i16 selected_node)
 {
     float current_time = glfwGetTime();
     float radius = STARTING_RING_RADIUS + (RING_SPEED * current_time);
 
     if (radius > SIMULATION_NODE_RANGE) {
 	glfwSetTime(0);
+	radius = STARTING_RING_RADIUS;
     }
 
-    for (u16 i = 0; i < MESH_NODE_COUNT; i++) {
-	draw_circle(coords[i].x, coords[i].y, radius);
-    }
+    if (selected_node != -1)
+	draw_circle(coords[selected_node].x, coords[selected_node].y, radius);
 }
 
-static void draw_toolbar_2(int selected_request_filter)
+static void draw_request_filter_buttons(int selected_request_filter)
 {
     init_free_type();
     load_font();
-    u16 radio_button_width = (SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT) / 3;
+    u16 radio_button_width = FILTERBAR_WIDTH / FILTERBAR_ITEM_COUNT;
     u8 i;
-    for (i = 0; i < 3; i++) {
+    for (i = 0; i < FILTERBAR_ITEM_COUNT; i++) {
 	int x = i * radio_button_width;
 	int y = SIMULATION_LENGTH - TOOLBAR_HEIGHT - TOOLBAR_HEIGHT / 2 - 10;
 	int radio_button_height = TOOLBAR_HEIGHT / 2;
@@ -319,6 +340,36 @@ static void draw_toolbar_2(int selected_request_filter)
 		    x + ((radio_button_width - (strlen(request_filter[i]) * 2)) / 3),
 		    y + (TOOLBAR_HEIGHT / 2 - 5) / 2, 0.8f);
     }
+
+    clean_font();
+}
+
+static void only_success_button(bool show_only_sucess)
+{
+    init_free_type();
+    load_font();
+
+    u16 radio_button_width = SIMULATION_WIDTH - (SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT);
+    int x = 1 * radio_button_width;
+    int y = SIMULATION_LENGTH - TOOLBAR_HEIGHT - TOOLBAR_HEIGHT / 2 - 10;
+
+    if (show_only_sucess) {
+	glColor3f(1.0f, 0.0f, 1.0f);
+    } else {
+	glColor3f(0.5f, 0.5f, 0.5f);
+    }
+
+    glBegin(GL_QUADS);
+    glVertex2f(x, y);
+    glVertex2f(x + radio_button_width, y);
+    glVertex2f(x + radio_button_width, y + TOOLBAR_HEIGHT / 2);
+    glVertex2f(x, y + TOOLBAR_HEIGHT / 2);
+    glEnd();
+
+    render_text("Only Success", radio_button_width + ((SIMULATION_WIDTH / TOOLBAR_ITEM_COUNT / 3)),
+		y + (TOOLBAR_HEIGHT / 2 - 5) / 2, 0.8f);
+
+    clean_font();
 }
 
 static void draw_toolbar(int selected_radio_button)
@@ -348,16 +399,22 @@ static void draw_toolbar(int selected_radio_button)
 		    x + ((radio_button_width - (strlen(toolbar_items[i]) * 4)) / 5),
 		    y + (TOOLBAR_HEIGHT - 12) / 2, 1.0f);
     }
+    clean_font();
 }
 
 
-static void draw_arrows(struct queue_t *arrows)
+static void draw_arrows(struct queue_t *arrows, bool show_only_sucess)
 {
     for (int i = arrows->start; i != arrows->end; i = (i + 1) % arrows->max) {
 	struct arrow_queue_data_t *data = (struct arrow_queue_data_t *)arrows->items[i];
-	if (data != NULL)
+	if (data != NULL) {
+	    if (show_only_sucess && !data->success)
+		continue;
+
 	    draw_arrow(coords[data->from_node - 1].x, coords[data->from_node - 1].y,
-		       coords[data->to_node - 1].x, coords[data->to_node - 1].y, data->is_send);
+		       coords[data->to_node - 1].x, coords[data->to_node - 1].y, data->is_send,
+		       data->success);
+	}
     }
 }
 
@@ -373,13 +430,15 @@ void window_update(GLFWwindow *window)
 
     draw_target_coords();
 
-    draw_ranges();
+    draw_ranges(window_data->selected_node);
 
     draw_toolbar(window_data->selected_radio_button);
 
-    draw_toolbar_2(window_data->selected_request_filter);
+    draw_request_filter_buttons(window_data->selected_request_filter);
 
-    draw_arrows(window_data->arrow_queue);
+    only_success_button(window_data->show_only_success);
+
+    draw_arrows(window_data->arrow_queue, window_data->show_only_success);
 
     glfwSwapBuffers(window);
 
@@ -388,8 +447,17 @@ void window_update(GLFWwindow *window)
 
 void window_destroy(GLFWwindow *window)
 {
-    clean_font();
+    struct window_data_t *window_data = (struct window_data_t *)glfwGetWindowUserPointer(window);
+    struct queue_t *arrow_queue = window_data->arrow_queue;
+    struct arrow_queue_data_t *data = NULL;
+    while ((data = (struct arrow_queue_data_t *)queue_pop(arrow_queue)) != NULL) {
+	free(data);
+    }
+    free_queue(arrow_queue);
+    free(arrow_queue);
+    free(window_data);
     glfwDestroyWindow(window);
     glfwTerminate();
 }
+
 #endif
