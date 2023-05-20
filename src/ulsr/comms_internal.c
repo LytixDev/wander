@@ -36,6 +36,7 @@ void propogate_failure(struct ulsr_internal_packet *packet, struct node_t *node)
     struct ulsr_internal_packet *failure_internal = ulsr_internal_from_external(failure_packet);
     failure_internal->pr = reverse_packet_route(packet->pr);
     failure_internal->is_response = true;
+    failure_internal->prev_node_id = node->node_id;
     LOG_ERR("PACKET COULD NOT BE ROUTED :-(");
     use_packet_route(failure_internal, node);
 }
