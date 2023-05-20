@@ -19,7 +19,21 @@ This project is a work in progress as far as the routing protocol is concerned. 
 The simulation environment in the project is quite advanced. It is possible to simulate a large number of nodes in a mesh network, and to simulate the movement of these nodes. The simulation environment is also capable of simulating the transmission of messages between nodes in the mesh network. The simulation environment is also capable of simulating the transmission of HTTP requests to external servers through the mesh network. In the simulation, the nodes are agnostic to the fact that they are simulated, and they behave as if they were real nodes in a real mesh network.
 
 ### GUI
-The GUI has multiple filters for easier viewing. Options for packet types to observe, request types between nodes to observe and the ability to filter out failed requests. The GUI is made completely from scratch without any component library, including the text that is rendered using OpenGL. The GUI is also capable of visualizing the mesh network in real time and allows the user to interact with the mesh network through a graphical user interface.
+The GUI is made completely from scratch without any component library, including the text that is rendered using OpenGL. The GUI is also capable of visualizing the mesh network in real time and allows the user to interact with the mesh network through a graphical user interface.
+Options for packet types to observe, request types between nodes to observe and the ability to filter out failed requests.
+
+Filtering options for the GUI:
+- Internal packets
+  - Hello packets
+  - Routing packets
+  - Routing done packets
+  - Data packets 
+  - Purge packets (not implemented in the protocol yet)
+- Request types
+  - Send request
+  - Receive request
+  - All requests
+- Show failed requests
 
 To select a node:
 - Press on a node.
@@ -129,7 +143,9 @@ $ ./client
 - `make format` - makes the code objectively pretty.
 
 ### Further development
-In the future, packets in and out of the network should not be bound to TCP, but rather be raw IP-packets. There are also many bugs in the code that need to be fixed, some known and others unknown. We have written up a list of all bugs we have come across, expect this list to grow.
+- In the future, packets in and out of the network should not be bound to TCP, but rather be raw IP-packets.
+- The GUI is currently fixed size, in the future it should be possible to resize the GUI and move around in the mesh network.
+- There are also many bugs in the code that need to be fixed, some known and others unknown. We have written up a list of all bugs we have come across, expect this list to grow.
 
 ### Known bugs
 - The whole GUI is buggy and largely needs to be rewritten as there are multiple causes for segfaults and memory leaks.
