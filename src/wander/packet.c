@@ -41,6 +41,13 @@ struct wander_packet *wander_create_response(struct wander_packet *packet, u8 *r
     return response_packet;
 }
 
+void wander_append_response(struct wander_packet *src, u8 *response, u16 seq_nr)
+{
+    memcpy(src->payload + src->payload_len, response, strlen((char *)response));
+    src->payload_len += strlen((char *)response);
+    src->seq_nr = seq_nr;
+}
+
 struct wander_packet *wander_create_failure(struct wander_packet *packet_that_failed)
 {
     struct wander_packet *response_packet = malloc(sizeof(struct wander_packet));

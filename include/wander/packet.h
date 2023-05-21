@@ -85,4 +85,6 @@ void wander_packet_free(struct wander_packet *packet);
 
 void wander_internal_packet_free(struct wander_internal_packet *packet);
 
+void wander_append_response(struct wander_packet *src, u8 *response, u16 seq_nr);
+
 #endif /* PACKET_H */

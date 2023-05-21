@@ -264,10 +264,8 @@ static void handle_routing_done_packet(struct node_t *node, struct wander_intern
 {
     struct route_payload_t *route = (struct route_payload_t *)packet->payload;
     if (packet->dest_node_id == node->node_id) {
-	if (route->route->time_taken > MAX_ROUTE_TIME) {
-	    // TODO: free route or something
+	if (route->route->time_taken > MAX_ROUTE_TIME)
 	    return;
-	}
 	add_last_pos(node->routing_table, route->route);
 	// LOG_NODE_INFO(node->node_id, "Found route to %d",
 	//	      route->route->path[route->route->path_length - 1]);
@@ -320,7 +318,7 @@ void main_recv_thread(void *arg)
 	    break;
 	}
 
-	free(packet);
+	wander_packet_free(packet);
     }
 }
 
