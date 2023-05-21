@@ -152,4 +152,6 @@ struct packet_route_t *route_to_packet_route(struct route_t *route);
 
 void route_free(struct route_t *route);
 
+void packet_route_free(struct packet_route_t *pr);
+
 #endif /* ROUTING_H */

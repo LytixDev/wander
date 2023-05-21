@@ -176,6 +176,8 @@ struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct pac
 
     combined->has_slept = a->has_slept || b->has_slept;
 
+    packet_route_free(a);
+    packet_route_free(b);
     return combined;
 }
 
@@ -193,6 +195,12 @@ void route_free(struct route_t *route)
 {
     free(route->path);
     free(route);
+}
+
+void packet_route_free(struct packet_route_t *pr)
+{
+    free(pr->path);
+    free(pr);
 }
 
 void route_sleep(struct route_t *route)

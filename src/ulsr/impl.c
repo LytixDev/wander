@@ -52,7 +52,7 @@ struct threadpool_t threadpool;
 static void init_packet_limbo_queue()
 {
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	queue_init(&packet_limbo[i], 32);
+	queue_init(&packet_limbo[i], 128);
     }
 }
 
@@ -282,13 +282,16 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 	pthread_cond_wait(&node_locks[node_idx].cond_variable, &node_locks[node_idx].cond_lock);
 
     struct ulsr_internal_packet *packet;
-//     if (queue_empty(&packet_limbo[node_idx]))
-// 	packet = NULL;
+    if (queue_empty(&packet_limbo[node_idx]))
+	packet = NULL;
 #ifdef GUI
-    packet = queue_pop(&packet_limbo[node_idx]);
-    sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false, true);
+    else {
+	packet = queue_pop(&packet_limbo[node_idx]);
+	sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false, true);
+    }
 #else
-    packet = queue_pop(&packet_limbo[node_idx]);
+    else
+	packet = queue_pop(&packet_limbo[node_idx]);
 #endif
 
     pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
@@ -318,7 +321,7 @@ bool simulate(void)
     /* main threadpool */
 #ifdef GUI
     /* init the window threadpool */
-    init_threadpool(&window_threadpool, 2 * MESH_NODE_COUNT + 1, 32);
+    init_threadpool(&window_threadpool, 4 * MESH_NODE_COUNT + 1, 1028);
     start_threadpool(&window_threadpool);
 #endif
     init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 16);

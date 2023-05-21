@@ -111,6 +111,7 @@ bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node)
     bool came_through = node->send_func(packet, packet->pr->path[packet->pr->step]) != -1;
     if (!came_through)
 	packet->pr->step--;
+
     return came_through;
 }
 

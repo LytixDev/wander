@@ -97,6 +97,8 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	}
     }
 
+    packet_route_free(packet->pr);
+
     close(ext_sockfd);
     return true;
 }
@@ -136,7 +138,6 @@ void handle_external(void *arg)
 	bool came_through = use_packet_route(internal_packet, node);
 	if (came_through)
 	    return;
-
 	/* path failed */
 	came_through = send_bogo(internal_packet, node);
 	if (!came_through)
@@ -154,8 +155,6 @@ void handle_external(void *arg)
 	if (!came_trough) {
 	    propagate_failure(internal_packet, node);
 	}
-
-	find_all_routes(data->node, node->known_nodes_count);
     }
 
 cleanup:
