@@ -81,6 +81,7 @@ void remove_old_neighbors(struct node_t *node)
     time_t now = time(NULL);
 
     double removed = 0;
+    double new_neighbors = node->new_neighbors_count;
     double neighbor_count = 0;
     struct neighbor_t *neighbor = NULL;
     for (int i = 0; i < node->known_nodes_count; i++) {
@@ -101,8 +102,12 @@ void remove_old_neighbors(struct node_t *node)
 
     pthread_mutex_unlock(&node->neighbor_list_lock);
 
+    node->new_neighbors_count = 0;
+    
+    neighbor_count -= new_neighbors;
     double removed_decimal = (removed / neighbor_count);
-    if (removed_decimal > 0.3)
+    double new_neighbors_decimal = (new_neighbors / neighbor_count);
+    if (removed_decimal > 0.7 || new_neighbors_decimal > 0.5)
 	remove_all_entries(node->routing_table);
 }
 
@@ -173,6 +178,8 @@ bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_nei
     node->known_nodes = malloc(sizeof(struct u16_arraylist_t));
     ARRAY_INIT(node->known_nodes);
     node->init_known_nodes_func(node);
+
+    node->new_neighbors_count = 0;
 
     // LOG_NODE_INFO(node->node_id, "Successfully initialized");
     return true;

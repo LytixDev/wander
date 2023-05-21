@@ -207,6 +207,7 @@ static void handle_hello_packet(struct node_t *node, struct ulsr_internal_packet
     pthread_mutex_lock(&node->neighbor_list_lock);
     struct neighbor_t *neighbor = node->neighbors[neighbor_id - 1];
     if (neighbor == NULL) {
+	node->new_neighbors_count++;
 	LOG_NODE_INFO(node->node_id, "Found new neighbor %d", neighbor_id);
 	neighbor = malloc(sizeof(struct neighbor_t));
 	neighbor->node_id = neighbor_id;
