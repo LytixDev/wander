@@ -72,7 +72,9 @@ struct route_table_entry_t *new_route_entry(struct route_t *route, struct route_
 					    struct route_table_entry_t *prev)
 {
     struct route_table_entry_t *res = malloc(sizeof(struct route_table_entry_t));
-    res->route = route;
+    res->route = malloc(sizeof(struct route_t));
+    init_route(route->source_id, route->destination_id, route->path, route->path_length,
+	       route->time_taken, res->route);
     res->next = next;
     res->prev = prev;
     return res;

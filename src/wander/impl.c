@@ -49,6 +49,10 @@ struct simulation_coord_t coords[MESH_NODE_COUNT];
 struct simulation_coord_t target_coords;
 struct threadpool_t threadpool;
 
+#ifdef GUI
+pthread_mutex_t arrows_mutex;
+#endif
+
 static void init_packet_limbo_queue()
 {
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
@@ -149,11 +153,11 @@ bool can_connect_func(struct node_t *node)
 void pop_and_free(void *arg)
 {
     struct queue_t *arrow_queue = (struct queue_t *)arg;
-    pthread_mutex_lock(&window_threadpool.cond_var->cond_lock);
+    pthread_mutex_lock(&arrows_mutex);
     struct arrow_queue_data_t *data = queue_pop(arrow_queue);
     if (data != NULL)
 	free(data);
-    pthread_mutex_unlock(&window_threadpool.cond_var->cond_lock);
+    pthread_mutex_unlock(&arrows_mutex);
 }
 
 void sleep_for_visualization(enum wander_internal_packet_type packet_type, u16 from, u16 to,
@@ -261,7 +265,7 @@ i32 send_func(struct wander_internal_packet *packet, u16 node_id)
     struct wander_internal_packet *new_packet = malloc(sizeof(struct wander_internal_packet));
     // TODO: this works for now, but we should implement a better copy function that recursively
     // copy the value of the pointers as well. This implementation only works before we (oh oh)
-    // never actually free a packets route or its payload...
+    // never actually free its payload...
     *new_packet = *packet;
     queue_push(&packet_limbo[node_id - 1], new_packet);
 
@@ -312,6 +316,10 @@ bool simulate(void)
 
     /* simulated queue of incoming packets */
     init_packet_limbo_queue();
+
+#ifdef GUI
+    pthread_mutex_init(&arrows_mutex, NULL);
+#endif
 
     /* connect, send and recv implementations declared in wander/impl.h and defined in uslr/impl.c
      */
@@ -393,6 +401,7 @@ end_simulation:
 #ifdef GUI
     threadpool_stop(&window_threadpool);
     free_threadpool(&window_threadpool);
+    pthread_mutex_destroy(&arrows_mutex);
 #endif
 
     logger_destroy();

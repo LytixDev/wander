@@ -71,31 +71,35 @@ bool handle_send_external(struct node_t *node, struct wander_internal_packet *pa
 	/* reverse the route we used to come here, and use that for the response */
 	u16 *reversed = reverse_route(packet->pr->path, packet->pr->len);
 	u32 seq_nr = 0;
-
+	struct wander_packet *ret_packet = NULL;
 	while (node->running && recv(ext_sockfd, response, UINT16_MAX - 1, 0) > 0) {
-	    struct wander_packet *ret_packet =
-		wander_create_response(internal_payload, response, seq_nr);
-	    struct wander_internal_packet *internal_packet =
-		wander_internal_from_external(ret_packet);
-
-	    /* init route */
-	    internal_packet->pr = malloc(sizeof(struct packet_route_t));
-	    internal_packet->pr->len = packet->pr->len;
-	    internal_packet->pr->step = 1;
-	    internal_packet->pr->path = reversed;
-	    internal_packet->prev_node_id = node->node_id;
-	    internal_packet->dest_node_id = packet->pr->path[0];
-	    internal_packet->is_response = true;
-
-	    // LOG_NODE_INFO(node->node_id, "Route length: %d", internal_packet->route->len);
-	    // for (int i = 0; i < internal_packet->route->len; i++) {
-	    //     LOG_NODE_INFO(node->node_id, "Route: %d", internal_packet->route->path[i]);
-	    // }
-	    node->send_func(internal_packet, internal_packet->pr->path[internal_packet->pr->step]);
+	    if (seq_nr == 0) {
+		ret_packet = wander_create_response(internal_payload, response, seq_nr);
+	    } else {
+		wander_append_response(ret_packet, response, seq_nr);
+	    }
 	    // LOG_NODE_INFO(node->node_id, "Sent return packet with seq_nr %d to node %d", seq_nr,
 	    //		  internal_packet->route->path[internal_packet->route->step]);
 	    seq_nr++;
 	}
+	struct wander_internal_packet *internal_packet = wander_internal_from_external(ret_packet);
+
+	/* init route */
+	internal_packet->pr = malloc(sizeof(struct packet_route_t));
+	internal_packet->pr->len = packet->pr->len;
+	internal_packet->pr->step = 1;
+	internal_packet->pr->path = reversed;
+	internal_packet->prev_node_id = node->node_id;
+	internal_packet->dest_node_id = packet->pr->path[0];
+	internal_packet->is_response = true;
+
+	LOG_INFO("Received external response with body: %s", ret_packet->payload);
+
+	// LOG_NODE_INFO(node->node_id, "Route length: %d", internal_packet->route->len);
+	// for (int i = 0; i < internal_packet->route->len; i++) {
+	//     LOG_NODE_INFO(node->node_id, "Route: %d", internal_packet->route->path[i]);
+	// }
+	node->send_func(internal_packet, internal_packet->pr->path[internal_packet->pr->step]);
     }
 
     packet_route_free(packet->pr);
@@ -108,9 +112,9 @@ void handle_external(void *arg)
 {
     struct external_request_thread_data_t *data = (struct external_request_thread_data_t *)arg;
     struct node_t *node = data->node;
-    struct wander_packet packet = { 0 };
+    struct wander_packet *packet = malloc(sizeof(struct wander_packet));
 
-    ssize_t bytes_read = recv(data->connection, &packet, sizeof(struct wander_packet), 0);
+    ssize_t bytes_read = recv(data->connection, packet, sizeof(struct wander_packet), 0);
     if (bytes_read <= 0) {
 	LOG_NODE_ERR(node->node_id, "ABORT!: Failed to read from socket");
 	goto cleanup;
@@ -126,7 +130,7 @@ void handle_external(void *arg)
     // }
 
     /* pack external packet into internal packet for routing between nodes */
-    struct wander_internal_packet *internal_packet = wander_internal_from_external(&packet);
+    struct wander_internal_packet *internal_packet = wander_internal_from_external(packet);
     internal_packet->prev_node_id = node->node_id;
 
     /* find path to destination */

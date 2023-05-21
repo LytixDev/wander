@@ -124,6 +124,8 @@ GLFWwindow *window_create()
     glfwSetWindowAspectRatio(window, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
     glfwGetFramebufferSize(window, &width, &height);
+    width = SIMULATION_WIDTH;
+    height = SIMULATION_LENGTH;
 
     glfwMakeContextCurrent(window);
 
@@ -133,13 +135,18 @@ GLFWwindow *window_create()
 	return NULL;
     }
 
+// Why is this needed? Why doesn't apple just use the same coordinate system as everyone else?
+#ifdef __APPLE__
+    glViewport(0.0f, 0.0f, width * 2, height * 2);
+#else
     glViewport(0.0f, 0.0f, width, height);
+#endif
 
     glMatrixMode(GL_PROJECTION);
 
     glLoadIdentity();
 
-    glOrtho(0, width, 0, height, -1, 1);
+    glOrtho(0, width, 0, height, 0, 1);
 
     glMatrixMode(GL_MODELVIEW);
 
@@ -407,14 +414,22 @@ static void draw_arrows(struct queue_t *arrows, bool show_only_sucess)
 {
     for (int i = arrows->start; i != arrows->end; i = (i + 1) % arrows->max) {
 	struct arrow_queue_data_t *data = (struct arrow_queue_data_t *)arrows->items[i];
+	pthread_mutex_lock(&arrows_mutex);
 	if (data != NULL) {
 	    if (show_only_sucess && !data->success)
 		continue;
+	    u8 from_node = data->from_node - 1;
+	    u8 to_node = data->to_node - 1;
+	    if (from_node > 11 || to_node > 11) {
+		pthread_mutex_unlock(&arrows_mutex);
+		continue;
+	    }
 
-	    struct simulation_coord_t from = coords[data->from_node - 1];
-	    struct simulation_coord_t to = coords[data->to_node - 1];
+	    struct simulation_coord_t from = coords[from_node];
+	    struct simulation_coord_t to = coords[to_node];
 	    draw_arrow(from.x, from.y, to.x, to.y, data->is_send, data->success);
 	}
+	pthread_mutex_unlock(&arrows_mutex);
     }
 }
 

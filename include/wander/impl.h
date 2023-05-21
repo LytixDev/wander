@@ -81,6 +81,7 @@ struct window_data_t {
 };
 
 extern struct threadpool_t window_threadpool;
+extern pthread_mutex_t arrows_mutex;
 #endif
 
 /* Global variables for the simulation */

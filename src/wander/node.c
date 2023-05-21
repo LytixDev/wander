@@ -135,7 +135,13 @@ bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_nei
 	return false;
     }
 
-    if (setsockopt(node->sockfd, SOL_SOCKET, SO_REUSEADDR | 15, &(int){ 1 }, sizeof(int)) < 0) {
+#ifdef __APPLE__
+    int optname = SO_REUSEADDR;
+#else
+    int optname = SO_REUSEADDR | 15;
+#endif
+
+    if (setsockopt(node->sockfd, SOL_SOCKET, optname, &(int){ 1 }, sizeof(int)) < 0) {
 	LOG_NODE_ERR(node->node_id, "ABORT!: Failed to set socket options");
 	return false;
     }
@@ -275,7 +281,6 @@ void free_node(struct node_t *node)
 
 void destroy_node(struct node_t *node)
 {
-    // u16 idx = node->node_id + 1;
     close_node(node);
     free_node(node);
 }

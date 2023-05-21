@@ -81,4 +81,10 @@ struct wander_internal_packet *wander_internal_create_hello(u16 from, u16 to);
 
 u32 wander_checksum(u8 *packet, unsigned long size);
 
+void wander_packet_free(struct wander_packet *packet);
+
+void wander_internal_packet_free(struct wander_internal_packet *packet);
+
+void wander_append_response(struct wander_packet *src, u8 *response, u16 seq_nr);
+
 #endif /* PACKET_H */

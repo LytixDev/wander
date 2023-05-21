@@ -39,11 +39,11 @@
 void construct_test_packet(struct wander_packet *p)
 {
     /* datakom.no IP */
-    char host[16] = "20.100.42.130";
+    char host[16] = "188.184.21.108";
 
     /* payload */
     char *payload = "GET / HTTP/1.1\r\n"
-		    "Host: datakom.no\r\n"
+		    "Host: info.cern.ch\r\n"
 		    "Connection: close\r\n"
 		    "\r\n";
     u16 payload_len = strlen(payload);

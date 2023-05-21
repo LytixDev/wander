@@ -41,6 +41,13 @@ struct wander_packet *wander_create_response(struct wander_packet *packet, u8 *r
     return response_packet;
 }
 
+void wander_append_response(struct wander_packet *src, u8 *response, u16 seq_nr)
+{
+    memcpy(src->payload + src->payload_len, response, strlen((char *)response));
+    src->payload_len += strlen((char *)response);
+    src->seq_nr = seq_nr;
+}
+
 struct wander_packet *wander_create_failure(struct wander_packet *packet_that_failed)
 {
     struct wander_packet *response_packet = malloc(sizeof(struct wander_packet));
@@ -74,6 +81,18 @@ struct wander_internal_packet *wander_internal_create_hello(u16 from, u16 to)
     packet->prev_node_id = from;
     packet->dest_node_id = to;
     return packet;
+}
+
+void wander_packet_free(struct wander_packet *packet)
+{
+    free(packet);
+}
+
+void wander_internal_packet_free(struct wander_internal_packet *packet)
+{
+    if (packet->payload != NULL)
+	free(packet->payload);
+    free(packet);
 }
 
 
