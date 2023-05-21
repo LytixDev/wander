@@ -121,7 +121,7 @@ $ make client
 
 To run the simulation:
 ```sh
-$ ./ulsr
+$ ./wander
 ```
 
 To run the simulation graphically:

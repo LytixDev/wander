@@ -20,10 +20,10 @@
 
 void logger_init()
 {
-    pthread_mutex_init(&ulsr_global_log_mutex, NULL);
+    pthread_mutex_init(&wander_global_log_mutex, NULL);
 }
 
 void logger_destroy()
 {
-    pthread_mutex_destroy(&ulsr_global_log_mutex);
+    pthread_mutex_destroy(&wander_global_log_mutex);
 }
