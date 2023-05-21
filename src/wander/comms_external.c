@@ -99,6 +99,7 @@ bool handle_send_external(struct node_t *node, struct wander_internal_packet *pa
     }
 
     packet_route_free(packet->pr);
+    wander_internal_packet_free(packet);
 
     close(ext_sockfd);
     return true;

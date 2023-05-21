@@ -76,6 +76,18 @@ struct wander_internal_packet *wander_internal_create_hello(u16 from, u16 to)
     return packet;
 }
 
+void wander_packet_free(struct wander_packet *packet)
+{
+    free(packet);
+}
+
+void wander_internal_packet_free(struct wander_internal_packet *packet)
+{
+    if (packet->payload != NULL)
+        free(packet->payload);
+    free(packet);
+}
+
 
 // TODO: use checksums everywhere
 u32 wander_checksum(u8 *packet, unsigned long size)

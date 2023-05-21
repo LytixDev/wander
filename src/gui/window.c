@@ -124,6 +124,8 @@ GLFWwindow *window_create()
     glfwSetWindowAspectRatio(window, GLFW_DONT_CARE, GLFW_DONT_CARE);
 
     glfwGetFramebufferSize(window, &width, &height);
+    width = SIMULATION_WIDTH;
+    height = SIMULATION_LENGTH;
 
     glfwMakeContextCurrent(window);
 
@@ -133,13 +135,18 @@ GLFWwindow *window_create()
 	return NULL;
     }
 
+// Why is this needed? Why doesn't apple just use the same coordinate system as everyone else?
+#ifdef __APPLE__
+    glViewport(0.0f, 0.0f, width * 2, height * 2);
+#else
     glViewport(0.0f, 0.0f, width, height);
+#endif
 
     glMatrixMode(GL_PROJECTION);
 
     glLoadIdentity();
 
-    glOrtho(0, width, 0, height, -1, 1);
+    glOrtho(0, width, 0, height, 0, 1);
 
     glMatrixMode(GL_MODELVIEW);
 

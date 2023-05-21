@@ -275,7 +275,6 @@ void free_node(struct node_t *node)
 
 void destroy_node(struct node_t *node)
 {
-    // u16 idx = node->node_id + 1;
     close_node(node);
     free_node(node);
 }
