@@ -29,11 +29,6 @@ bool route_table_empty(struct route_table_t *rt)
     return rt->size == 0;
 }
 
-bool route_is_old(struct route_table_entry_t *rt)
-{
-    return rt->use_count > MAX_AGE;
-}
-
 struct route_t *get_random_route(struct route_table_t *rt)
 {
     if (route_table_empty(rt))
@@ -43,9 +38,6 @@ struct route_t *get_random_route(struct route_table_t *rt)
     iter_start(&iter, rt);
     for (int i = 0; i < random; i++)
 	iter_next(&iter);
-    iter.current->use_count++;
-    if (route_is_old(iter.current))
-	return remove_entry(rt, iter.current)->route;
     return iter.current->route;
 }
 
@@ -56,7 +48,6 @@ struct route_table_entry_t *new_route_entry(struct route_t *route, struct route_
     res->route = route;
     res->next = next;
     res->prev = prev;
-    res->use_count = 0;
     return res;
 }
 

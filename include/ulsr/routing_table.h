@@ -31,7 +31,6 @@ struct route_table_entry_t {
     struct route_t *route;
     struct route_table_entry_t *prev;
     struct route_table_entry_t *next;
-    u16 use_count;
 };
 
 /**
