@@ -20,21 +20,21 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "wander/node.h"
 
-/**
- * Struct for an arraylist of routes
- */
-ARRAY_T(route_array_t, struct route_t *);
-
+#define NS_TO_US(ns) ((ns) / 1000)
+#define SEC_TO_NS(sec) ((sec)*1000000000)
+#define MAX_ROUTE_TIME 10000000
 
 struct packet_route_t {
     u16 *path;
     u16 len;
     u16 step;
+    bool has_slept;
 };
 
 /**
@@ -46,7 +46,7 @@ struct routing_data_t {
     bool *visited;
     u16 *path;
     u16 path_length;
-    u32 time_taken;
+    u64 time_taken;
 };
 
 /**
@@ -57,7 +57,7 @@ struct route_t {
     u16 destination_id;
     u16 *path;
     u16 path_length;
-    u32 time_taken;
+    u64 time_taken;
 };
 
 /**
@@ -83,7 +83,7 @@ struct route_payload_t {
  * @param routing_data The routing data struct to initialize
  */
 void init_routing_data(u16 source_id, u16 total_nodes, bool *visited, u16 *path, u16 path_length,
-		       u32 time_taken, struct routing_data_t *routing_data);
+		       u64 time_taken, struct routing_data_t *routing_data);
 
 /**
  * Initializes the route struct
@@ -95,7 +95,7 @@ void init_routing_data(u16 source_id, u16 total_nodes, bool *visited, u16 *path,
  * @param time_taken The time taken to reach the current node
  * @param route The route struct to initialize
  */
-void init_route(u16 source_id, u16 destination_id, u16 *path, u16 path_length, u32 time_taken,
+void init_route(u16 source_id, u16 destination_id, u16 *path, u16 path_length, u64 time_taken,
 		struct route_t *route);
 
 /**
@@ -125,7 +125,7 @@ void free_route(struct route_t *route);
  * @param time_taken The time taken to reach the current node
  */
 void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited, u16 *path,
-			  u16 path_length, u32 time_taken);
+			  u16 path_length, u64 time_taken);
 
 /**
  * Finds all routes from the current node to the destination node
@@ -136,14 +136,6 @@ void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited, u
  */
 void find_all_routes(struct node_t *start, u16 total_nodes);
 
-/**
- * Finds the longest time taken by any route
- *
- * @param routes The arraylist of routes
- * @return The longest time taken by any route
- */
-u32 find_longest_time_taken(struct route_array_t *routes);
-
 u16 *reverse_route(u16 *route, u16 route_length);
 
 struct packet_route_t *reverse_packet_route_from_step(struct packet_route_t *pt);
@@ -152,8 +144,14 @@ u16 packet_route_next_hop(struct packet_route_t *pt);
 
 u16 packet_route_final_hop(struct packet_route_t *pt);
 
+void route_sleep(struct route_t *route);
+
 struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct packet_route_t *b);
 
 struct packet_route_t *route_to_packet_route(struct route_t *route);
+
+void route_free(struct route_t *route);
+
+void packet_route_free(struct packet_route_t *pr);
 
 #endif /* ROUTING_H */

@@ -98,6 +98,8 @@ bool handle_send_external(struct node_t *node, struct wander_internal_packet *pa
 	}
     }
 
+    packet_route_free(packet->pr);
+
     close(ext_sockfd);
     return true;
 }
@@ -129,12 +131,14 @@ void handle_external(void *arg)
 
     /* find path to destination */
     if (!route_table_empty(node->routing_table)) {
-	struct packet_route_t *pr = route_to_packet_route(get_random_route(node->routing_table));
+	struct route_t *route = get_random_route(node->routing_table);
+
+	route_sleep(route);
+	struct packet_route_t *pr = route_to_packet_route(route);
 	internal_packet->pr = pr;
 	bool came_through = use_packet_route(internal_packet, node);
 	if (came_through)
 	    return;
-
 	/* path failed */
 	came_through = send_bogo(internal_packet, node);
 	if (!came_through)
@@ -152,8 +156,6 @@ void handle_external(void *arg)
 	if (!came_trough) {
 	    propagate_failure(internal_packet, node);
 	}
-
-	find_all_routes(data->node, node->known_nodes_count);
     }
 
 cleanup:

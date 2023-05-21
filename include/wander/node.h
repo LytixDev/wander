@@ -103,6 +103,7 @@ struct node_t {
     u8 hello_poll_interval; // in seconds
     u8 remove_neighbor_threshold; // in seconds
     u16 known_nodes_count; // currently we assume this is constant
+    u16 new_neighbors_count;
     node_init_known_nodes_func_t init_known_nodes_func;
     node_send_func_t send_func;
     node_recv_func_t recv_func;

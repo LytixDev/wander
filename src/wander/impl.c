@@ -52,7 +52,7 @@ struct threadpool_t threadpool;
 static void init_packet_limbo_queue()
 {
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
-	queue_init(&packet_limbo[i], 32);
+	queue_init(&packet_limbo[i], 128);
     }
 }
 
@@ -322,7 +322,7 @@ bool simulate(void)
     /* main threadpool */
 #ifdef GUI
     /* init the window threadpool */
-    init_threadpool(&window_threadpool, 2 * MESH_NODE_COUNT + 1, 32);
+    init_threadpool(&window_threadpool, 4 * MESH_NODE_COUNT + 1, 1028);
     start_threadpool(&window_threadpool);
 #endif
     init_threadpool(&threadpool, MESH_NODE_COUNT + 1, 16);
@@ -332,7 +332,7 @@ bool simulate(void)
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	bool success =
 	    init_node(&nodes[i], i + 1, HELLO_POLL_INTERVAL, REMOVE_NEIGHBOR_THRESHOLD,
-		      MESH_NODE_COUNT, 8, 8, 64, set_initial_node_ids, node_can_connect_func,
+		      MESH_NODE_COUNT, 8, 8, 256, set_initial_node_ids, node_can_connect_func,
 		      node_send_func, node_recv_func, WANDER_DEVICE_PORT_START + i);
 	if (!success)
 	    exit(1);

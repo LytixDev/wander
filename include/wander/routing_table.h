@@ -22,7 +22,7 @@
 // #include "wander/routing.h"
 #include <stdbool.h>
 
-#define MAX_AGE 10
+#define MAX_WAIT 10000000
 
 /**
  * A route table entry.
@@ -31,7 +31,6 @@ struct route_table_entry_t {
     struct route_t *route;
     struct route_table_entry_t *prev;
     struct route_table_entry_t *next;
-    u16 use_count;
 };
 
 /**
@@ -72,5 +71,7 @@ void iter_next(struct route_iter_t *iter);
 void route_entry_free(struct route_table_entry_t *entry);
 
 void route_table_free(struct route_table_t *rt);
+
+void remove_all_entries(struct route_table_t *rt);
 
 #endif /* ROUTE_TABLE_H */

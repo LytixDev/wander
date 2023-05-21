@@ -52,7 +52,7 @@ static void insert_external_connection(struct connections_t *connections, int co
 
 void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id)
 {
-    /* if route queue already empty, do nothing */
+    /* if route table already empty, do nothing */
     if (route_table_empty(node->routing_table))
 	return;
 
@@ -64,9 +64,9 @@ void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id)
 	for (u16 i = 0; i < route->path_length; i++) {
 	    if (route->path[i] == invalid_node_id) {
 		/* remove route from routing table */
-		remove_entry(node->routing_table, entry);
+		entry = remove_entry(node->routing_table, entry);
 		/* free route */
-		// free(route);
+		route_entry_free(entry);
 		break;
 	    }
 	}
@@ -80,22 +80,35 @@ void remove_old_neighbors(struct node_t *node)
     pthread_mutex_lock(&node->neighbor_list_lock);
     time_t now = time(NULL);
 
+    double removed = 0;
+    double new_neighbors = node->new_neighbors_count;
+    double neighbor_count = 0;
     struct neighbor_t *neighbor = NULL;
     for (int i = 0; i < node->known_nodes_count; i++) {
 	neighbor = node->neighbors[i];
 	if (neighbor == NULL)
 	    continue;
 
+	neighbor_count++;
 	if (now - neighbor->last_seen > node->remove_neighbor_threshold) {
 	    // LOG_NODE_INFO(node->node_id, "%d removed as neighbor", i + 1);
 	    node->neighbors[i] = NULL;
 	    free(neighbor);
+	    removed++;
 	    // invalidate all routes that use this neighbor
 	    remove_route_with_old_neighbor(node, i + 1);
 	}
     }
 
     pthread_mutex_unlock(&node->neighbor_list_lock);
+
+    node->new_neighbors_count = 0;
+
+    neighbor_count -= new_neighbors;
+    double removed_decimal = (removed / neighbor_count);
+    double new_neighbors_decimal = (new_neighbors / neighbor_count);
+    if (removed_decimal > 0.7 || new_neighbors_decimal > 0.5)
+	remove_all_entries(node->routing_table);
 }
 
 /* node lifetime functions */
@@ -165,6 +178,8 @@ bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_nei
     node->known_nodes = malloc(sizeof(struct u16_arraylist_t));
     ARRAY_INIT(node->known_nodes);
     node->init_known_nodes_func(node);
+
+    node->new_neighbors_count = 0;
 
     // LOG_NODE_INFO(node->node_id, "Successfully initialized");
     return true;

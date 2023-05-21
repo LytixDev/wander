@@ -16,9 +16,12 @@
  */
 
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
+#include <time.h>
 
 #include "lib/common.h"
+#include "lib/logger.h"
 #include "wander/routing.h"
 #include "wander/routing_table.h"
 
@@ -29,24 +32,40 @@ bool route_table_empty(struct route_table_t *rt)
     return rt->size == 0;
 }
 
-bool route_is_old(struct route_table_entry_t *rt)
+u64 find_longest_time_used(struct route_table_t *rt)
 {
-    return rt->use_count > MAX_AGE;
+    if (route_table_empty(rt))
+	return 0;
+    struct route_iter_t iter;
+    iter_start(&iter, rt);
+    u64 max = 0;
+    while (!iter_end(&iter)) {
+	if (iter.current->route->time_taken > max)
+	    max = iter.current->route->time_taken;
+	iter_next(&iter);
+    }
+    return max = max < MAX_WAIT ? max : MAX_WAIT;
 }
 
 struct route_t *get_random_route(struct route_table_t *rt)
 {
     if (route_table_empty(rt))
 	return NULL;
+    u64 max = find_longest_time_used(rt);
     int random = rand() % rt->size;
     struct route_iter_t iter;
     iter_start(&iter, rt);
     for (int i = 0; i < random; i++)
 	iter_next(&iter);
-    iter.current->use_count++;
-    if (route_is_old(iter.current))
-	return remove_entry(rt, iter.current)->route;
-    return iter.current->route;
+
+    struct route_t *found = iter.current->route;
+    struct route_t *res = malloc(sizeof(struct route_t));
+    max = (((i128)max) - ((i128)found->time_taken)) < 0 ? 0 : max - found->time_taken;
+    //    LOG_INFO("Found route from %d to %d that will sleep %ld µs", found->source_id,
+    //	     found->destination_id, max);
+    init_route(found->source_id, found->destination_id, found->path, found->path_length, max, res);
+
+    return res;
 }
 
 struct route_table_entry_t *new_route_entry(struct route_t *route, struct route_table_entry_t *next,
@@ -56,7 +75,6 @@ struct route_table_entry_t *new_route_entry(struct route_t *route, struct route_
     res->route = route;
     res->next = next;
     res->prev = prev;
-    res->use_count = 0;
     return res;
 }
 
@@ -85,6 +103,8 @@ void add_last_pos(struct route_table_t *rt, struct route_t *route)
 struct route_table_entry_t *remove_entry(struct route_table_t *rt,
 					 struct route_table_entry_t *entry)
 {
+    if (!entry)
+	return NULL;
     if (entry->prev)
 	entry->prev->next = entry->next;
     else
@@ -117,9 +137,22 @@ void iter_next(struct route_iter_t *iter)
 
 void route_entry_free(struct route_table_entry_t *entry)
 {
-    free(entry->route->path);
-    free(entry->route);
+    route_free(entry->route);
     free(entry);
+}
+
+void remove_all_entries(struct route_table_t *rt)
+{
+    struct route_iter_t iter;
+    iter_start(&iter, rt);
+    while (!iter_end(&iter)) {
+	struct route_table_entry_t *entry = iter.current;
+	iter_next(&iter);
+	route_entry_free(entry);
+    }
+    rt->head = NULL;
+    rt->tail = NULL;
+    rt->size = 0;
 }
 
 void route_table_free(struct route_table_t *rt)

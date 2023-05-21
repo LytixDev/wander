@@ -26,16 +26,21 @@
 #define u16 uint16_t
 #define u32 uint32_t
 #define u64 uint64_t
-#define u128 uint128_t
-#define u256 uint256_t
+// #define u128 uint128_t
+// #define u256 uint256_t
 
 /* signed integral types */
 #define i8 int8_t
 #define i16 int16_t
 #define i32 int32_t
 #define i64 int64_t
-#define i128 iint128_t
-#define i256 iint256_t
+#if defined(__clang__)
+#define i128 long long
+#elif defined(__GNUC__) || defined(__GNUG__)
+#define i128 __int128
+#endif
+
+// #define i256 int256_t
 
 /* common */
 #define VA_NUMBER_OF_ARGS(...) (sizeof((int[]){ __VA_ARGS__ }) / sizeof(int))
