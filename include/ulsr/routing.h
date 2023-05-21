@@ -34,7 +34,7 @@ struct packet_route_t {
     u16 *path;
     u16 len;
     u16 step;
-    bool has_bogoed;
+    bool has_slept;
 };
 
 /**

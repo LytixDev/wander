@@ -76,7 +76,6 @@ static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *p
 bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 {
     // LOG_NODE_INFO(node->node_id, "use bogo, step %d", packet->pr->step);
-    packet->pr->has_bogoed = true;
     packet->pr->path = realloc(packet->pr->path, (packet->pr->step + 2) * sizeof(u16));
     packet->pr->len = packet->pr->step + 1;
 
@@ -168,6 +167,9 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 
 	/* packet is for external network, so check if node can connect to external network */
 	if (node->can_connect_func(node)) {
+	    if (!packet->pr->has_slept)
+		packet->pr->has_slept = true;
+	
 	    LOG_NODE_INFO(node->node_id, "Sending to external");
 	    // TODO: handle failure
 	    handle_send_external(node, packet);
@@ -184,8 +186,10 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	if (!route_table_empty(node->routing_table)) {
 	    struct route_t *route = get_random_route(node->routing_table);
 
-	    if (!packet->pr->has_bogoed)
+	    if (!packet->pr->has_slept) {
+		packet->pr->has_slept = true;
 		route_sleep(route);
+	    }
 	    struct packet_route_t *append = route_to_packet_route(route);
 	    struct packet_route_t *pt = packet_route_combine(packet->pr, append);
 

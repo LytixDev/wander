@@ -282,15 +282,12 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 	pthread_cond_wait(&node_locks[node_idx].cond_variable, &node_locks[node_idx].cond_lock);
 
     struct ulsr_internal_packet *packet;
-    if (queue_empty(&packet_limbo[node_idx]))
-	packet = NULL;
+//     if (queue_empty(&packet_limbo[node_idx]))
+// 	packet = NULL;
 #ifdef GUI
-    else {
 	packet = queue_pop(&packet_limbo[node_idx]);
 	sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false, true);
-    }
 #else
-    else
 	packet = queue_pop(&packet_limbo[node_idx]);
 #endif
 

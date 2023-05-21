@@ -174,7 +174,7 @@ struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct pac
 	combined->path[i] = b->path[i - a->step];
     }
 
-    combined->has_bogoed = a->has_bogoed || b->has_bogoed;
+    combined->has_slept = a->has_slept || b->has_slept;
 
     return combined;
 }
@@ -185,7 +185,7 @@ struct packet_route_t *route_to_packet_route(struct route_t *route)
     pr->path = route->path;
     pr->len = route->path_length;
     pr->step = 0;
-    pr->has_bogoed = false;
+    pr->has_slept = false;
     return pr;
 }
 
