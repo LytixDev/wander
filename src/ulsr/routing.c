@@ -136,12 +136,14 @@ u16 *reverse_route(u16 *path, u16 route_length)
     return reversed_route;
 }
 
-struct packet_route_t *reverse_packet_route(struct packet_route_t *pt)
+struct packet_route_t *reverse_packet_route_from_step(struct packet_route_t *pt)
 {
     struct packet_route_t *reversed = malloc(sizeof(struct route_t));
-    u16 *path = reverse_route(pt->path, pt->step); // TODO: step correct?
+    u16 new_len = pt->len == pt->step ? pt->len : pt->step + 1;
+    u16 *path = reverse_route(pt->path, new_len);
+
     reversed->path = path;
-    reversed->len = pt->step;
+    reversed->len = new_len;
     reversed->step = 0;
     return reversed;
 }

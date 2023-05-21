@@ -258,7 +258,6 @@ i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
 
-
     /* critical section */
     struct ulsr_internal_packet *new_packet = malloc(sizeof(struct ulsr_internal_packet));
     // TODO: this works for now, but we should implement a better copy function that recursively

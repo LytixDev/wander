@@ -38,6 +38,6 @@ bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node);
 
 bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node);
 
-void propogate_failure();
+void propagate_failure(struct ulsr_internal_packet *packet, struct node_t *node);
 
 #endif /* COMMS_INTERNAL_H */

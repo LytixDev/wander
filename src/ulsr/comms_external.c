@@ -56,7 +56,10 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
     }
 
     /* send packet to external entity */
-    if (send(ext_sockfd, internal_payload->payload, internal_payload->payload_len, 0) < 0) {
+    u8 *payload = packet->is_response ? (u8 *)internal_payload : internal_payload->payload;
+    size_t len = packet->is_response ? packet->payload_len : internal_payload->payload_len;
+
+    if (send(ext_sockfd, payload, len, 0) < 0) {
 	LOG_NODE_ERR(node->node_id, "Failed to send packet to %s/%d", internal_payload->dest_ipv4,
 		     internal_payload->dest_port);
 	return false;
@@ -134,7 +137,7 @@ void handle_external(void *arg)
 	/* path failed */
 	came_through = send_bogo(internal_packet, node);
 	if (!came_through)
-	    propogate_failure();
+	    propagate_failure(internal_packet, node);
     } else {
 	/* should be a function */
 	internal_packet->pr = malloc(sizeof(struct packet_route_t));
@@ -146,7 +149,7 @@ void handle_external(void *arg)
 	/* find random neighbor to forward the packet to */
 	bool came_trough = send_bogo(internal_packet, node);
 	if (!came_trough) {
-	    propogate_failure();
+	    propagate_failure(internal_packet, node);
 	}
 
 	find_all_routes(data->node, node->known_nodes_count);
