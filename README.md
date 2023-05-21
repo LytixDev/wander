@@ -28,6 +28,7 @@ IMPORTANT: if you have already built the simulated mobile mesh using `make`, you
 
 #### Optional dependencies for the visualization (make gui and make gui_macos)
 - `OpenGL` - Graphics rendering library.
+
 For Linux, BSD and Windows:
 - `X11` - The X11 window system. Wayland users can use the Xwayland compatability layer. For Winodws users you need a window server like VcXsrv.
 
