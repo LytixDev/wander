@@ -74,7 +74,7 @@ bool handle_send_external(struct node_t *node, struct wander_internal_packet *pa
 	struct wander_packet *ret_packet = NULL;
 	while (node->running && recv(ext_sockfd, response, UINT16_MAX - 1, 0) > 0) {
 	    if (seq_nr == 0) {
-	    ret_packet = wander_create_response(internal_payload, response, seq_nr);
+		ret_packet = wander_create_response(internal_payload, response, seq_nr);
 	    } else {
 		wander_append_response(ret_packet, response, seq_nr);
 	    }

@@ -91,7 +91,7 @@ void wander_packet_free(struct wander_packet *packet)
 void wander_internal_packet_free(struct wander_internal_packet *packet)
 {
     if (packet->payload != NULL)
-        free(packet->payload);
+	free(packet->payload);
     free(packet);
 }
 
