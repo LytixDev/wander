@@ -40,7 +40,11 @@
 /* starting node (device) count */
 #define MESH_NODE_COUNT 12 // TODO: this should be initial starting node count
 /* how often each node polls every other known node to see if its in range to receive */
+<<<<<<< HEAD
 #define HELLO_POLL_INTERVAL 3
+=======
+#define HELLO_POLL_INTERVAL 5
+>>>>>>> main
 /* how long until a neighboring node is considered no longer a neighbor */
 #define REMOVE_NEIGHBOR_THRESHOLD HELLO_POLL_INTERVAL
 

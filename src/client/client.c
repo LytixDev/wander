@@ -147,6 +147,7 @@ void listen_for_response()
 	    LOG_INFO("Done receiving");
 	    break;
 	}
+
 	printf("received %ld bytes\n", received);
 
 	if (packet.type == ULSR_INTERNAL_FAILURE) {

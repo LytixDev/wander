@@ -151,10 +151,9 @@ void pop_and_free(void *arg)
     struct queue_t *arrow_queue = (struct queue_t *)arg;
     pthread_mutex_lock(&window_threadpool.cond_var->cond_lock);
     struct arrow_queue_data_t *data = queue_pop(arrow_queue);
-    pthread_mutex_unlock(&window_threadpool.cond_var->cond_lock);
-    pthread_cond_signal(&window_threadpool.cond_var->cond_variable);
     if (data != NULL)
 	free(data);
+    pthread_mutex_unlock(&window_threadpool.cond_var->cond_lock);
 }
 
 void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 from, u16 to,
@@ -257,7 +256,6 @@ i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 	return -1;
 
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
-
 
     /* critical section */
     struct ulsr_internal_packet *new_packet = malloc(sizeof(struct ulsr_internal_packet));
