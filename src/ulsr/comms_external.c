@@ -56,7 +56,10 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
     }
 
     /* send packet to external entity */
-    if (send(ext_sockfd, internal_payload->payload, internal_payload->payload_len, 0) < 0) {
+    u8 *payload = packet->is_response ? (u8 *)internal_payload : internal_payload->payload;
+    size_t len = packet->is_response ? packet->payload_len : internal_payload->payload_len;
+
+    if (send(ext_sockfd, payload, len, 0) < 0) {
 	LOG_NODE_ERR(node->node_id, "Failed to send packet to %s/%d", internal_payload->dest_ipv4,
 		     internal_payload->dest_port);
 	return false;

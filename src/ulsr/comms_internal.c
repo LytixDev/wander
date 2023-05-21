@@ -105,7 +105,7 @@ bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 
 bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node)
 {
-    LOG_NODE_INFO(node->node_id, "Use packet route");
+    // LOG_NODE_INFO(node->node_id, "Use packet route");
     packet->pr->step++;
     packet->prev_node_id = node->node_id;
     bool came_through = node->send_func(packet, packet->pr->path[packet->pr->step]) != -1;
