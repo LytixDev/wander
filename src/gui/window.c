@@ -14,6 +14,7 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#define GUI
 #ifdef GUI
 #include <stdbool.h>
 #include <stdio.h>
@@ -411,9 +412,9 @@ static void draw_arrows(struct queue_t *arrows, bool show_only_sucess)
 	    if (show_only_sucess && !data->success)
 		continue;
 
-	    draw_arrow(coords[data->from_node - 1].x, coords[data->from_node - 1].y,
-		       coords[data->to_node - 1].x, coords[data->to_node - 1].y, data->is_send,
-		       data->success);
+	    struct simulation_coord_t from = coords[data->from_node - 1];
+	    struct simulation_coord_t to = coords[data->to_node - 1];
+	    draw_arrow(from.x, from.y, to.x, to.y, data->is_send, data->success);
 	}
     }
 }
