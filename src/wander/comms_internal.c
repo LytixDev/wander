@@ -60,7 +60,7 @@ void propagate_failure(struct wander_internal_packet *packet, struct node_t *nod
 
     came_through = use_packet_route(failure_internal, node);
     if (!came_through) {
-	LOG_NODE_ERR(node->node_id, "PROPOGATE FAILURE ... FAILED");
+	LOG_NODE_ERR(node->node_id, "PROPOGATE FAILURE ... FAILED NO ROUTE");
     }
 }
 
@@ -90,6 +90,7 @@ bool send_bogo(struct wander_internal_packet *packet, struct node_t *node)
 	came_through = use_packet_route(packet, node);
 	if (came_through) {
 	    /* This is called because this node doesn't have any routes to the destination */
+	    remove_all_entries(node->routing_table);
 	    find_all_routes(node, node->known_nodes_count);
 	    return true;
 	}
@@ -99,6 +100,7 @@ bool send_bogo(struct wander_internal_packet *packet, struct node_t *node)
     }
 
     /* packet got stuck in bogo :-( */
+    remove_all_entries(node->routing_table);
     find_all_routes(node, node->known_nodes_count);
     return false;
 }
