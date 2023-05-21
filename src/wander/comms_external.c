@@ -24,17 +24,17 @@
 
 #include "lib/common.h"
 #include "lib/logger.h"
-#include "ulsr/comms_external.h"
-#include "ulsr/comms_internal.h"
-#include "ulsr/node.h"
-#include "ulsr/packet.h"
-#include "ulsr/routing.h"
-#include "ulsr/ulsr.h"
+#include "wander/comms_external.h"
+#include "wander/comms_internal.h"
+#include "wander/node.h"
+#include "wander/packet.h"
+#include "wander/routing.h"
+#include "wander/wander.h"
 
 
-bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *packet)
+bool handle_send_external(struct node_t *node, struct wander_internal_packet *packet)
 {
-    struct ulsr_packet *internal_payload = packet->payload;
+    struct wander_packet *internal_payload = packet->payload;
     LOG_NODE_INFO(node->node_id, "Handling outgoing request to IP %s at port %d",
 		  internal_payload->dest_ipv4, internal_payload->dest_port);
 
@@ -73,9 +73,10 @@ bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *pack
 	u32 seq_nr = 0;
 
 	while (node->running && recv(ext_sockfd, response, UINT16_MAX - 1, 0) > 0) {
-	    struct ulsr_packet *ret_packet =
-		ulsr_create_response(internal_payload, response, seq_nr);
-	    struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(ret_packet);
+	    struct wander_packet *ret_packet =
+		wander_create_response(internal_payload, response, seq_nr);
+	    struct wander_internal_packet *internal_packet =
+		wander_internal_from_external(ret_packet);
 
 	    /* init route */
 	    internal_packet->pr = malloc(sizeof(struct packet_route_t));
@@ -105,9 +106,9 @@ void handle_external(void *arg)
 {
     struct external_request_thread_data_t *data = (struct external_request_thread_data_t *)arg;
     struct node_t *node = data->node;
-    struct ulsr_packet packet = { 0 };
+    struct wander_packet packet = { 0 };
 
-    ssize_t bytes_read = recv(data->connection, &packet, sizeof(struct ulsr_packet), 0);
+    ssize_t bytes_read = recv(data->connection, &packet, sizeof(struct wander_packet), 0);
     if (bytes_read <= 0) {
 	LOG_NODE_ERR(node->node_id, "ABORT!: Failed to read from socket");
 	goto cleanup;
@@ -116,14 +117,14 @@ void handle_external(void *arg)
     LOG_NODE_INFO(node->node_id, "Received external packet");
 
     /* validate checksum */
-    // u32 checksum = ulsr_checksum((u8 *)&packet, (unsigned long)bytes_read);
+    // u32 checksum = wander_checksum((u8 *)&packet, (unsigned long)bytes_read);
     // if (checksum != packet.checksum) {
     //     LOG_NODE_ERR(node->node_id, "ABORT!: Checksum failed!");
     //     goto cleanup;
     // }
 
     /* pack external packet into internal packet for routing between nodes */
-    struct ulsr_internal_packet *internal_packet = ulsr_internal_from_external(&packet);
+    struct wander_internal_packet *internal_packet = wander_internal_from_external(&packet);
     internal_packet->prev_node_id = node->node_id;
 
     /* find path to destination */

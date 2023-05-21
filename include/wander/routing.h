@@ -23,7 +23,7 @@
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
-#include "ulsr/node.h"
+#include "wander/node.h"
 
 /**
  * Struct for an arraylist of routes

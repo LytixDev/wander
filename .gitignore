@@ -8,9 +8,9 @@ tags
 compile_commands.json
 
 # compiled binary, but not sources
-ulsr
-!src/ulsr
-!include/ulsr
+wander
+!src/wander
+!include/wander
 client
 !src/client
 !include/client

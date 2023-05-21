@@ -1,4 +1,4 @@
-name: ulsr checkstyle
+name: wander checkstyle
 on: [push]
 
 jobs:

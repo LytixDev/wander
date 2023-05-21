@@ -20,8 +20,8 @@
 
 #include <stdbool.h>
 
-#include "ulsr/packet.h"
-#include "ulsr/routing.h"
+#include "wander/packet.h"
+#include "wander/routing.h"
 
 
 struct external_request_thread_data_t {
@@ -34,7 +34,7 @@ struct external_request_thread_data_t {
 
 void handle_external(void *arg);
 
-bool handle_send_external(struct node_t *node, struct ulsr_internal_packet *packet);
+bool handle_send_external(struct node_t *node, struct wander_internal_packet *packet);
 
 
 #endif /* COMMS_EXTERNAL_H */

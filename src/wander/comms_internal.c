@@ -23,19 +23,19 @@
 #include "lib/common.h"
 #include "lib/logger.h"
 #include "lib/queue.h"
-#include "ulsr/comms_external.h"
-#include "ulsr/comms_internal.h"
-#include "ulsr/node.h"
-#include "ulsr/packet.h"
-#include "ulsr/routing.h"
+#include "wander/comms_external.h"
+#include "wander/comms_internal.h"
+#include "wander/node.h"
+#include "wander/packet.h"
+#include "wander/routing.h"
 
 
-void propagate_failure(struct ulsr_internal_packet *packet, struct node_t *node)
+void propagate_failure(struct wander_internal_packet *packet, struct node_t *node)
 {
     LOG_NODE_ERR(node->node_id, "PACKET COULD NOT BE ROUTED: PROPOGATE FAILURE");
 
-    struct ulsr_packet *failure_packet = ulsr_create_failure(packet->payload);
-    struct ulsr_internal_packet *failure_internal = ulsr_internal_from_external(failure_packet);
+    struct wander_packet *failure_packet = wander_create_failure(packet->payload);
+    struct wander_internal_packet *failure_internal = wander_internal_from_external(failure_packet);
 
     /* create reversed route */
     u16 failure_step = packet->pr->step;
@@ -72,7 +72,7 @@ static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *p
     return next_hop_id;
 }
 
-bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
+bool send_bogo(struct wander_internal_packet *packet, struct node_t *node)
 {
     // LOG_NODE_INFO(node->node_id, "use bogo, step %d", packet->pr->step);
 
@@ -103,7 +103,7 @@ bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
     return false;
 }
 
-bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node)
+bool use_packet_route(struct wander_internal_packet *packet, struct node_t *node)
 {
     // LOG_NODE_INFO(node->node_id, "Use packet route");
     packet->pr->step++;
@@ -152,7 +152,7 @@ ignore:
     return neighbors[rand() % counter]->node_id;
 }
 
-static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet *packet)
+static void handle_data_packet(struct node_t *node, struct wander_internal_packet *packet)
 {
     LOG_NODE_INFO(node->node_id, "Received data packet from %d", packet->prev_node_id);
     /* check last node in route is this node */
@@ -222,7 +222,7 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
     }
 }
 
-static void handle_hello_packet(struct node_t *node, struct ulsr_internal_packet *packet)
+static void handle_hello_packet(struct node_t *node, struct wander_internal_packet *packet)
 {
     u16 neighbor_id = packet->prev_node_id;
 
@@ -239,14 +239,14 @@ static void handle_hello_packet(struct node_t *node, struct ulsr_internal_packet
     pthread_mutex_unlock(&node->neighbor_list_lock);
 }
 
-static void handle_routing_packet(struct node_t *node, struct ulsr_internal_packet *packet)
+static void handle_routing_packet(struct node_t *node, struct wander_internal_packet *packet)
 {
     struct routing_data_t *routing_data = packet->payload;
     find_all_routes_send(node, routing_data->total_nodes, routing_data->visited, routing_data->path,
 			 routing_data->path_length, routing_data->time_taken);
 }
 
-static void handle_routing_done_packet(struct node_t *node, struct ulsr_internal_packet *packet)
+static void handle_routing_done_packet(struct node_t *node, struct wander_internal_packet *packet)
 {
     struct route_payload_t *route = (struct route_payload_t *)packet->payload;
     if (packet->dest_node_id == node->node_id) {
@@ -264,7 +264,7 @@ static void handle_routing_done_packet(struct node_t *node, struct ulsr_internal
 void main_recv_thread(void *arg)
 {
     struct node_t *node = (struct node_t *)arg;
-    struct ulsr_internal_packet *packet = NULL;
+    struct wander_internal_packet *packet = NULL;
 
     while (node->running) {
 	packet = node->recv_func(node->node_id);
@@ -315,7 +315,8 @@ void hello_poll_thread(void *arg)
 	    if (to_id == node->node_id)
 		continue;
 
-	    struct ulsr_internal_packet *packet = ulsr_internal_create_hello(node->node_id, to_id);
+	    struct wander_internal_packet *packet =
+		wander_internal_create_hello(node->node_id, to_id);
 	    node->send_func(packet, to_id);
 	    free(packet);
 	}

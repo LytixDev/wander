@@ -22,9 +22,9 @@
 #include "lib/arraylist.h"
 #include "lib/common.h"
 #include "lib/logger.h"
-#include "ulsr/node.h"
-#include "ulsr/packet.h"
-#include "ulsr/routing.h"
+#include "wander/node.h"
+#include "wander/packet.h"
+#include "wander/routing.h"
 
 // TODO: so many memory leaks....
 void init_routing_data(u16 source_id, u16 total_nodes, bool *visited, u16 *path, u16 path_length,
@@ -80,7 +80,7 @@ void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited, u
 	struct route_payload_t *route_payload = malloc(sizeof(struct route_payload_t));
 	route_payload->route = route;
 	route_payload->step_from_destination = 1;
-	struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
+	struct wander_internal_packet *packet = malloc(sizeof(struct wander_internal_packet));
 	packet->type = PACKET_ROUTING_DONE;
 	packet->payload = route_payload;
 	packet->payload_len =
@@ -100,7 +100,7 @@ void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited, u
 	    struct routing_data_t *routing_data = malloc(sizeof(struct routing_data_t));
 	    init_routing_data(curr->node_id, total_nodes, visited, path, path_length, time_taken,
 			      routing_data);
-	    struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
+	    struct wander_internal_packet *packet = malloc(sizeof(struct wander_internal_packet));
 	    packet->type = PACKET_ROUTING;
 	    packet->payload = routing_data;
 	    packet->payload_len = sizeof(struct routing_data_t) + sizeof(bool) * total_nodes +
