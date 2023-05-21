@@ -19,10 +19,10 @@
 #define ROUTE_TABLE_H
 
 #include "lib/common.h"
-#include "ulsr/routing.h"
+// #include "ulsr/routing.h"
 #include <stdbool.h>
 
-#define STD_ROUTE_TABLE_SIZE 32
+#define MAX_AGE 10
 
 /**
  * A route table entry.
@@ -31,6 +31,7 @@ struct route_table_entry_t {
     struct route_t *route;
     struct route_table_entry_t *prev;
     struct route_table_entry_t *next;
+    u16 use_count;
 };
 
 /**
@@ -42,5 +43,33 @@ struct route_table_t {
     u16 size;
 };
 
+struct route_iter_t {
+    struct route_table_entry_t *current;
+};
+
+bool route_table_empty(struct route_table_t *rt);
+
+bool routes_are_old(struct route_table_t *rt, u16 max_age);
+
+struct route_t *get_random_route(struct route_table_t *rt);
+
+struct route_table_entry_t *new_route_entry(struct route_t *route, struct route_table_entry_t *next,
+					    struct route_table_entry_t *prev);
+
+void add_first_pos(struct route_table_t *rt, struct route_t *route);
+
+void add_last_pos(struct route_table_t *rt, struct route_t *route);
+
+struct route_table_entry_t *remove_entry(struct route_table_t *rt, struct route_table_entry_t *entry);
+
+void iter_start(struct route_iter_t *iter, struct route_table_t *rt);
+
+int iter_end(struct route_iter_t *iter);
+
+void iter_next(struct route_iter_t *iter);
+
+void route_entry_free(struct route_table_entry_t *entry);
+
+void route_table_free(struct route_table_t *rt);
 
 #endif /* ROUTE_TABLE_H */

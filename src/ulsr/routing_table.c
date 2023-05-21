@@ -19,13 +19,31 @@
 #include <stdlib.h>
 
 #include "lib/common.h"
-#include "ulsr/route_table.h"
+#include "ulsr/routing_table.h"
 #include "ulsr/routing.h"
 
-void route_table_init(struct route_table_t *table)
+bool route_table_empty(struct route_table_t *rt)
 {
-    table->size = 0;
-    table->cap = STD_ROUTE_TABLE_SIZE;
+    if (!rt) return true;
+    return rt->size == 0;
+}
+
+bool route_is_old(struct route_table_entry_t *rt)
+{
+    return rt->use_count > MAX_AGE;
+}
+
+struct route_t *get_random_route(struct route_table_t *rt)
+{
+    if (route_table_empty(rt)) return NULL;
+    int random = rand() % rt->size;
+    struct route_iter_t iter;
+    iter_start(&iter, rt);
+    for (int i = 0; i < random; i++) iter_next(&iter);
+    iter.current->use_count++;
+    if (route_is_old(iter.current))
+    return remove_entry(rt, iter.current)->route;
+    return iter.current->route;
 }
 
 struct route_table_entry_t *new_route_entry(struct route_t *route, struct route_table_entry_t *next,
@@ -35,52 +53,71 @@ struct route_table_entry_t *new_route_entry(struct route_t *route, struct route_
     res->route = route;
     res->next = next;
     res->prev = prev;
+    res->use_count = 0;
     return res;
 }
 
-
+void add_first_pos(struct route_table_t *rt, struct route_t *route)
 {
-    ListNode *res = (ListNode *)(malloc(sizeof(ListNode)));
-    res->element = e;
-    res->next = n;
-    res->prev = p;
-    return res;
+    struct route_table_entry_t *res = new_route_entry(route, NULL, NULL);
+    rt->head = res;
+    if (!rt->tail) rt->tail = res;
+    else res->next->prev = res;
+    rt->size++;
 }
 
-void route_table_free(struct route_table_t *table)
+void add_last_pos(struct route_table_t *rt, struct route_t *route)
 {
-    free(table->entries);
+    struct route_table_entry_t *res = new_route_entry(route, NULL, rt->tail);
+    if (rt->tail) rt->tail->next = res;
+    else rt->head = res;
+    rt->tail = res;
+    rt->size++;
 }
 
-void route_table_add(struct route_table_t *table, struct route_t *route)
+struct route_table_entry_t *remove_entry(struct route_table_t *rt, struct route_table_entry_t *entry)
 {
-    u32 tmp = route->destination_id - 1;
-    if (tmp >= table->cap) {
-	table->cap <<= 1;
-	table->entries = realloc(table->entries, sizeof(struct route_t) * table->cap);
+    if (entry->prev) entry->prev->next = entry->next;
+    else rt->head = entry->next;
+    if (entry->next) entry->next->prev = entry->prev;
+    else rt->tail = entry->prev;
+    rt->size--;
+    entry->next = NULL;
+    entry->prev = NULL;
+    return entry;
+}
+
+void iter_start(struct route_iter_t *iter, struct route_table_t *rt)
+{
+    iter->current = rt->head;
+}
+
+int iter_end(struct route_iter_t *iter)
+{
+    return !iter->current;
+}
+
+void iter_next(struct route_iter_t *iter)
+{
+    if(!iter_end(iter))
+        iter->current = iter->current->next;
+}
+
+void route_entry_free(struct route_table_entry_t *entry)
+{
+    free(entry->route->path);
+    free(entry->route);
+    free(entry);
+}
+
+void route_table_free(struct route_table_t *rt)
+{
+    struct route_iter_t iter;
+    iter_start(&iter, rt);
+    while (!iter_end(&iter)) {
+        struct route_table_entry_t *entry = iter.current;
+        iter_next(&iter);
+        route_entry_free(entry);
     }
-
-    table->entries[tmp] = route;
-    table->size++;
-}
-
-void route_table_remove(struct route_table_t *table, u16 key)
-{
-    table->entries[key - 1] = NULL;
-    table->size--;
-}
-
-bool route_table_contains(struct route_table_t *table, u16 key)
-{
-    return table->entries[key - 1] != NULL;
-}
-
-struct route_t *route_table_get(struct route_table_t *table, u16 key)
-{
-    return table->entries[key - 1];
-}
-
-void route_table_set(struct route_table_t *table, u16 key, struct route_t *value)
-{
-    table->entries[key - 1] = value;
+    free(rt);
 }

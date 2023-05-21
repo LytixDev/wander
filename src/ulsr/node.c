@@ -27,6 +27,7 @@
 #include "lib/common.h"
 #include "lib/logger.h"
 #include "lib/queue.h"
+#include "ulsr/routing_table.h"
 #include "ulsr/comms_external.h"
 #include "ulsr/comms_internal.h"
 #include "ulsr/node.h"
@@ -52,28 +53,25 @@ static void insert_external_connection(struct connections_t *connections, int co
 void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id)
 {
     /* if route queue already empty, do nothing */
-    if (queue_empty(node->route_queue))
+    if (route_table_empty(node->routing_table))
 	return;
 
-    struct queue_t *new_route_queue = malloc(sizeof(struct queue_t));
-    queue_init(new_route_queue, node->known_nodes_count);
-
-    struct route_t *route = NULL;
-    while (!queue_empty(node->route_queue)) {
-	route = queue_pop(node->route_queue);
-	for (u16 i = 0; i < route->path_length; i++) {
-	    if (route->path[i] == invalid_node_id) {
-		// TODO: fix freeing of routes and packets
-		// free(route);
-		continue;
-	    }
-	}
-	/* will only enter here if invalid node is not a part of the route */
-	queue_push(new_route_queue, route);
+    struct route_iter_t iter;
+    iter_start(&iter, node->routing_table);
+    while (!iter_end(&iter)) {
+        struct route_table_entry_t *entry = iter.current;
+        struct route_t *route = entry->route;
+        for (u16 i = 0; i < route->path_length; i++) {
+            if (route->path[i] == invalid_node_id) {
+                /* remove route from routing table */
+                remove_entry(node->routing_table, entry);
+                /* free route */
+                // free(route);
+                break;
+            }
+        }
+        iter_next(&iter);
     }
-
-    free(node->route_queue);
-    node->route_queue = new_route_queue;
 }
 
 void remove_old_neighbors(struct node_t *node)
@@ -144,6 +142,9 @@ bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_nei
 	return false;
     }
 
+    /* init routing table */
+    node->routing_table = malloc(sizeof(struct route_table_t));
+
     node->connections = malloc(sizeof(struct connections_t));
     node->connections->connections = calloc(max_connections, sizeof(int));
     node->connections->index = -1;
@@ -152,10 +153,6 @@ bool init_node(struct node_t *node, u16 node_id, u8 poll_interval, u8 remove_nei
     /* init threadpool */
     node->threadpool = malloc(sizeof(struct threadpool_t));
     init_threadpool(node->threadpool, max_threads, queue_size);
-
-    /* init route datastructure */
-    node->route_queue = (struct queue_t *)(malloc(sizeof(struct queue_t)));
-    queue_init(node->route_queue, node->known_nodes_count);
 
     /* init neighbor list */
     node->neighbors = calloc(node->known_nodes_count, sizeof(struct neighbor_t *));
@@ -251,9 +248,8 @@ void free_node(struct node_t *node)
 	free(node->neighbors);
     }
 
-    if (node->route_queue != NULL) {
-	free_queue(node->route_queue);
-	free(node->route_queue);
+    if (node->routing_table != NULL) {
+        route_table_free(node->routing_table);
     }
 
     if (node->known_nodes != NULL) {
