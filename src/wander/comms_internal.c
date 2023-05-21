@@ -320,7 +320,7 @@ void main_recv_thread(void *arg)
 	    break;
 	}
 
-	wander_packet_free(packet);
+	free(packet);
     }
 }
 
