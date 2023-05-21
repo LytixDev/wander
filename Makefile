@@ -49,7 +49,7 @@ $(TARGET_CLIENT):
 $(OBJDIR):
 	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))
 
-gui: CFLAGS += -DGUI -I/usr/include/freetype2 -I/usr/include/libpng16
+gui: CFLAGS += -DGUI -I/usr/include/freetype2 -I/usr/include/libpng16 -g
 gui: LDLIBS += -lglfw -lGLU -lGL -lXrandr -lXxf86vm -lXi -lXinerama -lX11 -lrt -ldl -lfreetype -lGLEW
 
 GUI_SRCS := $(shell find $(SRC)/gui -type f -name "*.c")

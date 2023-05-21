@@ -407,14 +407,22 @@ static void draw_arrows(struct queue_t *arrows, bool show_only_sucess)
 {
     for (int i = arrows->start; i != arrows->end; i = (i + 1) % arrows->max) {
 	struct arrow_queue_data_t *data = (struct arrow_queue_data_t *)arrows->items[i];
+    pthread_mutex_lock(&arrows_mutex);
 	if (data != NULL) {
 	    if (show_only_sucess && !data->success)
 		continue;
-
-	    struct simulation_coord_t from = coords[data->from_node - 1];
-	    struct simulation_coord_t to = coords[data->to_node - 1];
+        u8 from_node = data->from_node;
+        u8 to_node = data->to_node;
+        if (from_node > 11 || to_node > 11) {
+            pthread_mutex_unlock(&arrows_mutex);
+            continue;
+        }
+        
+	    struct simulation_coord_t from = coords[from_node - 1];
+	    struct simulation_coord_t to = coords[to_node - 1];
 	    draw_arrow(from.x, from.y, to.x, to.y, data->is_send, data->success);
 	}
+    pthread_mutex_unlock(&arrows_mutex);
     }
 }
 
