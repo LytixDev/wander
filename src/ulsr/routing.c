@@ -18,6 +18,7 @@
 #include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/time.h>
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
@@ -28,7 +29,7 @@
 
 // TODO: so many memory leaks....
 void init_routing_data(u16 source_id, u16 total_nodes, bool *visited, u16 *path, u16 path_length,
-		       u32 time_taken, struct routing_data_t *routing_data)
+		       u64 time_taken, struct routing_data_t *routing_data)
 {
     routing_data->source_id = source_id;
 
@@ -45,7 +46,7 @@ void init_routing_data(u16 source_id, u16 total_nodes, bool *visited, u16 *path,
     routing_data->time_taken = time_taken;
 }
 
-void init_route(u16 source_id, u16 destination_id, u16 *path, u16 path_length, u32 time_taken,
+void init_route(u16 source_id, u16 destination_id, u16 *path, u16 path_length, u64 time_taken,
 		struct route_t *route)
 {
     route->source_id = source_id;
@@ -69,7 +70,7 @@ void free_route(struct route_t *route)
 }
 
 void find_all_routes_send(struct node_t *curr, u16 total_nodes, bool *visited, u16 *path,
-			  u16 path_length, u32 time_taken)
+			  u16 path_length, u64 time_taken)
 {
     visited[curr->node_id - 1] = true;
     path[path_length++] = curr->node_id;
@@ -120,7 +121,7 @@ void find_all_routes(struct node_t *start, u16 total_nodes)
     memset(visited, false, total_nodes);
     u16 path[total_nodes];
     u16 path_length = 0;
-    u32 time_taken = 0;
+    u64 time_taken = clock();
 
     find_all_routes_send(start, total_nodes, visited, path, path_length, time_taken);
 }
@@ -171,6 +172,8 @@ struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct pac
 	combined->path[i] = b->path[i - a->step];
     }
 
+    combined->has_bogoed = a->has_bogoed || b->has_bogoed;
+    
     return combined;
 }
 
@@ -180,6 +183,21 @@ struct packet_route_t *route_to_packet_route(struct route_t *route)
     pr->path = route->path;
     pr->len = route->path_length;
     pr->step = 0;
-
+    pr->has_bogoed = false;
     return pr;
+}
+
+void route_free(struct route_t *route)
+{
+    free(route->path);
+    free(route);
+}
+
+void route_sleep(struct route_t *route)
+{
+    struct timeval tv;
+    tv.tv_sec = 0;
+    tv.tv_usec = route->time_taken;
+    LOG_INFO("Sleeping for %ld microseconds", route->time_taken);
+    select(1, NULL, NULL, NULL, &tv);
 }

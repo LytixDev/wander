@@ -22,7 +22,7 @@
 // #include "ulsr/routing.h"
 #include <stdbool.h>
 
-#define MAX_AGE 10
+#define MAX_WAIT 10000000
 
 /**
  * A route table entry.

@@ -66,7 +66,7 @@ void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id)
 		/* remove route from routing table */
 		remove_entry(node->routing_table, entry);
 		/* free route */
-		// free(route);
+		free_route(route);
 		break;
 	    }
 	}

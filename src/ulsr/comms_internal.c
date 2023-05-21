@@ -18,6 +18,7 @@
 #include <pthread.h>
 #include <stdlib.h>
 #include <string.h>
+#include <time.h>
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
@@ -47,7 +48,7 @@ static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *p
 bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
 {
     // LOG_NODE_INFO(node->node_id, "use bogo, step %d", packet->pr->step);
-
+    packet->pr->has_bogoed = true;
     packet->pr->path = realloc(packet->pr->path, (packet->pr->step + 2) * sizeof(u16));
     packet->pr->len = packet->pr->step + 1;
 
@@ -155,8 +156,11 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 
 	/* 1 */
 	if (!route_table_empty(node->routing_table)) {
-	    struct packet_route_t *append =
-		route_to_packet_route(get_random_route(node->routing_table));
+	    struct route_t *route = get_random_route(node->routing_table);
+
+	    if (!packet->pr->has_bogoed)
+	    	route_sleep(route);
+	    struct packet_route_t *append = route_to_packet_route(route);
 	    struct packet_route_t *pt = packet_route_combine(packet->pr, append);
 
 	    //     Check if we can free the path here
@@ -216,6 +220,10 @@ static void handle_hello_packet(struct node_t *node, struct ulsr_internal_packet
 static void handle_routing_packet(struct node_t *node, struct ulsr_internal_packet *packet)
 {
     struct routing_data_t *routing_data = packet->payload;
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
+    u64 nanosecs = SEC_TO_NS((uint64_t)ts.tv_sec) + (uint64_t)ts.tv_nsec;
+    routing_data->time_taken = NS_TO_US(nanosecs) - routing_data->time_taken;    
     find_all_routes_send(node, routing_data->total_nodes, routing_data->visited, routing_data->path,
 			 routing_data->path_length, routing_data->time_taken);
 }
@@ -224,6 +232,10 @@ static void handle_routing_done_packet(struct node_t *node, struct ulsr_internal
 {
     struct route_payload_t *route = (struct route_payload_t *)packet->payload;
     if (packet->dest_node_id == node->node_id) {
+	if (route->route->time_taken > MAX_ROUTE_TIME) {
+	    // TODO: free route or something
+	    return;
+	}
 	add_last_pos(node->routing_table, route->route);
 	// LOG_NODE_INFO(node->node_id, "Found route to %d",
 	//	      route->route->path[route->route->path_length - 1]);

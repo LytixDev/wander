@@ -17,6 +17,8 @@
 
 #include <stdbool.h>
 #include <stdlib.h>
+#include <time.h>
+#include <stdint.h>
 
 #include "lib/common.h"
 #include "ulsr/routing.h"
@@ -29,16 +31,41 @@ bool route_table_empty(struct route_table_t *rt)
     return rt->size == 0;
 }
 
+u64 find_longest_time_used(struct route_table_t *rt)
+{
+    if (route_table_empty(rt))
+    return 0;
+    struct route_iter_t iter;
+    iter_start(&iter, rt);
+    u64 max = 0;
+    while (!iter_end(&iter)) {
+        if (iter.current->route->time_taken > max)
+            max = iter.current->route->time_taken;
+        iter_next(&iter);
+    }
+    return max = max < MAX_WAIT ? max : MAX_WAIT;
+}
+
 struct route_t *get_random_route(struct route_table_t *rt)
 {
     if (route_table_empty(rt))
 	return NULL;
+    u64 max = find_longest_time_used(rt);
     int random = rand() % rt->size;
     struct route_iter_t iter;
     iter_start(&iter, rt);
     for (int i = 0; i < random; i++)
 	iter_next(&iter);
-    return iter.current->route;
+
+    struct route_t *found = iter.current->route;
+    struct route_t *res = malloc(sizeof(struct route_t));
+    printf("Time taken: %ld\n", found->time_taken);
+    printf("Max time: %ld\n", max);
+    max = (((i128) max) - ((i128) found->time_taken)) < 0 ? 0 : max - found->time_taken;
+    printf("Time taken: %ld\n", max);
+    init_route(found->source_id, found->destination_id, found->path, found->path_length, max, res);
+
+    return res;
 }
 
 struct route_table_entry_t *new_route_entry(struct route_t *route, struct route_table_entry_t *next,

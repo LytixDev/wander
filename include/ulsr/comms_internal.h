@@ -18,6 +18,8 @@
 #ifndef COMMS_INTERNAL_H
 #define COMMS_INTERNAL_H
 
+# define CLOCK_MONOTONIC_RAW 4
+
 #include "ulsr/node.h"
 #include <stdbool.h>
 

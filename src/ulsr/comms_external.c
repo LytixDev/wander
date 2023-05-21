@@ -125,7 +125,10 @@ void handle_external(void *arg)
 
     /* find path to destination */
     if (!route_table_empty(node->routing_table)) {
-	struct packet_route_t *pr = route_to_packet_route(get_random_route(node->routing_table));
+	struct route_t *route = get_random_route(node->routing_table);
+
+	route_sleep(route);
+	struct packet_route_t *pr = route_to_packet_route(route);
 	internal_packet->pr = pr;
 	bool came_through = use_packet_route(internal_packet, node);
 	if (came_through)
