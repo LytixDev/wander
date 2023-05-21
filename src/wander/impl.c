@@ -47,9 +47,9 @@ struct queue_t packet_limbo[MESH_NODE_COUNT];
 struct await_t node_locks[MESH_NODE_COUNT];
 struct simulation_coord_t coords[MESH_NODE_COUNT];
 struct simulation_coord_t target_coords;
+struct threadpool_t threadpool;
 
 #ifdef GUI
-struct threadpool_t threadpool;
 pthread_mutex_t arrows_mutex;
 #endif
 
