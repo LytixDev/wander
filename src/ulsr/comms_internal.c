@@ -169,7 +169,7 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	if (node->can_connect_func(node)) {
 	    if (!packet->pr->has_slept)
 		packet->pr->has_slept = true;
-	
+
 	    LOG_NODE_INFO(node->node_id, "Sending to external");
 	    // TODO: handle failure
 	    handle_send_external(node, packet);

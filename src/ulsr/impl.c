@@ -285,10 +285,10 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
 //     if (queue_empty(&packet_limbo[node_idx]))
 // 	packet = NULL;
 #ifdef GUI
-	packet = queue_pop(&packet_limbo[node_idx]);
-	sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false, true);
+    packet = queue_pop(&packet_limbo[node_idx]);
+    sleep_for_visualization(packet->type, packet->prev_node_id, node_id, false, true);
 #else
-	packet = queue_pop(&packet_limbo[node_idx]);
+    packet = queue_pop(&packet_limbo[node_idx]);
 #endif
 
     pthread_mutex_unlock(&node_locks[node_idx].cond_lock);
