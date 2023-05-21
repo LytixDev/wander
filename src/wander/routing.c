@@ -208,6 +208,6 @@ void route_sleep(struct route_t *route)
     struct timeval tv;
     tv.tv_sec = 0;
     tv.tv_usec = route->time_taken;
-    LOG_INFO("Sleeping for %ld microseconds", route->time_taken);
+    // LOG_INFO("Sleeping for %ld microseconds", route->time_taken);
     select(1, NULL, NULL, NULL, &tv);
 }

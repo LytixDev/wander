@@ -40,7 +40,7 @@
 #define i128 __int128
 #endif
 
-//#define i256 int256_t
+// #define i256 int256_t
 
 /* common */
 #define VA_NUMBER_OF_ARGS(...) (sizeof((int[]){ __VA_ARGS__ }) / sizeof(int))

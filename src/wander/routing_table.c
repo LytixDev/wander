@@ -61,8 +61,8 @@ struct route_t *get_random_route(struct route_table_t *rt)
     struct route_t *found = iter.current->route;
     struct route_t *res = malloc(sizeof(struct route_t));
     max = (((i128)max) - ((i128)found->time_taken)) < 0 ? 0 : max - found->time_taken;
-    LOG_INFO("Found route from %d to %d that will sleep %ld µs", found->source_id,
-	     found->destination_id, max);
+    //    LOG_INFO("Found route from %d to %d that will sleep %ld µs", found->source_id,
+    //	     found->destination_id, max);
     init_route(found->source_id, found->destination_id, found->path, found->path_length, max, res);
 
     return res;
