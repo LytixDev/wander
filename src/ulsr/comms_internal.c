@@ -30,17 +30,37 @@
 #include "ulsr/routing.h"
 
 
-void propogate_failure(struct ulsr_internal_packet *packet, struct node_t *node)
+void propagate_failure(struct ulsr_internal_packet *packet, struct node_t *node)
 {
+    LOG_NODE_ERR(node->node_id, "PACKET COULD NOT BE ROUTED: PROPOGATE FAILURE");
+
     struct ulsr_packet *failure_packet = ulsr_create_failure(packet->payload);
     struct ulsr_internal_packet *failure_internal = ulsr_internal_from_external(failure_packet);
-    failure_internal->pr = reverse_packet_route(packet->pr);
-    failure_internal->is_response = true;
+
+    /* create reversed route */
+    u16 failure_step = packet->pr->step;
+    failure_internal->pr = reverse_packet_route_from_step(packet->pr);
+    /* can fail at any step of the route, but so we have to start the reversed route from where we
+     * failed */
+    failure_internal->pr->step = failure_internal->pr->len - failure_step;
+    failure_internal->pr->step = 0;
     failure_internal->prev_node_id = node->node_id;
-    LOG_NODE_ERR(node->node_id, "PACKET COULD NOT BE ROUTED: PROPOGATE FAILURE");
-    bool came_through = use_packet_route(failure_internal, node);
-    if (!came_through)
-	LOG_NODE_ERR(node->node_id, "PROPOGATE FAILURE FAILED!!!");
+    failure_internal->is_response = true;
+
+    bool came_through;
+    /* edge case where reversed len is 1 */
+    if (failure_internal->pr->len == 1) {
+	came_through = handle_send_external(node, failure_internal);
+	if (!came_through) {
+	    LOG_NODE_ERR(node->node_id, "PROPOGATE FAILURE ... FAILED");
+	}
+	return;
+    }
+
+    came_through = use_packet_route(failure_internal, node);
+    if (!came_through) {
+	LOG_NODE_ERR(node->node_id, "PROPOGATE FAILURE ... FAILED");
+    }
 }
 
 static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *pt, u16 *ignore_list,
@@ -177,14 +197,14 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	    /* path failed */
 	    came_through = send_bogo(packet, node);
 	    if (!came_through)
-		propogate_failure(packet, node);
+		propagate_failure(packet, node);
 
 	    /* 2 */
 	} else {
 	    /* send packet to random neighbor */
 	    bool came_through = send_bogo(packet, node);
 	    if (!came_through)
-		propogate_failure(packet, node);
+		propagate_failure(packet, node);
 	}
 
     } else {
@@ -198,7 +218,7 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	/* path failed */
 	came_through = send_bogo(packet, node);
 	if (!came_through)
-	    propogate_failure(packet, node);
+	    propagate_failure(packet, node);
     }
 }
 

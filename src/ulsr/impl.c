@@ -245,6 +245,8 @@ i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
 			      SIMULATION_NODE_RANGE) &&
 				!(nodes[node_id - 1].node_id == NODE_INACTIVE_ID));
 #endif
+    if (packet->type == PACKET_DATA)
+	LOG_INFO("attempt send from %d to %d", packet->prev_node_id, node_id);
     /*
      * how the simulation mocks whether a packet addressed for this node can't be received due too
      * bad signal
@@ -255,6 +257,9 @@ i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
     /* how the simulation mocks a packet can't be sent because a node is not active anymore */
     if (nodes[node_id - 1].node_id == NODE_INACTIVE_ID)
 	return -1;
+
+    if (packet->type == PACKET_DATA)
+	LOG_INFO("success sent from %d to %d", packet->prev_node_id, node_id);
 
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
 
