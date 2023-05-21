@@ -89,7 +89,7 @@ void remove_old_neighbors(struct node_t *node)
 	if (neighbor == NULL)
 	    continue;
 
-    neighbor_count++;
+	neighbor_count++;
 	if (now - neighbor->last_seen > node->remove_neighbor_threshold) {
 	    // LOG_NODE_INFO(node->node_id, "%d removed as neighbor", i + 1);
 	    node->neighbors[i] = NULL;
@@ -103,7 +103,7 @@ void remove_old_neighbors(struct node_t *node)
     pthread_mutex_unlock(&node->neighbor_list_lock);
 
     node->new_neighbors_count = 0;
-    
+
     neighbor_count -= new_neighbors;
     double removed_decimal = (removed / neighbor_count);
     double new_neighbors_decimal = (new_neighbors / neighbor_count);
