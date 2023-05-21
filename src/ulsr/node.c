@@ -27,10 +27,10 @@
 #include "lib/common.h"
 #include "lib/logger.h"
 #include "lib/queue.h"
-#include "ulsr/routing_table.h"
 #include "ulsr/comms_external.h"
 #include "ulsr/comms_internal.h"
 #include "ulsr/node.h"
+#include "ulsr/routing_table.h"
 
 
 static void close_all_external_connections(struct connections_t *connections)
@@ -59,18 +59,18 @@ void remove_route_with_old_neighbor(struct node_t *node, u16 invalid_node_id)
     struct route_iter_t iter;
     iter_start(&iter, node->routing_table);
     while (!iter_end(&iter)) {
-        struct route_table_entry_t *entry = iter.current;
-        struct route_t *route = entry->route;
-        for (u16 i = 0; i < route->path_length; i++) {
-            if (route->path[i] == invalid_node_id) {
-                /* remove route from routing table */
-                remove_entry(node->routing_table, entry);
-                /* free route */
-                // free(route);
-                break;
-            }
-        }
-        iter_next(&iter);
+	struct route_table_entry_t *entry = iter.current;
+	struct route_t *route = entry->route;
+	for (u16 i = 0; i < route->path_length; i++) {
+	    if (route->path[i] == invalid_node_id) {
+		/* remove route from routing table */
+		remove_entry(node->routing_table, entry);
+		/* free route */
+		// free(route);
+		break;
+	    }
+	}
+	iter_next(&iter);
     }
 }
 
@@ -249,7 +249,7 @@ void free_node(struct node_t *node)
     }
 
     if (node->routing_table != NULL) {
-        route_table_free(node->routing_table);
+	route_table_free(node->routing_table);
     }
 
     if (node->known_nodes != NULL) {

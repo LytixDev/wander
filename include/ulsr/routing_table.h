@@ -60,7 +60,8 @@ void add_first_pos(struct route_table_t *rt, struct route_t *route);
 
 void add_last_pos(struct route_table_t *rt, struct route_t *route);
 
-struct route_table_entry_t *remove_entry(struct route_table_t *rt, struct route_table_entry_t *entry);
+struct route_table_entry_t *remove_entry(struct route_table_t *rt,
+					 struct route_table_entry_t *entry);
 
 void iter_start(struct route_iter_t *iter, struct route_table_t *rt);
 

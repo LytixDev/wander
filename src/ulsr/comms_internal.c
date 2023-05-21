@@ -155,8 +155,8 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 
 	/* 1 */
 	if (!route_table_empty(node->routing_table)) {
-
-	    struct packet_route_t *append = route_to_packet_route(get_random_route(node->routing_table));
+	    struct packet_route_t *append =
+		route_to_packet_route(get_random_route(node->routing_table));
 	    struct packet_route_t *pt = packet_route_combine(packet->pr, append);
 
 	    //     Check if we can free the path here

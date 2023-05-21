@@ -26,8 +26,8 @@
 #include "lib/common.h"
 #include "lib/queue.h"
 #include "lib/threadpool.h"
-#include "ulsr/routing_table.h"
 #include "ulsr/packet.h"
+#include "ulsr/routing_table.h"
 
 
 /* opaque bro */
