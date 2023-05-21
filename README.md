@@ -3,6 +3,10 @@
 
 Copyright © 2023 Nicolai Brand and Callum Grand under GPL v3 (see LICENSE.txt). .clang-format is licensed under GPL v2.
 
+<div align="center">
+  <img src="https://github.com/LytixDev/wander/tree/main/include/static/wander.gif" width="900">
+</div>
+
 ## Table of Contents
 - [Compile and run](#compile)
 - [Functionality](#functionality)
