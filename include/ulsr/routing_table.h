@@ -72,4 +72,6 @@ void route_entry_free(struct route_table_entry_t *entry);
 
 void route_table_free(struct route_table_t *rt);
 
+void remove_all_entries(struct route_table_t *rt);
+
 #endif /* ROUTE_TABLE_H */

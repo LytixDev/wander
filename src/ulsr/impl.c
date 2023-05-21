@@ -333,7 +333,7 @@ bool simulate(void)
     for (int i = 0; i < MESH_NODE_COUNT; i++) {
 	bool success =
 	    init_node(&nodes[i], i + 1, HELLO_POLL_INTERVAL, REMOVE_NEIGHBOR_THRESHOLD,
-		      MESH_NODE_COUNT, 8, 8, 64, set_initial_node_ids, node_can_connect_func,
+		      MESH_NODE_COUNT, 8, 8, 256, set_initial_node_ids, node_can_connect_func,
 		      node_send_func, node_recv_func, ULSR_DEVICE_PORT_START + i);
 	if (!success)
 	    exit(1);

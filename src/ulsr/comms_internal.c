@@ -159,7 +159,7 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	    struct route_t *route = get_random_route(node->routing_table);
 
 	    if (!packet->pr->has_bogoed)
-	    	route_sleep(route);
+		route_sleep(route);
 	    struct packet_route_t *append = route_to_packet_route(route);
 	    struct packet_route_t *pt = packet_route_combine(packet->pr, append);
 
@@ -223,7 +223,7 @@ static void handle_routing_packet(struct node_t *node, struct ulsr_internal_pack
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC_RAW, &ts);
     u64 nanosecs = SEC_TO_NS((uint64_t)ts.tv_sec) + (uint64_t)ts.tv_nsec;
-    routing_data->time_taken = NS_TO_US(nanosecs) - routing_data->time_taken;    
+    routing_data->time_taken = NS_TO_US(nanosecs) - routing_data->time_taken;
     find_all_routes_send(node, routing_data->total_nodes, routing_data->visited, routing_data->path,
 			 routing_data->path_length, routing_data->time_taken);
 }

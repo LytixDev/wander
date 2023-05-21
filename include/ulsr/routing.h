@@ -26,7 +26,7 @@
 #include "lib/common.h"
 #include "ulsr/node.h"
 
-#define NS_TO_US(ns) ((ns)/1000)
+#define NS_TO_US(ns) ((ns) / 1000)
 #define SEC_TO_NS(sec) ((sec)*1000000000)
 #define MAX_ROUTE_TIME 10000000
 
@@ -150,6 +150,6 @@ struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct pac
 
 struct packet_route_t *route_to_packet_route(struct route_t *route);
 
-void free_route(struct route_t *route);
+void route_free(struct route_t *route);
 
 #endif /* ROUTING_H */

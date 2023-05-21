@@ -173,7 +173,7 @@ struct packet_route_t *packet_route_combine(struct packet_route_t *a, struct pac
     }
 
     combined->has_bogoed = a->has_bogoed || b->has_bogoed;
-    
+
     return combined;
 }
 
