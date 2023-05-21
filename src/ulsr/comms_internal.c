@@ -37,8 +37,10 @@ void propogate_failure(struct ulsr_internal_packet *packet, struct node_t *node)
     failure_internal->pr = reverse_packet_route(packet->pr);
     failure_internal->is_response = true;
     failure_internal->prev_node_id = node->node_id;
-    LOG_ERR("PACKET COULD NOT BE ROUTED :-(");
-    use_packet_route(failure_internal, node);
+    LOG_NODE_ERR(node->node_id, "PACKET COULD NOT BE ROUTED: PROPOGATE FAILURE");
+    bool came_through = use_packet_route(failure_internal, node);
+    if (!came_through)
+	LOG_NODE_ERR(node->node_id, "PROPOGATE FAILURE FAILED!!!");
 }
 
 static u16 bogo_find_neighbor_stub(struct node_t *node, struct packet_route_t *pt, u16 *ignore_list,
@@ -77,8 +79,6 @@ bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node)
     }
 
     /* packet got stuck in bogo :-( */
-    propogate_failure(packet, node);
-    /* This is called because this node doesn't have any routes to the destination */
     find_all_routes(node, node->known_nodes_count);
     return false;
 }
@@ -160,8 +160,9 @@ static void handle_data_packet(struct node_t *node, struct ulsr_internal_packet 
 	 */
 
 	/* 1 */
-	if (!queue_empty(node->route_queue)) {
-	    struct packet_route_t *append = route_to_packet_route(queue_pop(node->route_queue));
+	if (!route_table_empty(node->routing_table)) {
+	    struct packet_route_t *append =
+		route_to_packet_route(get_random_route(node->routing_table));
 	    struct packet_route_t *pt = packet_route_combine(packet->pr, append);
 
 	    //     Check if we can free the path here
@@ -229,7 +230,7 @@ static void handle_routing_done_packet(struct node_t *node, struct ulsr_internal
 {
     struct route_payload_t *route = (struct route_payload_t *)packet->payload;
     if (packet->dest_node_id == node->node_id) {
-	queue_push(node->route_queue, route->route);
+	add_last_pos(node->routing_table, route->route);
 	// LOG_NODE_INFO(node->node_id, "Found route to %d",
 	//	      route->route->path[route->route->path_length - 1]);
     } else {
