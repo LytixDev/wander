@@ -19,7 +19,7 @@
 #define ROUTE_TABLE_H
 
 #include "lib/common.h"
-// #include "ulsr/routing.h"
+// #include "wander/routing.h"
 #include <stdbool.h>
 
 #define MAX_AGE 10

@@ -26,7 +26,7 @@
 #include <stdlib.h>
 
 #include "font.h"
-#include "ulsr/impl.h"
+#include "wander/impl.h"
 
 #define STARTING_RING_RADIUS 50.0f
 #define RING_SPEED 100.0f
