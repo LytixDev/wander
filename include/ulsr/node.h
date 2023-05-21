@@ -27,6 +27,7 @@
 #include "lib/queue.h"
 #include "lib/threadpool.h"
 #include "ulsr/packet.h"
+#include "ulsr/routing_table.h"
 
 
 /* opaque bro */
@@ -108,7 +109,7 @@ struct node_t {
     node_can_connect_func_t can_connect_func;
     struct connections_t *connections;
     struct threadpool_t *threadpool;
-    struct queue_t *route_queue;
+    struct route_table_t *routing_table;
     struct u16_arraylist_t *known_nodes;
     struct neighbor_t **neighbors;
     pthread_mutex_t neighbor_list_lock;

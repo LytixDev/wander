@@ -124,8 +124,8 @@ void handle_external(void *arg)
     internal_packet->prev_node_id = node->node_id;
 
     /* find path to destination */
-    if (!queue_empty(node->route_queue)) {
-	struct packet_route_t *pr = route_to_packet_route(queue_pop(node->route_queue));
+    if (!route_table_empty(node->routing_table)) {
+	struct packet_route_t *pr = route_to_packet_route(get_random_route(node->routing_table));
 	internal_packet->pr = pr;
 	bool came_through = use_packet_route(internal_packet, node);
 	if (came_through)
