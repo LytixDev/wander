@@ -26,8 +26,8 @@
 #include "lib/common.h"
 #include "lib/queue.h"
 #include "lib/threadpool.h"
-#include "ulsr/packet.h"
-#include "ulsr/routing_table.h"
+#include "wander/packet.h"
+#include "wander/routing_table.h"
 
 
 /* opaque bro */
@@ -39,12 +39,12 @@ struct node_t;
  * Function definition for a function that sends a message.
  * Returns the amount of bytes that came through.
  */
-typedef i32 (*node_send_func_t)(struct ulsr_internal_packet *packet, u16 node_id);
+typedef i32 (*node_send_func_t)(struct wander_internal_packet *packet, u16 node_id);
 
 /**
  * Function definition for a function that receives a message.
  */
-typedef struct ulsr_internal_packet *(*node_recv_func_t)(u16 node_id);
+typedef struct wander_internal_packet *(*node_recv_func_t)(u16 node_id);
 
 /**
  * Function definition for a function that checks if a given mesh node is connected to the internet

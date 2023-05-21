@@ -20,7 +20,7 @@
 
 #define CLOCK_MONOTONIC_RAW 4
 
-#include "ulsr/node.h"
+#include "wander/node.h"
 #include <stdbool.h>
 
 /* functions */
@@ -36,10 +36,10 @@ void hello_poll_thread(void *arg);
 u16 find_random_neighbor(struct node_t *node, u16 *path, u16 path_len, u16 *ignore_list,
 			 u16 ignore_len);
 
-bool send_bogo(struct ulsr_internal_packet *packet, struct node_t *node);
+bool send_bogo(struct wander_internal_packet *packet, struct node_t *node);
 
-bool use_packet_route(struct ulsr_internal_packet *packet, struct node_t *node);
+bool use_packet_route(struct wander_internal_packet *packet, struct node_t *node);
 
-void propagate_failure(struct ulsr_internal_packet *packet, struct node_t *node);
+void propagate_failure(struct wander_internal_packet *packet, struct node_t *node);
 
 #endif /* COMMS_INTERNAL_H */

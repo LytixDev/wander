@@ -28,10 +28,10 @@
 #include "lib/logger.h"
 #include "lib/queue.h"
 #include "lib/threadpool.h"
-#include "ulsr/impl.h"
-#include "ulsr/node.h"
-#include "ulsr/packet.h"
-#include "ulsr/ulsr.h"
+#include "wander/impl.h"
+#include "wander/node.h"
+#include "wander/packet.h"
+#include "wander/wander.h"
 
 
 /* global simulation running variable */
@@ -156,7 +156,7 @@ void pop_and_free(void *arg)
     pthread_mutex_unlock(&window_threadpool.cond_var->cond_lock);
 }
 
-void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 from, u16 to,
+void sleep_for_visualization(enum wander_internal_packet_type packet_type, u16 from, u16 to,
 			     bool is_send, bool success)
 {
     if (window != NULL) {
@@ -236,7 +236,7 @@ void sleep_for_visualization(enum ulsr_internal_packet_type packet_type, u16 fro
 }
 #endif
 
-i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
+i32 send_func(struct wander_internal_packet *packet, u16 node_id)
 {
 #ifdef GUI
     sleep_for_visualization(packet->type, packet->prev_node_id, node_id, true,
@@ -258,7 +258,7 @@ i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
     pthread_mutex_lock(&node_locks[node_id - 1].cond_lock);
 
     /* critical section */
-    struct ulsr_internal_packet *new_packet = malloc(sizeof(struct ulsr_internal_packet));
+    struct wander_internal_packet *new_packet = malloc(sizeof(struct wander_internal_packet));
     // TODO: this works for now, but we should implement a better copy function that recursively
     // copy the value of the pointers as well. This implementation only works before we (oh oh)
     // never actually free a packets route or its payload...
@@ -272,7 +272,7 @@ i32 send_func(struct ulsr_internal_packet *packet, u16 node_id)
     return packet->payload_len;
 };
 
-struct ulsr_internal_packet *recv_func(u16 node_id)
+struct wander_internal_packet *recv_func(u16 node_id)
 {
     u16 node_idx = node_id - 1;
     pthread_mutex_lock(&node_locks[node_idx].cond_lock);
@@ -281,7 +281,7 @@ struct ulsr_internal_packet *recv_func(u16 node_id)
     while (queue_empty(&packet_limbo[node_idx]) && running)
 	pthread_cond_wait(&node_locks[node_idx].cond_variable, &node_locks[node_idx].cond_lock);
 
-    struct ulsr_internal_packet *packet;
+    struct wander_internal_packet *packet;
     if (queue_empty(&packet_limbo[node_idx]))
 	packet = NULL;
 #ifdef GUI
@@ -313,7 +313,8 @@ bool simulate(void)
     /* simulated queue of incoming packets */
     init_packet_limbo_queue();
 
-    /* connect, send and recv implementations declared in ulsr/impl.h and defined in uslr/impl.c */
+    /* connect, send and recv implementations declared in wander/impl.h and defined in uslr/impl.c
+     */
     node_can_connect_func_t node_can_connect_func = can_connect_func;
     node_send_func_t node_send_func = send_func;
     node_recv_func_t node_recv_func = recv_func;
@@ -332,7 +333,7 @@ bool simulate(void)
 	bool success =
 	    init_node(&nodes[i], i + 1, HELLO_POLL_INTERVAL, REMOVE_NEIGHBOR_THRESHOLD,
 		      MESH_NODE_COUNT, 8, 8, 256, set_initial_node_ids, node_can_connect_func,
-		      node_send_func, node_recv_func, ULSR_DEVICE_PORT_START + i);
+		      node_send_func, node_recv_func, WANDER_DEVICE_PORT_START + i);
 	if (!success)
 	    exit(1);
 

@@ -22,8 +22,8 @@
 
 #include "lib/common.h"
 #include "lib/logger.h"
-#include "ulsr/routing.h"
-#include "ulsr/routing_table.h"
+#include "wander/routing.h"
+#include "wander/routing_table.h"
 
 bool route_table_empty(struct route_table_t *rt)
 {

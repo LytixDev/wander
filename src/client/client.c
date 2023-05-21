@@ -25,8 +25,8 @@
 
 #include "lib/common.h"
 #include "lib/logger.h"
-#include "ulsr/packet.h"
-#include "ulsr/ulsr.h"
+#include "wander/packet.h"
+#include "wander/wander.h"
 
 #define MY_IP "127.0.0.1"
 
@@ -36,7 +36,7 @@
 /*
  * I want to send an HTTP GET request to http://datakom.no
  */
-void construct_test_packet(struct ulsr_packet *p)
+void construct_test_packet(struct wander_packet *p)
 {
     /* datakom.no IP */
     char host[16] = "20.100.42.130";
@@ -49,7 +49,7 @@ void construct_test_packet(struct ulsr_packet *p)
     u16 payload_len = strlen(payload);
 
     /* construct packet */
-    p->type = ULSR_HTTP;
+    p->type = WANDER_HTTP;
     p->seq_nr = 0;
     strncpy(p->source_ipv4, MY_IP, 16);
     strncpy(p->dest_ipv4, host, 16);
@@ -57,13 +57,13 @@ void construct_test_packet(struct ulsr_packet *p)
     p->payload_len = payload_len;
     strncpy((char *)p->payload, payload, payload_len);
 
-    u32 checksum = ulsr_checksum((u8 *)p, sizeof(struct ulsr_packet));
+    u32 checksum = wander_checksum((u8 *)p, sizeof(struct wander_packet));
     p->checksum = checksum;
 }
 
 void send_test_packet()
 {
-    struct ulsr_packet packet;
+    struct wander_packet packet;
     construct_test_packet(&packet);
 
     /* create socket */
@@ -90,10 +90,10 @@ void send_test_packet()
     LOG_INFO("Successfully connected to the mesh device");
 
     /* send */
-    ssize_t sent = send(sockfd, &packet, sizeof(struct ulsr_packet), 0);
+    ssize_t sent = send(sockfd, &packet, sizeof(struct wander_packet), 0);
     if (sent == -1)
 	LOG_ERR("could not send :-(");
-    else if (sent == sizeof(struct ulsr_packet))
+    else if (sent == sizeof(struct wander_packet))
 	LOG_INFO("probably good?");
 
     close(sockfd);
@@ -111,7 +111,7 @@ void listen_for_response()
     struct sockaddr_in address = { 0 };
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = INADDR_ANY;
-    address.sin_port = htons(ULSR_DEFAULT_PORT);
+    address.sin_port = htons(WANDER_DEFAULT_PORT);
 
     if (bind(sockfd, (struct sockaddr *)&address, sizeof(address)) < 0) {
 	LOG_ERR("Failed to bind socket");
@@ -137,12 +137,12 @@ void listen_for_response()
 
 /* naive, but works for this test */
 #define max_packets_recieved 32
-    struct ulsr_packet packets[max_packets_recieved];
+    struct wander_packet packets[max_packets_recieved];
     int packets_received = 0;
 
     while (1) {
-	struct ulsr_packet packet;
-	ssize_t received = recv(connfd, &packet, sizeof(struct ulsr_packet), 0);
+	struct wander_packet packet;
+	ssize_t received = recv(connfd, &packet, sizeof(struct wander_packet), 0);
 	if (received <= 0) {
 	    LOG_INFO("Done receiving");
 	    break;
@@ -150,7 +150,7 @@ void listen_for_response()
 
 	printf("received %ld bytes\n", received);
 
-	if (packet.type == ULSR_INTERNAL_FAILURE) {
+	if (packet.type == WANDER_INTERNAL_FAILURE) {
 	    LOG_ERR("Packet got stuck in mesh, try again :-(");
 	    return;
 	}
@@ -174,7 +174,7 @@ void listen_for_response()
 int main(void)
 {
     /*
-     * 1. construct ulsr packet
+     * 1. construct wander packet
      * 2. connect to a node of the mesh
      * 3. send the packet to the mesh
      * 4. wait for response

@@ -15,12 +15,12 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef ULSR_H
-#define ULSR_H
+#ifndef WANDER_H
+#define WANDER_H
 
-/* ulsr default port */
-#define ULSR_DEFAULT_PORT 6969
+/* wander default port */
+#define WANDER_DEFAULT_PORT 6969
 
-#define ULSR_DEVICE_PORT_START 8087
+#define WANDER_DEVICE_PORT_START 8087
 
-#endif /* ULSR_H */
+#endif /* WANDER_H */

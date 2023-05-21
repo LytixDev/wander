@@ -21,32 +21,32 @@
 #include <pthread.h>
 #include <stdio.h>
 
-static pthread_mutex_t ulsr_global_log_mutex;
+static pthread_mutex_t wander_global_log_mutex;
 
 void logger_init();
 void logger_destroy();
 
 #ifdef LOGGING
-#define LOG_INFO(...)                                 \
-    ({                                                \
-	pthread_mutex_lock(&ulsr_global_log_mutex);   \
-	fprintf(stdout, "\033[0;33m[LOG]: ");         \
-	fprintf(stdout, __VA_ARGS__);                 \
-	fprintf(stdout, "\033[0m\n");                 \
-	pthread_mutex_unlock(&ulsr_global_log_mutex); \
+#define LOG_INFO(...)                                   \
+    ({                                                  \
+	pthread_mutex_lock(&wander_global_log_mutex);   \
+	fprintf(stdout, "\033[0;33m[LOG]: ");           \
+	fprintf(stdout, __VA_ARGS__);                   \
+	fprintf(stdout, "\033[0m\n");                   \
+	pthread_mutex_unlock(&wander_global_log_mutex); \
     })
 #else
 #define LOG_INFO(...) (void)0
 #endif
 
 #ifdef LOGGING
-#define LOG_ERR(...)                                  \
-    ({                                                \
-	pthread_mutex_lock(&ulsr_global_log_mutex);   \
-	fprintf(stderr, "\033[0;31m[ERR]: ");         \
-	fprintf(stderr, __VA_ARGS__);                 \
-	fprintf(stderr, "\033[0m\n");                 \
-	pthread_mutex_unlock(&ulsr_global_log_mutex); \
+#define LOG_ERR(...)                                    \
+    ({                                                  \
+	pthread_mutex_lock(&wander_global_log_mutex);   \
+	fprintf(stderr, "\033[0;31m[ERR]: ");           \
+	fprintf(stderr, __VA_ARGS__);                   \
+	fprintf(stderr, "\033[0m\n");                   \
+	pthread_mutex_unlock(&wander_global_log_mutex); \
     })
 #else
 #define LOGG_ERR(...) (void)0
@@ -57,26 +57,26 @@ void logger_destroy();
  */
 
 #ifdef LOGGING
-#define LOG_NODE_INFO(node_id, ...)                   \
-    ({                                                \
-	pthread_mutex_lock(&ulsr_global_log_mutex);   \
-	fprintf(stdout, "\033[0;32m[%d]: ", node_id); \
-	fprintf(stdout, __VA_ARGS__);                 \
-	fprintf(stdout, "\033[0m\n");                 \
-	pthread_mutex_unlock(&ulsr_global_log_mutex); \
+#define LOG_NODE_INFO(node_id, ...)                     \
+    ({                                                  \
+	pthread_mutex_lock(&wander_global_log_mutex);   \
+	fprintf(stdout, "\033[0;32m[%d]: ", node_id);   \
+	fprintf(stdout, __VA_ARGS__);                   \
+	fprintf(stdout, "\033[0m\n");                   \
+	pthread_mutex_unlock(&wander_global_log_mutex); \
     })
 #else
 #define LOGG_NODE_INFO(node_id...) (void)0
 #endif
 
 #ifdef LOGGING
-#define LOG_NODE_ERR(node_id, ...)                     \
-    ({                                                 \
-	pthread_mutex_lock(&ulsr_global_log_mutex);    \
-	fprintf(stderr, ":\033[0;31m[%d]: ", node_id); \
-	fprintf(stderr, __VA_ARGS__);                  \
-	fprintf(stderr, "\033[0m\n");                  \
-	pthread_mutex_unlock(&ulsr_global_log_mutex);  \
+#define LOG_NODE_ERR(node_id, ...)                      \
+    ({                                                  \
+	pthread_mutex_lock(&wander_global_log_mutex);   \
+	fprintf(stderr, ":\033[0;31m[%d]: ", node_id);  \
+	fprintf(stderr, __VA_ARGS__);                   \
+	fprintf(stderr, "\033[0m\n");                   \
+	pthread_mutex_unlock(&wander_global_log_mutex); \
     })
 #else
 #define LOGG_NODE_ERR(node_id, ...) (void)0

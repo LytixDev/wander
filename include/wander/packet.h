@@ -21,15 +21,15 @@
 #include "lib/common.h"
 #include <stdbool.h>
 
-enum ulsr_packet_type {
-    ULSR_HTTP,
-    ULSR_RESPONSE,
-    ULSR_INTERNAL_FAILURE,
+enum wander_packet_type {
+    WANDER_HTTP,
+    WANDER_RESPONSE,
+    WANDER_INTERNAL_FAILURE,
 };
 
-struct ulsr_packet {
+struct wander_packet {
     u32 checksum;
-    enum ulsr_packet_type type;
+    enum wander_packet_type type;
     u16 seq_nr;
     char source_ipv4[16];
     char dest_ipv4[16];
@@ -41,7 +41,7 @@ struct ulsr_packet {
 /*
  * packets used for internal communication between devices in the simulation
  */
-enum ulsr_internal_packet_type {
+enum wander_internal_packet_type {
     PACKET_DATA = 0, // data packets final destination will always be an external entity
     PACKET_HELLO,
     PACKET_PURGE,
@@ -53,9 +53,9 @@ enum ulsr_internal_packet_type {
 
 extern char *uslr_internal_type_to_str[PACKET_TYPE_COUNT];
 
-struct ulsr_internal_packet {
+struct wander_internal_packet {
     u32 checksum;
-    enum ulsr_internal_packet_type type;
+    enum wander_internal_packet_type type;
     u16 prev_node_id;
     u16 dest_node_id;
     u32 payload_len;
@@ -66,18 +66,19 @@ struct ulsr_internal_packet {
 
 /* functions */
 
-struct ulsr_packet *ulsr_create_response(struct ulsr_packet *packet, u8 *response, u16 seq_nr);
+struct wander_packet *wander_create_response(struct wander_packet *packet, u8 *response,
+					     u16 seq_nr);
 
 /*
  * Creates a new internal packet from an external packet.
  * Allocates the internal packet on the heap.
  */
-struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *external_packet);
+struct wander_internal_packet *wander_internal_from_external(struct wander_packet *external_packet);
 
-struct ulsr_packet *ulsr_create_failure(struct ulsr_packet *packet_that_failed);
+struct wander_packet *wander_create_failure(struct wander_packet *packet_that_failed);
 
-struct ulsr_internal_packet *ulsr_internal_create_hello(u16 from, u16 to);
+struct wander_internal_packet *wander_internal_create_hello(u16 from, u16 to);
 
-u32 ulsr_checksum(u8 *packet, unsigned long size);
+u32 wander_checksum(u8 *packet, unsigned long size);
 
 #endif /* PACKET_H */

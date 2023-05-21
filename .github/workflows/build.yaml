@@ -1,4 +1,4 @@
-name: ulsr build
+name: wander build
 on: [push]
 
 jobs:

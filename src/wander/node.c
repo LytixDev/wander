@@ -27,10 +27,10 @@
 #include "lib/common.h"
 #include "lib/logger.h"
 #include "lib/queue.h"
-#include "ulsr/comms_external.h"
-#include "ulsr/comms_internal.h"
-#include "ulsr/node.h"
-#include "ulsr/routing_table.h"
+#include "wander/comms_external.h"
+#include "wander/comms_internal.h"
+#include "wander/node.h"
+#include "wander/routing_table.h"
 
 
 static void close_all_external_connections(struct connections_t *connections)

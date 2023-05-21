@@ -1,4 +1,4 @@
-# Nicolai Brand (lytix.dev) 2022-2023
+# Nicolai Brand (lytix.dev), Callum Gran 2022-2023
 # See LICENSE for license info
 
 OBJDIR = .obj
@@ -13,7 +13,7 @@ LDFLAGS = -pthread
 LDLIBS = -lm
 
 .PHONY: format clean tags bear $(OBJDIR)
-TARGET = ulsr
+TARGET = wander
 TARGET_CLIENT = client
 TARGET_GUI = gui
 TARGET_GUI_MACOS = gui_macos
@@ -44,12 +44,12 @@ format:
 	python format.py
 
 $(TARGET_CLIENT):
-	$(CC) src/client/client.c src/ulsr/packet.c $(CFLAGS) -o $(TARGET_CLIENT)
+	$(CC) src/client/client.c src/wander/packet.c $(CFLAGS) -o $(TARGET_CLIENT)
 
 $(OBJDIR):
 	$(foreach dir, $(DIRS), $(shell mkdir -p $(OBJDIR)/$(dir)))
 
-gui: CFLAGS += -DGUI -I/usr/include/freetype2 -I/usr/include/libpng16 -g -DDEBUG
+gui: CFLAGS += -DGUI -I/usr/include/freetype2 -I/usr/include/libpng16
 gui: LDLIBS += -lglfw -lGLU -lGL -lXrandr -lXxf86vm -lXi -lXinerama -lX11 -lrt -ldl -lfreetype -lGLEW
 
 GUI_SRCS := $(shell find $(SRC)/gui -type f -name "*.c")

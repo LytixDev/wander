@@ -24,7 +24,7 @@
 
 #include "lib/arraylist.h"
 #include "lib/common.h"
-#include "ulsr/node.h"
+#include "wander/node.h"
 
 #define NS_TO_US(ns) ((ns) / 1000)
 #define SEC_TO_NS(sec) ((sec)*1000000000)

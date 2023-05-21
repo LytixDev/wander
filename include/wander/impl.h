@@ -21,7 +21,7 @@
 /*
  * This is the simulation implementation.
  * In order to implement a new simulation, or implement the protocol in a real world scenario,
- * the functions send_func and recv_func defined in ulsr/node.h need to be implemented.
+ * the functions send_func and recv_func defined in wander/node.h need to be implemented.
  * In addition, for any simulation, the simulation() method must be implemented. The simulation
  * method initializes all the simulated nodes and their starting state.
  */
@@ -31,8 +31,8 @@
 
 #include "lib/common.h"
 #include "lib/queue.h"
-#include "ulsr/node.h"
-#include "ulsr/packet.h"
+#include "wander/node.h"
+#include "wander/packet.h"
 
 
 /* NOTE: variables that need to be defined: */
@@ -105,10 +105,10 @@ bool simulate(void);
 bool can_connect_func(struct node_t *node);
 
 /* after the packet is sent, a copy is made, and the caller can free the original */
-i32 send_func(struct ulsr_internal_packet *packet, u16 node_id);
+i32 send_func(struct wander_internal_packet *packet, u16 node_id);
 
 /* returns one heap allocated packet at a time */
-struct ulsr_internal_packet *recv_func(u16 node_id);
+struct wander_internal_packet *recv_func(u16 node_id);
 
 /* simulation specific functions */
 void update_coord(u16 node_id, u16 new_x, u16 new_y);

@@ -14,7 +14,6 @@
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-#define GUI
 #ifdef GUI
 #include <stdbool.h>
 #include <stdio.h>
@@ -26,7 +25,7 @@
 #include "gui/window.h"
 #include "lib/common.h"
 #include "lib/queue.h"
-#include "ulsr/impl.h"
+#include "wander/impl.h"
 
 static i16 node_find(int x, int y)
 {
@@ -109,7 +108,7 @@ GLFWwindow *window_create()
 	return NULL;
     }
 
-    window = glfwCreateWindow(SIMULATION_WIDTH, SIMULATION_LENGTH, "ULSR Simulation", NULL, NULL);
+    window = glfwCreateWindow(SIMULATION_WIDTH, SIMULATION_LENGTH, "WANDER Simulation", NULL, NULL);
 
     if (!window) {
 	glfwTerminate();

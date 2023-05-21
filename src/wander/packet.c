@@ -20,43 +20,43 @@
 #include <string.h>
 
 #include "lib/common.h"
-#include "ulsr/packet.h"
-#include "ulsr/routing.h"
-#include "ulsr/ulsr.h"
+#include "wander/packet.h"
+#include "wander/routing.h"
+#include "wander/wander.h"
 
 char *uslr_internal_type_to_str[PACKET_TYPE_COUNT] = {
     "DATA", "HELLO", "PURGE", "ROUTING", "ROUTING_DONE", "NONE",
 };
 
-struct ulsr_packet *ulsr_create_response(struct ulsr_packet *packet, u8 *response, u16 seq_nr)
+struct wander_packet *wander_create_response(struct wander_packet *packet, u8 *response, u16 seq_nr)
 {
-    struct ulsr_packet *response_packet = malloc(sizeof(struct ulsr_packet));
+    struct wander_packet *response_packet = malloc(sizeof(struct wander_packet));
     strncpy(response_packet->source_ipv4, packet->dest_ipv4, 16);
     strncpy(response_packet->dest_ipv4, packet->source_ipv4, 16);
-    response_packet->dest_port = ULSR_DEFAULT_PORT;
+    response_packet->dest_port = WANDER_DEFAULT_PORT;
     response_packet->payload_len = strlen((char *)response);
     strncpy((char *)response_packet->payload, (char *)response, response_packet->payload_len);
-    response_packet->type = ULSR_RESPONSE;
+    response_packet->type = WANDER_RESPONSE;
     response_packet->seq_nr = seq_nr;
     return response_packet;
 }
 
-struct ulsr_packet *ulsr_create_failure(struct ulsr_packet *packet_that_failed)
+struct wander_packet *wander_create_failure(struct wander_packet *packet_that_failed)
 {
-    struct ulsr_packet *response_packet = malloc(sizeof(struct ulsr_packet));
+    struct wander_packet *response_packet = malloc(sizeof(struct wander_packet));
     strncpy(response_packet->source_ipv4, packet_that_failed->dest_ipv4, 16);
     strncpy(response_packet->dest_ipv4, packet_that_failed->source_ipv4, 16);
-    response_packet->dest_port = ULSR_DEFAULT_PORT;
-    response_packet->type = ULSR_INTERNAL_FAILURE;
+    response_packet->dest_port = WANDER_DEFAULT_PORT;
+    response_packet->type = WANDER_INTERNAL_FAILURE;
     response_packet->seq_nr = 0;
     response_packet->checksum = 0;
     return response_packet;
 }
 
-struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *external)
+struct wander_internal_packet *wander_internal_from_external(struct wander_packet *external)
 {
-    struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
-    packet->payload_len = sizeof(struct ulsr_packet);
+    struct wander_internal_packet *packet = malloc(sizeof(struct wander_internal_packet));
+    packet->payload_len = sizeof(struct wander_packet);
     packet->payload = external;
     packet->prev_node_id = 0;
     packet->dest_node_id = 0;
@@ -65,9 +65,9 @@ struct ulsr_internal_packet *ulsr_internal_from_external(struct ulsr_packet *ext
     return packet;
 }
 
-struct ulsr_internal_packet *ulsr_internal_create_hello(u16 from, u16 to)
+struct wander_internal_packet *wander_internal_create_hello(u16 from, u16 to)
 {
-    struct ulsr_internal_packet *packet = malloc(sizeof(struct ulsr_internal_packet));
+    struct wander_internal_packet *packet = malloc(sizeof(struct wander_internal_packet));
     packet->type = PACKET_HELLO;
     packet->payload_len = 0;
     packet->payload = NULL;
@@ -78,7 +78,7 @@ struct ulsr_internal_packet *ulsr_internal_create_hello(u16 from, u16 to)
 
 
 // TODO: use checksums everywhere
-u32 ulsr_checksum(u8 *packet, unsigned long size)
+u32 wander_checksum(u8 *packet, unsigned long size)
 {
     u32 checksum = 0;
 
