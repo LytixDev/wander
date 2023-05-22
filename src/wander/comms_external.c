@@ -93,7 +93,7 @@ bool handle_send_external(struct node_t *node, struct wander_internal_packet *pa
 	internal_packet->dest_node_id = packet->pr->path[0];
 	internal_packet->is_response = true;
 
-	LOG_INFO("Received external response with body: %s", ret_packet->payload);
+	//LOG_INFO("Received external response with body: %s", ret_packet->payload);
 
 	// LOG_NODE_INFO(node->node_id, "Route length: %d", internal_packet->route->len);
 	// for (int i = 0; i < internal_packet->route->len; i++) {
