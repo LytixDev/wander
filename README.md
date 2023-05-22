@@ -195,4 +195,5 @@ The project is written in C11 and compiles with gcc and clang. The project is de
 
 ## Known bugs
 - The GUI is generally volatile and may seg fault.
+- When running the GUI packets may get stuck because of bloated/badly written listening methods.
 - There may be memory leaks from not freeing packets correctly after they have been dealth with by a node. This is only a problem with the simulation, and not the protocol itself.
