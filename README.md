@@ -19,8 +19,8 @@ Copyright © 2023 Nicolai Brand and Callum Grand under GPL v3 (see LICENSE.txt).
 The project is built using a `Make`. The project has three targets: `make`, `make gui`, `make gui_macos` and `make client`.
 
 - `make` builds the simulated mobile mesh.
+- `make gui` and `make gui_macos` builds the samilated mobile mesh with a graphical visualization.
 - `make client` builds a client program that connects to the simulated mobile mesh.
-- `make gui` and `make gui_macos` builds a visualization of the simulated mobile mesh.
  
 IMPORTANT: if you have already built the simulated mobile mesh using `make`, you need to `make clean` before you can `make gui` or `make gui_macos`.
 
@@ -89,7 +89,7 @@ To run the simulation:
 $ ./wander
 ```
 
-To run the simulation with a graphical visualization:
+Or to run the simulation with a graphical visualization:
 ```sh
 $ ./gui
 ```
@@ -184,10 +184,10 @@ The project is written in C11 and compiles with gcc and clang. The project is de
 
 ## Further development
 - In the future, packets in and out of the network should not be bound to TCP, but rather be raw IP-packets.
-- The GUI is generally volatile and may seg fault.
+- The whole GUI is buggy and largely needs to be rewritten as there are multiple causes for segfaults and memory leaks.
 - The GUI is currently fixed size, in the future it should be possible to resize the GUI and move around in the mesh network.
 - There are also many bugs in the code that need to be fixed, some known and others unknown. We have written up a list of all bugs we have come across, expect this list to grow.
 
 ## Known bugs
-- The whole GUI is buggy and largely needs to be rewritten as there are multiple causes for segfaults and memory leaks.
-- Packets and routes are not always freed correctly in the simulation, which causes memory leaks. This is however not a problem in a real world scenario, as the packets are freed when they are sent as it would go through a socket.
+- The GUI is generally volatile and may seg fault.
+- There may be memory leaks from not freeing packets correctly after they have been dealth with by a node. This is only a problem with the simulation, and not the protocol itself.
