@@ -53,6 +53,12 @@ For debian-based systems (apt), the added dependencies required to make the gui 
 - libxi-dev 
 - libxinerama-dev
 
+These dependencies can be installed by using the following command:
+
+```shell
+sudo apt install libglfw3-dev libgl-dev libglew-dev libxxf86vm-dev libxi-dev libxinerama-dev
+```
+
 For arch-based systems (pacman), the added dependencies required to make the gui are:
 - glfw-x11
 - mesa
